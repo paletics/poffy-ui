@@ -37,6 +37,26 @@ const coverImageClass = css({ width: '100%', height: '100%', objectFit: 'cover' 
 const containImageClass = css({ width: '100%', height: '100%', objectFit: 'contain' });
 const sampleImageSrc =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500"%3E%3Crect width="800" height="500" fill="%23dbeafe"/%3E%3Ccircle cx="560" cy="150" r="90" fill="%23fbbf24"/%3E%3Cpath d="M0 390 180 220l130 120 120-95 370 260H0z" fill="%232563eb"/%3E%3Cpath d="M0 430 240 270l150 105 110-70 300 210H0z" fill="%230f766e"/%3E%3C/svg%3E';
+const mapEmbedSrcDoc = `
+<!doctype html>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0;
+        display: grid;
+        place-items: center;
+        width: 100vw;
+        height: 100vh;
+        background: #dbeafe;
+        color: #1e3a8a;
+        font: 600 24px sans-serif;
+      }
+    </style>
+  </head>
+  <body>Static map preview</body>
+</html>
+`;
 
 export const Default: Story = {
   parameters: {
@@ -196,11 +216,10 @@ export const MapEmbed: Story = {
     <Box w="400px">
       <AspectRatio {...args}>
         <iframe
-          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3240.828030598852!2d139.76454987623358!3d35.68123617258712!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x60188bfbd89f7007%3A0x277c49ba34ed38!2z5p2x5Lqs6aeF!5e0!3m2!1sja!2sjp!4v1700000000000!5m2!1sja!2sjp"
+          srcDoc={mapEmbedSrcDoc}
           title="Google Maps"
           allowFullScreen
           loading="lazy"
-          referrerPolicy="no-referrer-when-downgrade"
           className={embedClass}
         />
       </AspectRatio>
