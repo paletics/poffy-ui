@@ -1,0 +1,32 @@
+import { defineConfig } from 'tsup';
+
+export default defineConfig({
+  entry: [
+    'src/index.ts',
+    'src/activation/index.ts',
+    'src/hooks/index.ts',
+    'src/accordion/index.ts',
+    'src/calendar/index.ts',
+    'src/clipboard/index.ts',
+    'src/context-menu/index.ts',
+    'src/datetime/index.ts',
+    'src/dropdown/index.ts',
+    'src/file-upload/index.ts',
+    'src/listbox/index.ts',
+    'src/number-input/index.ts',
+    'src/otp-input/index.ts',
+    'src/pagination/index.ts',
+    'src/radio-group/index.ts',
+    'src/scroll-area/index.ts',
+    'src/split-button/index.ts',
+    'src/time/index.ts',
+    'src/toggle-button/index.ts',
+    'src/wheel-picker/index.ts',
+    'src/logic/index.ts',
+  ],
+  format: ['cjs', 'esm'],
+  dts: true,
+  sourcemap: true,
+  clean: true,
+  treeshake: true,
+});

@@ -1,0 +1,61 @@
+{
+  "name": "@poffy-ui/system",
+  "description": "Poffy UI design system — tokens, semantic tokens, recipes, and Panda CSS preset",
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.33.0",
+  "type": "commonjs",
+  "license": "Apache-2.0",
+  "author": "paletics",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paletics/poffy-ui.git",
+    "directory": "packages/system"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./styles.css": "./dist/styles.css",
+    "./preset": {
+      "import": {
+        "types": "./dist/preset.d.mts",
+        "default": "./dist/preset.mjs"
+      },
+      "require": {
+        "types": "./dist/preset.d.ts",
+        "default": "./dist/preset.js"
+      }
+    }
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "build": "panda codegen && panda cssgen && tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "codegen": "panda codegen"
+  }
+}

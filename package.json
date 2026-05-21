@@ -1,0 +1,145 @@
+{
+  "name": "@paletics/poffy-ui",
+  "private": true,
+  "description": "An AI-first UI library. Build animation-rich interfaces with LLM-optimized structures and Framer Motion.",
+  "keywords": [
+    "react",
+    "ui",
+    "component-library",
+    "panda-css",
+    "design-system",
+    "typescript"
+  ],
+  "homepage": "https://github.com/paletics/poffy-ui#readme",
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.33.0",
+  "license": "Apache-2.0",
+  "author": "paletics",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paletics/poffy-ui.git"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "fast-uri": "3.1.2",
+      "lodash-es": "4.18.1",
+      "postcss": "8.5.9",
+      "rolldown": "1.0.0-rc.15"
+    },
+    "peerDependencyRules": {
+      "allowedVersions": {
+        "react": "18 || 19",
+        "react-dom": "18 || 19"
+      }
+    }
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "catalog:",
+    "@changesets/cli": "catalog:",
+    "@commitlint/cli": "catalog:",
+    "@commitlint/config-conventional": "catalog:",
+    "@eslint/js": "catalog:",
+    "@pandacss/dev": "catalog:",
+    "@playwright/test": "catalog:",
+    "@poffy-ui/eslint-config": "workspace:*",
+    "@poffy-ui/system": "workspace:*",
+    "@poffy-ui/typescript-config": "workspace:*",
+    "@storybook/addon-a11y": "catalog:",
+    "@storybook/addon-docs": "catalog:",
+    "@storybook/addon-vitest": "catalog:",
+    "@storybook/react": "catalog:",
+    "@storybook/react-vite": "catalog:",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/node": "catalog:",
+    "@types/prismjs": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "@vitest/browser": "catalog:",
+    "@vitest/browser-playwright": "catalog:",
+    "@vitest/coverage-v8": "catalog:",
+    "@vitest/ui": "catalog:",
+    "autoprefixer": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "eslint-plugin-jsx-a11y": "catalog:",
+    "eslint-plugin-react": "catalog:",
+    "eslint-plugin-react-hooks": "catalog:",
+    "globals": "catalog:",
+    "husky": "catalog:",
+    "jsdom": "catalog:",
+    "lint-staged": "catalog:",
+    "playwright": "catalog:",
+    "prettier": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "storybook": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vite": "catalog:",
+    "vitest": "catalog:",
+    "vitest-axe": "catalog:"
+  },
+  "lint-staged": {
+    "*.{css,json,md}": [
+      "prettier --write"
+    ],
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  },
+  "scripts": {
+    "check:encoding": "node scripts/check-encoding.mjs",
+    "check:exports": "node scripts/check-package-exports.mjs",
+    "check:declarations": "node scripts/check-package-declarations.mjs",
+    "check:package-boundaries": "node scripts/check-package-boundaries.mjs",
+    "check:pack-smoke": "node scripts/check-package-pack-smoke.mjs",
+    "check:licenses": "node scripts/check-prohibited-licenses.mjs",
+    "oss:audit": "node scripts/oss-audit.mjs",
+    "check:tier": "node scripts/tier-audit.mjs",
+    "format": "prettier --write \"**/*.{ts,tsx,css,json,md}\"",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "typecheck": "pnpm -r --filter \"./packages/*\" typecheck",
+    "prepare": "husky",
+    "prepare:codegen": "pnpm --filter @poffy-ui/react exec panda codegen",
+    "prepare:css:codegen": "pnpm --filter @poffy-ui/react exec panda cssgen",
+    "prepare:storybook": "pnpm prepare:codegen && pnpm prepare:css:codegen",
+    "storybook": "pnpm prepare:storybook && storybook dev -p 6006",
+    "storybook:watch": "pnpm --filter @poffy-ui/react exec panda --watch",
+    "test": "vitest",
+    "test:browser": "vitest --project=browser --passWithNoTests",
+    "test:e2e": "playwright test",
+    "test:storybook": "pnpm prepare:storybook && vitest --project=storybook",
+    "test:unit": "pnpm prepare:codegen && vitest --project=unit",
+    "test:vrt": "playwright test --grep \"visual\"",
+    "test:vrt:update": "playwright test --grep \"visual\" --update-snapshots",
+    "coverage": "vitest run --coverage",
+    "coverage:ui": "vitest --ui --coverage",
+    "coverage:storybook": "pnpm prepare:storybook && vitest --project=storybook -- --coverage",
+    "analyze": "tsup --metafile",
+    "build": "pnpm build:packages",
+    "build:packages": "pnpm -r --filter \"./packages/*\" build",
+    "changeset": "changeset",
+    "changeset:version": "changeset version",
+    "changeset:publish": "changeset publish --provenance",
+    "changeset:status": "changeset status",
+    "release:bootstrap-packages": "node scripts/create-npm-bootstrap-packages.mjs",
+    "build:storybook": "pnpm prepare:storybook && storybook build"
+  },
+  "browserslist": [
+    "> 0.5%",
+    "last 2 versions",
+    "not dead"
+  ]
+}

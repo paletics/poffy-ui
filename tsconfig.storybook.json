@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": ".",
+    "types": ["node"]
+  },
+  "include": [
+    ".storybook/preview.tsx",
+    "packages/react/src/**/*.stories.tsx",
+    "packages/react/src/**/*.stories.ts"
+  ],
+  "exclude": []
+}

@@ -1,0 +1,30 @@
+node_modules
+dist
+cjs
+es
+umd
+*storybook.log
+storybook-static
+playwright-report
+test-results
+
+coverage/
+
+styled-system
+
+.agent/
+
+.vscode/
+
+.npmrc
+
+# Local env / secrets
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Generated Panda CSS output (kept out of git; shipped via dist)
+packages/*/src/styled-system/styles.css

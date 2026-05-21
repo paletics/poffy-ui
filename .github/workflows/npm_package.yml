@@ -1,0 +1,92 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+defaults:
+  run:
+    shell: bash
+    working-directory: ./
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Use Node.js 24.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.x
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check encoding
+        run: pnpm check:encoding
+
+      - name: Check prohibited licenses
+        run: pnpm check:licenses
+
+      - name: OSS audit (secrets / internal refs)
+        run: pnpm oss:audit
+
+      - name: Tier audit (no Pro/Enterprise refs)
+        run: pnpm check:tier
+
+      - name: Check package boundaries
+        run: pnpm check:package-boundaries
+
+      - name: Build workspace dependencies for checks
+        run: pnpm --filter @poffy-ui/types --filter @poffy-ui/system --filter @poffy-ui/behavior build
+
+      - name: Generate Panda styled-system
+        run: pnpm prepare:codegen
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test:unit -- --run
+
+      - name: Build
+        run: pnpm build
+
+      - name: Check package exports
+        run: pnpm check:exports
+
+      - name: Check package declarations
+        run: pnpm check:declarations
+
+      - name: Check packed package install
+        run: pnpm check:pack-smoke
+
+      - name: Check package integrity (publint)
+        run: |
+          for package in packages/react packages/system packages/behavior packages/types; do
+            npx publint "$package"
+          done
+
+      - name: Publish (npm)
+        run: pnpm changeset:publish
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096

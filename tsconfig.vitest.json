@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.lib.json",
+  "compilerOptions": {
+    "composite": true,
+    "rootDir": ".",
+    "types": ["vitest/globals", "@testing-library/jest-dom", "vitest-axe"]
+  },
+  "include": [
+    "packages/react/src",
+    "styled-system",
+    "packages/react/src/**/*.test.ts",
+    "packages/react/src/**/*.test.tsx",
+    "packages/react/src/**/*.spec.ts",
+    "packages/react/src/**/*.spec.tsx",
+    "tests/setup.ts"
+  ],
+  "exclude": []
+}

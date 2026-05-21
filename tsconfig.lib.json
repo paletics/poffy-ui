@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "composite": false,
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "jsx": "react-jsx",
+    "rootDir": "packages/react/src",
+    "outDir": "./dist",
+    "types": []
+  },
+  "include": ["packages/react/src/**/*", "styled-system/**/*"],
+  "exclude": [
+    "packages/react/src/**/*.stories.tsx",
+    "packages/react/src/**/*.stories.ts",
+    "packages/react/src/**/*.test.tsx",
+    "packages/react/src/**/*.test.ts",
+    "packages/react/src/**/*.spec.tsx",
+    "packages/react/src/**/*.spec.ts",
+    "packages/react/src/**/*.visual.spec.tsx",
+    "packages/react/src/**/*.visual.spec.ts"
+  ]
+}

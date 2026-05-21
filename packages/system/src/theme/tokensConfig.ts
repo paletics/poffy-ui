@@ -1,0 +1,124 @@
+import { poffyPalette } from './colors';
+import { baseTokens } from './tokens';
+import { fontSizes, fontWeights, lineHeights } from './typography';
+
+/**
+ * Panda CSS Token Configuration.
+ * Constructs the final tokens object for the theme by mapping base tokens
+ * and primitive palettes into the required value structure.
+ */
+export const tokens = {
+  colors: poffyPalette,
+  borderWidths: {
+    thin: { value: baseTokens.borderWidths.thin },
+    default: { value: baseTokens.borderWidths.default },
+    strong: { value: baseTokens.borderWidths.strong },
+  },
+  focusRing: {
+    width: { value: baseTokens.focusRing.width },
+    offset: { value: baseTokens.focusRing.offset },
+    insetOffset: { value: baseTokens.focusRing.insetOffset },
+    underlineWidth: { value: baseTokens.focusRing.underlineWidth },
+  },
+  shadowOffsets: {
+    sm: { value: baseTokens.shadowOffsets.sm },
+    md: { value: baseTokens.shadowOffsets.md },
+    lg: { value: baseTokens.shadowOffsets.lg },
+  },
+  strokeWidths: {
+    thin: { value: baseTokens.strokeWidths.thin },
+    default: { value: baseTokens.strokeWidths.default },
+    strong: { value: baseTokens.strokeWidths.strong },
+  },
+  radii: {
+    xs: { value: baseTokens.radii.xs },
+    sm: { value: baseTokens.radii.sm },
+    md: { value: baseTokens.radii.md },
+    lg: { value: baseTokens.radii.lg },
+    xl: { value: baseTokens.radii.xl },
+    '2xl': { value: baseTokens.radii['2xl'] },
+    '3xl': { value: baseTokens.radii['3xl'] },
+    full: { value: baseTokens.radii.full },
+    none: { value: baseTokens.radii.none },
+  },
+  spacing: {
+    none: { value: baseTokens.spacing.none },
+    '2xs': { value: baseTokens.spacing['2xs'] },
+    xs: { value: baseTokens.spacing.xs },
+    sm: { value: baseTokens.spacing.sm },
+    md: { value: baseTokens.spacing.md },
+    base: { value: baseTokens.spacing.base },
+    lg: { value: baseTokens.spacing.lg },
+    xl: { value: baseTokens.spacing.xl },
+    '2xl': { value: baseTokens.spacing['2xl'] },
+    '3xl': { value: baseTokens.spacing['3xl'] },
+  },
+  sizes: {
+    full: { value: baseTokens.sizes.full },
+    sm: { value: baseTokens.sizes.sm },
+    md: { value: baseTokens.sizes.md },
+    lg: { value: baseTokens.sizes.lg },
+    xl: { value: baseTokens.sizes.xl },
+    'ratio.sm': { value: baseTokens.sizes.ratio.sm },
+    'ratio.md': { value: baseTokens.sizes.ratio.md },
+    'ratio.lg': { value: baseTokens.sizes.ratio.lg },
+    'silver.1': { value: baseTokens.sizes.silver[1] },
+    'silver.2': { value: baseTokens.sizes.silver[2] },
+    'silver.3': { value: baseTokens.sizes.silver[3] },
+    'silver.4': { value: baseTokens.sizes.silver[4] },
+    'silver.5': { value: baseTokens.sizes.silver[5] },
+    'root.1': { value: baseTokens.sizes.root[1] },
+    'root.2': { value: baseTokens.sizes.root[2] },
+    'root.3': { value: baseTokens.sizes.root[3] },
+    'root.4': { value: baseTokens.sizes.root[4] },
+  },
+  fonts: {
+    body: { value: baseTokens.fontFamilies.body },
+    heading: { value: baseTokens.fontFamilies.heading },
+  },
+  fontSizes,
+  fontWeights,
+  lineHeights,
+  zIndex: {
+    mobileStepper: { value: baseTokens.zIndex.mobileStepper.toString() },
+    appBar: { value: baseTokens.zIndex.appBar.toString() },
+    drawer: { value: baseTokens.zIndex.drawer.toString() },
+    modal: { value: baseTokens.zIndex.modal.toString() },
+    popover: { value: baseTokens.zIndex.popover.toString() },
+    snackbar: { value: baseTokens.zIndex.snackbar.toString() },
+    puff: { value: baseTokens.zIndex.puff.toString() },
+    tooltip: { value: baseTokens.zIndex.tooltip.toString() },
+    overlay: { value: baseTokens.zIndex.overlay.toString() },
+  },
+  shadows: {
+    xs: { value: baseTokens.shadows.xs },
+    sm: { value: baseTokens.shadows.sm },
+    md: { value: baseTokens.shadows.md },
+    lg: { value: baseTokens.shadows.lg },
+    xl: { value: baseTokens.shadows.xl },
+  },
+  blurs: {
+    sm: { value: baseTokens.blurs.sm },
+    md: { value: baseTokens.blurs.md },
+    lg: { value: baseTokens.blurs.lg },
+    xl: { value: baseTokens.blurs.xl },
+  },
+  durations: {
+    ultraFast: { value: baseTokens.durations.ultraFast },
+    fast: { value: baseTokens.durations.fast },
+    standard: { value: baseTokens.durations.standard },
+    complex: { value: baseTokens.durations.complex },
+    slow: { value: baseTokens.durations.slow },
+    extraSlow: { value: baseTokens.durations.extraSlow },
+  },
+  easings: {
+    easeInOut: { value: baseTokens.easings.easeInOut },
+    easeIn: { value: baseTokens.easings.easeIn },
+    easeOut: { value: baseTokens.easings.easeOut },
+    sharp: { value: baseTokens.easings.sharp },
+    snappy: { value: baseTokens.easings.snappy },
+    bounce: { value: baseTokens.easings.bounce },
+    soft: { value: baseTokens.easings.soft },
+    default: { value: `cubic-bezier(${baseTokens.motion.easings.default.join(',')})` },
+  },
+};

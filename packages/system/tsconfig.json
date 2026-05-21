@@ -1,0 +1,13 @@
+{
+  "extends": "@poffy-ui/typescript-config/base.json",
+  "compilerOptions": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/styled-system/*": ["./src/styled-system/*"]
+    }
+  },
+  "include": ["src"]
+}

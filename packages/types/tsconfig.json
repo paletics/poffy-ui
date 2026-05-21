@@ -1,0 +1,9 @@
+{
+  "extends": "@poffy-ui/typescript-config/base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "paths": {}
+  },
+  "include": ["src"]
+}

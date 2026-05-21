@@ -1,0 +1,255 @@
+{
+  "name": "@poffy-ui/behavior",
+  "description": "Shared behavioral hooks and non-visual interaction logic for Poffy UI",
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.33.0",
+  "type": "commonjs",
+  "license": "Apache-2.0",
+  "author": "paletics",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paletics/poffy-ui.git",
+    "directory": "packages/behavior"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    },
+    "./activation": {
+      "import": {
+        "types": "./dist/activation/index.d.mts",
+        "default": "./dist/activation/index.mjs"
+      },
+      "require": {
+        "types": "./dist/activation/index.d.ts",
+        "default": "./dist/activation/index.js"
+      }
+    },
+    "./hooks": {
+      "import": {
+        "types": "./dist/hooks/index.d.mts",
+        "default": "./dist/hooks/index.mjs"
+      },
+      "require": {
+        "types": "./dist/hooks/index.d.ts",
+        "default": "./dist/hooks/index.js"
+      }
+    },
+    "./accordion": {
+      "import": {
+        "types": "./dist/accordion/index.d.mts",
+        "default": "./dist/accordion/index.mjs"
+      },
+      "require": {
+        "types": "./dist/accordion/index.d.ts",
+        "default": "./dist/accordion/index.js"
+      }
+    },
+    "./calendar": {
+      "import": {
+        "types": "./dist/calendar/index.d.mts",
+        "default": "./dist/calendar/index.mjs"
+      },
+      "require": {
+        "types": "./dist/calendar/index.d.ts",
+        "default": "./dist/calendar/index.js"
+      }
+    },
+    "./clipboard": {
+      "import": {
+        "types": "./dist/clipboard/index.d.mts",
+        "default": "./dist/clipboard/index.mjs"
+      },
+      "require": {
+        "types": "./dist/clipboard/index.d.ts",
+        "default": "./dist/clipboard/index.js"
+      }
+    },
+    "./context-menu": {
+      "import": {
+        "types": "./dist/context-menu/index.d.mts",
+        "default": "./dist/context-menu/index.mjs"
+      },
+      "require": {
+        "types": "./dist/context-menu/index.d.ts",
+        "default": "./dist/context-menu/index.js"
+      }
+    },
+    "./datetime": {
+      "import": {
+        "types": "./dist/datetime/index.d.mts",
+        "default": "./dist/datetime/index.mjs"
+      },
+      "require": {
+        "types": "./dist/datetime/index.d.ts",
+        "default": "./dist/datetime/index.js"
+      }
+    },
+    "./dropdown": {
+      "import": {
+        "types": "./dist/dropdown/index.d.mts",
+        "default": "./dist/dropdown/index.mjs"
+      },
+      "require": {
+        "types": "./dist/dropdown/index.d.ts",
+        "default": "./dist/dropdown/index.js"
+      }
+    },
+    "./file-upload": {
+      "import": {
+        "types": "./dist/file-upload/index.d.mts",
+        "default": "./dist/file-upload/index.mjs"
+      },
+      "require": {
+        "types": "./dist/file-upload/index.d.ts",
+        "default": "./dist/file-upload/index.js"
+      }
+    },
+    "./listbox": {
+      "import": {
+        "types": "./dist/listbox/index.d.mts",
+        "default": "./dist/listbox/index.mjs"
+      },
+      "require": {
+        "types": "./dist/listbox/index.d.ts",
+        "default": "./dist/listbox/index.js"
+      }
+    },
+    "./number-input": {
+      "import": {
+        "types": "./dist/number-input/index.d.mts",
+        "default": "./dist/number-input/index.mjs"
+      },
+      "require": {
+        "types": "./dist/number-input/index.d.ts",
+        "default": "./dist/number-input/index.js"
+      }
+    },
+    "./otp-input": {
+      "import": {
+        "types": "./dist/otp-input/index.d.mts",
+        "default": "./dist/otp-input/index.mjs"
+      },
+      "require": {
+        "types": "./dist/otp-input/index.d.ts",
+        "default": "./dist/otp-input/index.js"
+      }
+    },
+    "./pagination": {
+      "import": {
+        "types": "./dist/pagination/index.d.mts",
+        "default": "./dist/pagination/index.mjs"
+      },
+      "require": {
+        "types": "./dist/pagination/index.d.ts",
+        "default": "./dist/pagination/index.js"
+      }
+    },
+    "./radio-group": {
+      "import": {
+        "types": "./dist/radio-group/index.d.mts",
+        "default": "./dist/radio-group/index.mjs"
+      },
+      "require": {
+        "types": "./dist/radio-group/index.d.ts",
+        "default": "./dist/radio-group/index.js"
+      }
+    },
+    "./scroll-area": {
+      "import": {
+        "types": "./dist/scroll-area/index.d.mts",
+        "default": "./dist/scroll-area/index.mjs"
+      },
+      "require": {
+        "types": "./dist/scroll-area/index.d.ts",
+        "default": "./dist/scroll-area/index.js"
+      }
+    },
+    "./split-button": {
+      "import": {
+        "types": "./dist/split-button/index.d.mts",
+        "default": "./dist/split-button/index.mjs"
+      },
+      "require": {
+        "types": "./dist/split-button/index.d.ts",
+        "default": "./dist/split-button/index.js"
+      }
+    },
+    "./time": {
+      "import": {
+        "types": "./dist/time/index.d.mts",
+        "default": "./dist/time/index.mjs"
+      },
+      "require": {
+        "types": "./dist/time/index.d.ts",
+        "default": "./dist/time/index.js"
+      }
+    },
+    "./toggle-button": {
+      "import": {
+        "types": "./dist/toggle-button/index.d.mts",
+        "default": "./dist/toggle-button/index.mjs"
+      },
+      "require": {
+        "types": "./dist/toggle-button/index.d.ts",
+        "default": "./dist/toggle-button/index.js"
+      }
+    },
+    "./wheel-picker": {
+      "import": {
+        "types": "./dist/wheel-picker/index.d.mts",
+        "default": "./dist/wheel-picker/index.mjs"
+      },
+      "require": {
+        "types": "./dist/wheel-picker/index.d.ts",
+        "default": "./dist/wheel-picker/index.js"
+      }
+    },
+    "./logic": {
+      "import": {
+        "types": "./dist/logic/index.d.mts",
+        "default": "./dist/logic/index.mjs"
+      },
+      "require": {
+        "types": "./dist/logic/index.d.ts",
+        "default": "./dist/logic/index.js"
+      }
+    }
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "dependencies": {
+    "@floating-ui/react": "catalog:"
+  },
+  "scripts": {
+    "build": "tsup && node scripts/add-use-client-directives.mjs",
+    "dev": "tsup --watch",
+    "lint": "eslint .",
+    "test": "pnpm -C ../.. exec vitest --project=behavior --run",
+    "typecheck": "tsc --noEmit"
+  }
+}

@@ -1,0 +1,23 @@
+# Default owners for the repository
+* @paletics
+
+# Workflows and repo policy
+.github/ @paletics
+.changeset/ @paletics
+
+# Published packages
+packages/react/ @paletics
+packages/system/ @paletics
+packages/behavior/ @paletics
+packages/types/ @paletics
+
+# Tooling and scripts
+tooling/ @paletics
+scripts/ @paletics
+
+# Docs
+docs/ @paletics
+README.md @paletics
+CONTRIBUTING.md @paletics
+SECURITY.md @paletics
+

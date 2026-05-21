@@ -1,0 +1,10 @@
+{
+  "extends": "@poffy-ui/typescript-config/react.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["packages/react/src/*"],
+      "@/styled-system/*": ["styled-system/*", "packages/react/src/styled-system/*"]
+    }
+  }
+}

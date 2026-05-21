@@ -1,0 +1,47 @@
+{
+  "name": "@poffy-ui/types",
+  "description": "Shared TypeScript type definitions for Poffy UI",
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.33.0",
+  "type": "commonjs",
+  "license": "Apache-2.0",
+  "author": "paletics",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paletics/poffy-ui.git",
+    "directory": "packages/types"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "main": "dist/index.js",
+  "module": "dist/index.mjs",
+  "types": "dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "THIRD_PARTY_NOTICES.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  }
+}
