@@ -11,7 +11,7 @@ catalog:
 
   # Release / Git hooks
   "@changesets/cli": ^2.27.12
-  "@commitlint/cli": ^20.2.0
+  "@commitlint/cli": ^21.0.1
   "@commitlint/config-conventional": ^20.2.0
 
   # ESLint
