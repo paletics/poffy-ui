@@ -98,6 +98,7 @@ export default defineConfig({
         plugins: [storybookTest({ configDir: path.resolve(rootDir, '.storybook') })],
         test: {
           name: 'storybook',
+          fileParallelism: false,
           globals: true,
           browser: {
             enabled: true,
