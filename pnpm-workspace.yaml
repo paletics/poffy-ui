@@ -7,7 +7,7 @@ blockExoticSubdeps: true
 # --- Catalog ---
 catalog:
   # Accessibility / E2E
-  "@axe-core/playwright": ^4.11.1
+  "@axe-core/playwright": ^4.12.1
 
   # Release / Git hooks
   "@changesets/cli": ^2.27.12
