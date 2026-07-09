@@ -22,7 +22,7 @@ catalog:
 
   # Panda
   "@pandacss/dev": ^1.11.1
-  "@playwright/test": ^1.59.1
+  "@playwright/test": ^1.61.1
 
   # Radix
   "@radix-ui/react-slot": ^1.2.4
@@ -64,7 +64,7 @@ catalog:
   jsdom: ^29.0.2
   lint-staged: ^16.2.7
   motion: ^12.23.26
-  playwright: ^1.59.1
+  playwright: ^1.61.1
   prettier: ^3.8.3
   prismjs: ^1.30.0
 
