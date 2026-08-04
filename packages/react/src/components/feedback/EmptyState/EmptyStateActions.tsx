@@ -1,26 +1,20 @@
 'use client';
 
-import { cx } from '@/styled-system/css';
-import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
-import { useEmptyStateClasses } from './EmptyStateContext';
-import type { EmptyStateActionsProps } from './EmptyState.types';
+import { createFeedbackActions } from '@/components/feedback/shared/createFeedbackParts';
+import { useEmptyStateClasses } from '@/components/feedback/EmptyState/EmptyStateContext';
+import { getCommonMessages } from '@/components/shared/common.locales';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
 
 /**
- * Action container for EmptyState follow-up controls.
+ * Groups follow-up controls for an `EmptyState` with `role="group"` and a localized fallback label.
+ *
+ * `asChild` accepts only one native `div`; an invalid host falls back to the owned group. This part
+ * leaves live-region behavior unset unless the caller explicitly provides `aria-live`.
  */
-export const EmptyStateActions = forwardRef<HTMLDivElement, EmptyStateActionsProps>(
-  (props, ref) => {
-    const { asChild, children, className, ...rest } = props;
-    const Component = asChild ? Slot : 'div';
-    const classes = useEmptyStateClasses();
-
-    return (
-      <Component ref={ref} className={cx(classes.actions, className)} {...rest}>
-        {children}
-      </Component>
-    );
-  },
-);
-
-EmptyStateActions.displayName = 'EmptyStateActions';
+export const EmptyStateActions = createFeedbackActions({
+  // Keep the only slottable host aligned with the public HTMLDivElement ref.
+  allowedHosts: ['div'],
+  useDefaultAriaLabel: () => getCommonMessages(useOptionalLocale()?.locale).emptyStateActions,
+  displayName: 'EmptyStateActions',
+  useClasses: useEmptyStateClasses,
+});

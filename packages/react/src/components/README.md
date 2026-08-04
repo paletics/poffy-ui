@@ -28,7 +28,7 @@ If you are looking for product-tier add-ons (Pro/Enterprise), they are intention
 ### inputs
 
 - `Button`, `ButtonPrimitive`, `ButtonGroup`
-- `Calendar`, `Checkbox`, `RadioGroup`, `Select`, `Slider`, `Switch`, `Textarea`
+- `Calendar`, `Checkbox`, `RadioGroup`, `RangeSlider`, `SearchInput`, `Select`, `Slider`, `Switch`, `Textarea`
 - `CloseButton`, `ComboBox`, `CopyButton`, `DatePicker`, `DateTimePicker`
 - `DirectionalButton`, `DisclosureIconButton`, `FileUploader`
 - `FormControl`, `IconButton`, `Input`, `InputGroup`
@@ -47,15 +47,15 @@ If you are looking for product-tier add-ons (Pro/Enterprise), they are intention
 
 ### navigation
 
-- `Breadcrumbs`, `Dropdown`, `Navbar`, `Pagination`, `Sidebar`, `Stepper`, `Tabs`
+- `Breadcrumbs`, `CommandMenu`, `Dropdown`, `Navbar`, `Pagination`, `Sidebar`, `Stepper`, `Tabs`
 
 ### overlay
 
-- `Backdrop`, `ContextMenu`, `Drawer`, `ListboxPopover`, `Modal`, `Popover`, `Tooltip`
+- `AlertDialog`, `Backdrop`, `ContextMenu`, `Drawer`, `HoverCard`, `ListboxPopover`, `Modal`, `Popover`, `Portal`, `Tooltip`
 
 ### surfaces
 
-- `Accordion`, `Card`
+- `Accordion`, `Card`, `Collapsible`
 
 ### tree-view
 
@@ -63,4 +63,4 @@ If you are looking for product-tier add-ons (Pro/Enterprise), they are intention
 
 ### typography
 
-- `Code`, `Heading`, `Link`, `Text`
+- `Blockquote`, `Code`, `Heading`, `Kbd`, `Link`, `Text`

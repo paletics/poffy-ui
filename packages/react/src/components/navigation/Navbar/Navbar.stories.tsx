@@ -3,14 +3,7 @@ import { Navbar, NavbarBrand, NavbarContent, NavbarItem, NavbarLink } from '.';
 import { Button } from '@/components/inputs/Button';
 import { css } from '@/styled-system/css';
 
-/**
- * Storybook documentation and visual review surface for Navbar.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta: Meta<typeof Navbar> = {
   title: 'Navigation/Navbar',
   component: Navbar,
@@ -19,6 +12,10 @@ const meta: Meta<typeof Navbar> = {
     appearance: {
       control: 'select',
       options: ['soft', 'outline', 'ghost'],
+    },
+    narrowLayout: {
+      control: 'radio',
+      options: ['scroll', 'wrap'],
     },
   },
   parameters: {
@@ -82,5 +79,30 @@ export const Sticky: Story = {
         <p>Scroll down to see sticky behavior</p>
       </div>
     </div>
+  ),
+};
+
+export const NarrowWrap: Story = {
+  render: () => (
+    <Navbar narrowLayout="wrap" aria-label="Responsive primary navigation">
+      <NavbarBrand href="#home">PoffyWorkspaceWithAnUnbrokenBrandName</NavbarBrand>
+      <NavbarContent>
+        <NavbarItem>
+          <NavbarLink href="#dashboard" isActive>
+            Dashboard
+          </NavbarLink>
+        </NavbarItem>
+        <NavbarItem>
+          <NavbarLink href="#projects">Projects</NavbarLink>
+        </NavbarItem>
+        <NavbarItem>
+          <NavbarLink href="#activity">AReallyLongUnbrokenNavigationDestinationLabel</NavbarLink>
+        </NavbarItem>
+      </NavbarContent>
+      <NavbarContent justify="end">
+        <Button size="sm">Sign in</Button>
+        <Button size="sm">Create account</Button>
+      </NavbarContent>
+    </Navbar>
   ),
 };

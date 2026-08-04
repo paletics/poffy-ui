@@ -1,4 +1,5 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
+import { isDateUnavailable as isDateUnavailableByConstraints } from '@poffy-ui/behavior/date';
 import {
   getNextCalendarSelection,
   isCalendarDateSelected,
@@ -8,13 +9,6 @@ import {
 } from '@poffy-ui/behavior/calendar';
 import type { CalendarProps, DateRange } from './Calendar.types';
 
-/**
- * Options passed from useCalendarNavigation to this hook.
- * ### AI Context & Architecture
- * - Keeping selection logic separate from navigation prevents
- * useCalendarNavigation from exceeding the 200-line limit, and lets each
- * concern be tested in isolation.
- */
 interface UseCalendarSelectionOptions {
   mode: NonNullable<CalendarProps['mode']>;
   selected: CalendarProps['selected'];
@@ -24,7 +18,6 @@ interface UseCalendarSelectionOptions {
   minDate?: Date;
   maxDate?: Date;
   isDateDisabled?: (date: Date) => boolean;
-  focusedDate: Date;
   setFocusedDate: (date: Date) => void;
   month: number;
   year: number;
@@ -44,13 +37,6 @@ export interface UseCalendarSelectionResult {
   isRangeMiddle: (date: Date) => boolean;
 }
 
-/**
- * Manages date selection state and derived helpers for the Calendar component.
- * Receives navigation state as parameters to avoid cross-hook state coupling.
- *
- * ### AI Context & Architecture
- * - Extracted from useCalendarNavigation to keep file size under 200 lines.
- */
 export const useCalendarSelection = ({
   mode,
   selected,
@@ -60,33 +46,18 @@ export const useCalendarSelection = ({
   minDate,
   maxDate,
   isDateDisabled,
-  focusedDate: _focusedDate,
   setFocusedDate,
   month,
   year,
   handleMonthChange,
   hoveredDate,
 }: UseCalendarSelectionOptions): UseCalendarSelectionResult => {
-  const normalizedMinDate = useMemo(
-    () =>
-      minDate ? new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate()) : undefined,
-    [minDate],
-  );
-  const normalizedMaxDate = useMemo(
-    () =>
-      maxDate ? new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate()) : undefined,
-    [maxDate],
-  );
-
   const isDateUnavailable = useCallback(
     (date: Date) => {
       if (disabled) return true;
-      if (normalizedMinDate && date < normalizedMinDate) return true;
-      if (normalizedMaxDate && date > normalizedMaxDate) return true;
-      if (isDateDisabled?.(date)) return true;
-      return false;
+      return isDateUnavailableByConstraints(date, { minDate, maxDate, isDateDisabled });
     },
-    [disabled, normalizedMinDate, normalizedMaxDate, isDateDisabled],
+    [disabled, minDate, maxDate, isDateDisabled],
   );
 
   const handleDateSelect = useCallback(

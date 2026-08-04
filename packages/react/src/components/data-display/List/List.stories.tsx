@@ -3,14 +3,6 @@ import { List, ListItem, ListItemIcon, ListItemText } from '@/components/data-di
 import { HomeIcon, SettingsIcon, StarIcon, UploadIcon } from '@/components/media/Icon/icons';
 import { css } from '@/styled-system/css';
 
-/**
- * Semantic list wrapper that renders ordered or unordered lists with optional icons and secondary text.
- * Use for navigation menus, content enumerations, or any structured sequence of items.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (list recipe)
- */
 const meta: Meta<typeof List> = {
   title: 'Display/List',
   component: List,
@@ -26,6 +18,7 @@ const linkItemClass = css({
   textDecoration: 'none',
   color: 'text.primary',
 });
+const constrainedListClass = css({ width: '[200px]', maxWidth: '100%' });
 
 export const Default: Story = {
   render: (args) => (
@@ -85,25 +78,56 @@ export const Ordered: Story = {
 
 export const AsChild: Story = {
   render: (args) => (
-    <List {...args} asChild>
-      <nav>
-        <ListItem asChild>
-          <a href="#1" className={linkItemClass}>
-            <ListItemIcon>
-              <HomeIcon />
-            </ListItemIcon>
-            <ListItemText primary="Link Item 1" secondary="This is an anchor tag" />
-          </a>
-        </ListItem>
-        <ListItem asChild>
-          <a href="#2" className={linkItemClass}>
-            <ListItemIcon>
-              <SettingsIcon />
-            </ListItemIcon>
-            <ListItemText primary="Link Item 2" secondary="This is also an anchor tag" />
-          </a>
-        </ListItem>
-      </nav>
+    <nav aria-label="Example navigation">
+      <List {...args} asChild>
+        <ul>
+          <ListItem>
+            <a href="#1" className={linkItemClass}>
+              <ListItemIcon>
+                <HomeIcon />
+              </ListItemIcon>
+              <ListItemText primary="Link Item 1" secondary="This is an anchor tag" />
+            </a>
+          </ListItem>
+          <ListItem>
+            <a href="#2" className={linkItemClass}>
+              <ListItemIcon>
+                <SettingsIcon />
+              </ListItemIcon>
+              <ListItemText primary="Link Item 2" secondary="This is also an anchor tag" />
+            </a>
+          </ListItem>
+        </ul>
+      </List>
+    </nav>
+  ),
+};
+
+export const ConstrainedRtlLongContent: Story = {
+  render: () => (
+    <List
+      variant="ordered"
+      dir="rtl"
+      className={constrainedListClass}
+      aria-label="قائمة ضيقة بمحتوى طويل"
+    >
+      <ListItem>
+        <ListItemText
+          primary="معرّف-إصدار-طويل-جداً-بدون-فواصل-release-configuration-identifier"
+          secondary="https://example.com/releases/2026/07/rtl-long-destination"
+        />
+      </ListItem>
+      <ListItem>
+        <ListItemText primary="عنصر ثانٍ" secondary="وصف موجز" />
+      </ListItem>
     </List>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Ordered markers use logical start padding and long primary or secondary text wraps in a narrow RTL container.',
+      },
+    },
+  },
 };

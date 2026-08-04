@@ -1,63 +1,79 @@
 import { css, cx } from '@/styled-system/css';
 import { splitCssProps } from '@/styled-system/jsx';
 import { heading } from '@/styled-system/recipes';
+import {
+  getFallbackChildrenPreservingVoidHost,
+  isNonVoidAsChildHost,
+} from '@/components/shared/asChild';
 import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
-import { HeadingLevel, HeadingProps } from './Heading.types';
+import { forwardRef, type ElementType } from 'react';
+import type { ReactNode } from 'react';
+import type { HeadingComponent, HeadingLevel, HeadingProps } from './Heading.types';
 
-/**
- * A semantic heading component with level-based typography.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: heading), Radix Slot
- * ### Design Tokens
- * - font-size/line-height: silver-ratio scale tokens via heading recipe
- * ### Variant Logic
- * - level 1-6: Corresponds to semantic h1-h6 tags with proportionally scaling typography.
- * @example Page heading
- * ```tsx
- * import { Heading } from '@poffy-ui/react/typography';
- *
- * <Heading level="1">Main Page Title</Heading>
- * ```
- *
- * @example Visual heading without changing document outline
- * ```tsx
- * import { Heading } from '@poffy-ui/react/typography';
- *
- * <Heading level="2" weight="bold" asChild>
- *   <p>Visually h2 but semantically paragraph text.</p>
- * </Heading>
- * ```
- * ### Notes
- * Choose `level` from the document outline, not from desired font size. Do not
- * skip heading levels (for example h1 followed by h3). Use `asChild` only when
- * the visual heading style must be applied to a different semantic element.
- * ### Accessibility
- * - Automatically renders the appropriate heading tag (h1-h6) based on the `level` prop to maintain document outline.
- * - Avoid multiple unrelated h1 elements in the same page or landmark unless the page structure intentionally requires them.
- * ### AI Usage
- * - Use for page titles, section headers, and semantic document structuring.
- * - Use `asChild` for card titles, eyebrow text, or SEO-sensitive copy that should look like a heading without becoming one.
- * - Do not use Heading merely for bold or large body text; use `Text` variants or weights instead.
- */
-export const Heading = forwardRef<HTMLHeadingElement, HeadingProps>((props, ref) => {
-  const { level = '1', asChild, className, children, weight, ...rest } = props;
+const normalizeHeadingLevel = (level: unknown): HeadingLevel => {
+  const numeric = typeof level === 'string' ? Number(level) : level;
+  return typeof numeric === 'number' && Number.isInteger(numeric) && numeric >= 1 && numeric <= 6
+    ? (String(numeric) as HeadingLevel)
+    : '1';
+};
 
-  const Component = asChild ? Slot : (`h${level}` as `h${HeadingLevel}`);
+const isEmptyHeading = (children: ReactNode) => {
+  if (children === null) return true;
+  if (children === undefined) return true;
+  return typeof children === 'string' && children.trim() === '';
+};
+
+
+const HeadingImpl = forwardRef<Element, HeadingProps>((props, ref) => {
+  const {
+    level = '1',
+    asChild,
+    className,
+    children,
+    weight,
+    role,
+    'aria-level': ariaLevel,
+    ...rest
+  } = props;
+  const normalizedLevel = normalizeHeadingLevel(level);
+  const canUseAsChild = asChild && isNonVoidAsChildHost(children);
+
+  const Component = (canUseAsChild ? Slot : `h${normalizedLevel}`) as ElementType;
 
   const [cssProps, elementProps] = splitCssProps(rest);
+  const semanticOverrideProps = canUseAsChild ? { role, 'aria-level': ariaLevel } : {};
 
   const recipeClass = heading({
-    level,
+    level: normalizedLevel,
     weight,
   });
   const styleClass = css(cssProps);
+  const renderedChildren = canUseAsChild
+    ? children
+    : asChild
+      ? getFallbackChildrenPreservingVoidHost(children)
+      : children;
+
+  if (isEmptyHeading(renderedChildren)) return null;
 
   return (
-    <Component ref={ref} className={cx(recipeClass, styleClass, className)} {...elementProps}>
-      {children}
+    <Component
+      ref={ref}
+      className={cx(recipeClass, styleClass, className)}
+      {...elementProps}
+      {...semanticOverrideProps}
+    >
+      {renderedChildren}
     </Component>
   );
 });
 
-Heading.displayName = 'Heading';
+HeadingImpl.displayName = 'Heading';
+/**
+ * Renders a non-empty semantic heading whose visual styling is independent of its level.
+ *
+ * Choose `level` from the document outline. With `asChild`, a single non-void child host is
+ * preserved and the caller owns any heading semantics or ARIA override. Empty content renders
+ * nothing; an invalid runtime `level` is normalized to `1`.
+ */
+export const Heading = HeadingImpl as HeadingComponent;

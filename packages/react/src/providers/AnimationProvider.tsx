@@ -1,121 +1,162 @@
 'use client';
 
-import {
-  createContext,
-  ReactElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from 'react';
-import type { AnimationContextType, AnimationProviderProps } from './AnimationProvider.types';
+import { createContext, ReactElement, useCallback, useContext, useMemo, useState } from 'react';
+import { useMediaQuery } from '@poffy-ui/behavior/hooks';
+import type {
+  AnimationContextType,
+  AnimationProviderProps,
+  PoffyMotionStyle,
+} from './AnimationProvider.types';
+import { isPoffyMotionStyle } from './motionStyle';
+import { resolveMotionDefaults } from './motionDefaults';
+import { MotionScope } from './MotionScope';
+import { createGlobalDocumentOwnerStack } from './globalDocumentOwnership';
+import { useGlobalDocumentOwner } from './useGlobalDocumentOwner';
+import { useGlobalPreferenceRestoreGate } from './useGlobalPreferenceRestoreGate';
 
 /**
  * Public AnimationProvider context and props types.
  */
-export type { AnimationContextType, AnimationProviderProps } from './AnimationProvider.types';
+export type {
+  AnimationContextType,
+  AnimationProviderProps,
+  PoffyMotionStyle,
+} from './AnimationProvider.types';
 
 const ANIMATION_STORAGE_KEY = 'poffy-animation-enabled';
+const MOTION_STYLE_STORAGE_KEY = 'poffy-motion-style';
+
+interface GlobalMotionDocumentState {
+  animationEnabled: boolean;
+  isAnimating: boolean;
+  motionStyle: PoffyMotionStyle;
+  resolvedMotionStyle: PoffyMotionStyle;
+}
+
+interface GlobalMotionAttributes {
+  animation: string | null;
+  motionStyle: string | null;
+  scopeFallback: string | null;
+}
+
+const restoreAttribute = (targetDocument: Document, name: string, value: string | null) => {
+  if (value === null) targetDocument.documentElement.removeAttribute(name);
+  else targetDocument.documentElement.setAttribute(name, value);
+};
+
+const persistGlobalMotionPreferences = (
+  targetDocument: Document,
+  state: GlobalMotionDocumentState,
+) => {
+  try {
+    targetDocument.defaultView?.localStorage.setItem(
+      ANIMATION_STORAGE_KEY,
+      String(state.animationEnabled),
+    );
+    targetDocument.defaultView?.localStorage.setItem(MOTION_STYLE_STORAGE_KEY, state.motionStyle);
+  } catch {
+    // localStorage unavailable (e.g. private browsing, storage quota exceeded)
+  }
+};
+
+const globalMotionOwnerStack = createGlobalDocumentOwnerStack<
+  GlobalMotionDocumentState,
+  GlobalMotionAttributes
+>({
+  capture: (targetDocument) => ({
+    animation: targetDocument.documentElement.getAttribute('data-animation'),
+    motionStyle: targetDocument.documentElement.getAttribute('data-motion-style'),
+    scopeFallback: targetDocument.documentElement.getAttribute('data-motion-scope-fallback'),
+  }),
+  apply: (targetDocument, { isAnimating, resolvedMotionStyle }) => {
+    targetDocument.documentElement.setAttribute(
+      'data-animation',
+      isAnimating ? 'enabled' : 'disabled',
+    );
+    targetDocument.documentElement.setAttribute('data-motion-style', resolvedMotionStyle);
+    const cssScopeRule = (
+      targetDocument.defaultView as (Window & { CSSScopeRule?: unknown }) | null
+    )?.CSSScopeRule;
+    if (typeof cssScopeRule === 'undefined' && !isAnimating) {
+      targetDocument.documentElement.setAttribute('data-motion-scope-fallback', 'disabled');
+    } else {
+      targetDocument.documentElement.removeAttribute('data-motion-scope-fallback');
+    }
+  },
+  restore: (targetDocument, { animation, motionStyle, scopeFallback }) => {
+    restoreAttribute(targetDocument, 'data-animation', animation);
+    restoreAttribute(targetDocument, 'data-motion-style', motionStyle);
+    restoreAttribute(targetDocument, 'data-motion-scope-fallback', scopeFallback);
+  },
+  onActiveChange: persistGlobalMotionPreferences,
+});
 
 const AnimationContext = createContext<AnimationContextType | undefined>(undefined);
 
-const subscribe = (callback: () => void): (() => void) => {
-  const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-  mq.addEventListener('change', callback);
-  return () => mq.removeEventListener('change', callback);
-};
-
-const getSnapshot = (): boolean => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-const getServerSnapshot = (): boolean => false;
+const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 
 /**
- * Injects animation preference state into the component tree and optionally syncs
- * `data-animation` on `document.documentElement` so CSS transitions/animations
- * can be globally suppressed without JavaScript.
- *
- * ### How `isAnimating` is resolved
- * ```
- * isAnimating = animationEnabled && !reducedMotion
- * ```
- * OS-level `prefers-reduced-motion` always takes precedence. Even if `animationEnabled`
- * is `true`, `isAnimating` will be `false` when the OS requests reduced motion.
- *
- * ### CSS integration
- * When `global=true`, the provider writes `data-animation="disabled"` on `<html>`.
- * Add this rule to your global stylesheet to suppress all CSS animations:
- * ```css
- * [data-animation="disabled"] * {
- *   animation-duration: 0.01ms !important;
- *   transition-duration: 0.01ms !important;
- * }
- * ```
- *
- * ### AI Context & Architecture
- * - **Tier**: Provider / Infrastructure
- * - **Scope**: App Root — place once in `_app.tsx` or `layout.tsx`
- * - **SSR Safety**: `reducedMotion` uses `useSyncExternalStore` with a `false` server snapshot.
- *   `animationEnabled` lazy-initializes from `localStorage` with an SSR guard.
- *
- * ### AI Usage
- * - **DO**: Read `isAnimating` in every `*FX` component to skip animation when `false`.
- * - **DO**: Expose `animationEnabled` / `toggleAnimation` in accessibility settings UI.
- * - **DON'T**: Read `reducedMotion` directly in components — use `isAnimating` instead.
- * - **DON'T**: Nest two `AnimationProvider` instances — the inner one silently overrides the outer.
- *
- * @example Global animation control (default)
- * ```tsx
- * import { AnimationProvider } from '@poffy-ui/react';
- *
- * <AnimationProvider defaultAnimationEnabled={true}>
- *   <App />
- * </AnimationProvider>
- * ```
- *
- * @example Disable animations for an embedded widget
- * ```tsx
- * import { AnimationProvider } from '@poffy-ui/react';
- *
- * <AnimationProvider defaultAnimationEnabled={false} global={false}>
- *   <Widget />
- * </AnimationProvider>
- * ```
+ * Provides animation preferences to a subtree. At the application root, `global` synchronizes the
+ * effective preference to the owner document and restores persisted preferences after hydration;
+ * with `global={false}` and `scope`, it applies only to the local subtree. OS reduced-motion always
+ * disables `isAnimating`.
  */
 export const AnimationProvider = ({
   children,
   defaultAnimationEnabled = true,
+  defaultMotionStyle = 'standard',
   global = true,
+  ownerDocument,
+  scope = false,
 }: AnimationProviderProps): ReactElement => {
-  const [animationEnabled, setAnimationEnabledState] = useState<boolean>(() => {
-    if (typeof window === 'undefined') return defaultAnimationEnabled;
-    if (!global) return defaultAnimationEnabled;
-    try {
-      const saved = localStorage.getItem(ANIMATION_STORAGE_KEY);
-      if (saved === 'true') return true;
-      if (saved === 'false') return false;
-    } catch {
-      // localStorage unavailable (e.g. private browsing, storage quota exceeded)
-    }
-    return defaultAnimationEnabled;
+  const resolvedOwnerDocument =
+    ownerDocument ?? (typeof document === 'undefined' ? undefined : document);
+  const initialMotionDefaults = resolveMotionDefaults({
+    defaultAnimationEnabled,
+    defaultMotionStyle,
+  });
+  const [animationEnabled, setAnimationEnabledState] = useState<boolean>(
+    initialMotionDefaults.animationEnabled,
+  );
+
+  const [motionStyle, setMotionStyleState] = useState<PoffyMotionStyle>(
+    initialMotionDefaults.motionStyle,
+  );
+
+  const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY, {
+    targetWindow: resolvedOwnerDocument?.defaultView ?? null,
   });
 
-  const reducedMotion = useSyncExternalStore<boolean>(subscribe, getSnapshot, getServerSnapshot);
-
-  const isAnimating = animationEnabled && !reducedMotion;
-
-  useEffect(() => {
-    if (!global) return;
-
-    document.documentElement.setAttribute('data-animation', isAnimating ? 'enabled' : 'disabled');
-
+  const isAnimating = animationEnabled && motionStyle !== 'none' && !reducedMotion;
+  const resolvedMotionStyle: PoffyMotionStyle = isAnimating ? motionStyle : 'none';
+  const restorePreferences = useCallback(() => {
     try {
-      localStorage.setItem(ANIMATION_STORAGE_KEY, String(animationEnabled));
+      const storage = resolvedOwnerDocument?.defaultView?.localStorage;
+      const savedAnimationEnabled = storage?.getItem(ANIMATION_STORAGE_KEY);
+      if (savedAnimationEnabled === 'true') setAnimationEnabledState(true);
+      if (savedAnimationEnabled === 'false') setAnimationEnabledState(false);
+      const saved = storage?.getItem(MOTION_STYLE_STORAGE_KEY);
+      if (isPoffyMotionStyle(saved)) setMotionStyleState(saved);
     } catch {
       // localStorage unavailable (e.g. private browsing, storage quota exceeded)
     }
-  }, [isAnimating, animationEnabled, global]);
+  }, [resolvedOwnerDocument]);
+
+  const documentState = useMemo(
+    () => ({ animationEnabled, isAnimating, motionStyle, resolvedMotionStyle }),
+    [animationEnabled, isAnimating, motionStyle, resolvedMotionStyle],
+  );
+  const canOwnDocument = useGlobalPreferenceRestoreGate({
+    enabled: global,
+    restore: restorePreferences,
+    restoreKey: resolvedOwnerDocument,
+  });
+  useGlobalDocumentOwner(
+    globalMotionOwnerStack,
+    documentState,
+    canOwnDocument,
+    resolvedOwnerDocument,
+  );
 
   const setAnimationEnabled = useCallback((enabled: boolean) => {
     setAnimationEnabledState(enabled);
@@ -125,31 +166,47 @@ export const AnimationProvider = ({
     setAnimationEnabledState((prev) => !prev);
   }, []);
 
+  const setMotionStyle = useCallback((style: PoffyMotionStyle) => {
+    setMotionStyleState(isPoffyMotionStyle(style) ? style : 'standard');
+  }, []);
+
   const contextValue = useMemo(
-    () => ({ reducedMotion, animationEnabled, isAnimating, setAnimationEnabled, toggleAnimation }),
-    [reducedMotion, animationEnabled, isAnimating, setAnimationEnabled, toggleAnimation],
+    () => ({
+      reducedMotion,
+      animationEnabled,
+      isAnimating,
+      motionStyle,
+      resolvedMotionStyle,
+      setAnimationEnabled,
+      toggleAnimation,
+      setMotionStyle,
+    }),
+    [
+      reducedMotion,
+      animationEnabled,
+      isAnimating,
+      motionStyle,
+      resolvedMotionStyle,
+      setAnimationEnabled,
+      toggleAnimation,
+      setMotionStyle,
+    ],
   );
 
-  return <AnimationContext.Provider value={contextValue}>{children}</AnimationContext.Provider>;
+  return (
+    <AnimationContext.Provider value={contextValue}>
+      {!global && scope ? (
+        <MotionScope isAnimating={isAnimating} motionStyle={resolvedMotionStyle}>
+          {children}
+        </MotionScope>
+      ) : (
+        children
+      )}
+    </AnimationContext.Provider>
+  );
 };
 
-/**
- * Returns animation preferences and controls from the nearest `AnimationProvider`.
- *
- * ### AI Usage
- * - **DON'T**: Do not call outside an `AnimationProvider` tree — throws at runtime
- *
- * @returns `{ reducedMotion, animationEnabled, isAnimating, setAnimationEnabled, toggleAnimation }`
- *
- * @example
- * ```tsx
- * import { useAnimation } from '@poffy-ui/react';
- *
- * const { isAnimating } = useAnimation();
- * if (!isAnimating) return <StaticFallback />;
- * return <ParticleFieldFX />;
- * ```
- */
+/** Returns the nearest animation preferences and controls, or throws when no provider is present. */
 export const useAnimation = (): AnimationContextType => {
   const context = useContext(AnimationContext);
   if (!context) {
@@ -165,22 +222,26 @@ export const useAnimation = (): AnimationContextType => {
  */
 export const useOptionalAnimation = (): Pick<
   AnimationContextType,
-  'animationEnabled' | 'isAnimating' | 'reducedMotion'
+  'animationEnabled' | 'isAnimating' | 'motionStyle' | 'reducedMotion' | 'resolvedMotionStyle'
 > => {
   const context = useContext(AnimationContext);
-  const reducedMotion = useSyncExternalStore<boolean>(subscribe, getSnapshot, getServerSnapshot);
+  const reducedMotion = useMediaQuery(REDUCED_MOTION_QUERY);
 
   if (context) {
     return {
       animationEnabled: context.animationEnabled,
       isAnimating: context.isAnimating,
+      motionStyle: context.motionStyle,
       reducedMotion: context.reducedMotion,
+      resolvedMotionStyle: context.resolvedMotionStyle,
     };
   }
 
   return {
     animationEnabled: true,
     isAnimating: !reducedMotion,
+    motionStyle: 'standard',
     reducedMotion,
+    resolvedMotionStyle: reducedMotion ? 'none' : 'standard',
   };
 };

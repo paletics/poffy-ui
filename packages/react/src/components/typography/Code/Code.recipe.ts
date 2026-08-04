@@ -24,12 +24,19 @@ export const codeRecipe = defineSlotRecipe({
           padding: '0.2em 0.4em',
           borderRadius: '{radii.xs}',
           color: 'brand.main',
+          overflowWrap: 'anywhere',
         },
       },
       block: {
         root: {
+          width: '100%',
           maxWidth: '100%',
+          minWidth: '0',
           overflow: 'auto',
+          _focusVisible: {
+            outline: '2px solid {colors.brand.main}',
+            outlineOffset: '2px',
+          },
         },
         code: {
           display: 'block',
@@ -37,9 +44,49 @@ export const codeRecipe = defineSlotRecipe({
           paddingRight: '{spacing.lg}',
           backgroundColor: 'layout.surface',
           borderRadius: '{radii.sm}',
-          overflow: 'auto',
           lineHeight: 'relaxed',
-          color: 'text.primary',
+          color: '{colors.text.primary}',
+          '& .token.comment, & .token.prolog, & .token.doctype, & .token.cdata': {
+            color: '{colors.text.secondary}',
+          },
+          '& .token.punctuation': {
+            color: '{colors.text.secondary}',
+          },
+          '& .token.property, & .token.tag, & .token.boolean, & .token.number, & .token.constant, & .token.symbol, & .token.deleted':
+            {
+              color: {
+                base: '{colors.rose.700}',
+                _dark: '{colors.rose.400}',
+              },
+            },
+          '& .token.selector, & .token.attr-name, & .token.string, & .token.char, & .token.builtin, & .token.inserted':
+            {
+              color: {
+                base: '{colors.emerald.700}',
+                _dark: '{colors.emerald.400}',
+              },
+            },
+          '& .token.operator, & .token.entity, & .token.url, & .token.variable': {
+            color: '{colors.text.primary}',
+          },
+          '& .token.atrule, & .token.attr-value, & .token.function, & .token.class-name': {
+            color: {
+              base: '{colors.yellow.700}',
+              _dark: '{colors.yellow.400}',
+            },
+          },
+          '& .token.keyword': {
+            color: '{colors.brand.main}',
+          },
+          '& .token.regex, & .token.important': {
+            color: '{colors.brand.main}',
+          },
+          '& .token.important, & .token.bold': {
+            fontWeight: 'bold',
+          },
+          '& .token.italic': {
+            fontStyle: 'italic',
+          },
         },
       },
     },

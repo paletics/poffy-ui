@@ -2,19 +2,8 @@ import type { ReactNode } from 'react';
 import type { FeatureBundle, LazyFeatureBundle } from 'motion/react';
 
 /**
- * Props for the `MotionProvider` component.
- *
- * ### Notes
- * Most applications should receive this through `ThemeProvider`.
- * Configure directly only when embedding motion-enabled components without the
- * full theme provider stack.
- *
- * When paired with `AnimationProvider`, `MotionProvider` maps app-level
- * animation preferences to Motion's native `MotionConfig reducedMotion` policy.
- *
- * ### AI Usage
- * - **DO**: Keep the default async `domMax` unless bundle strategy requires a different feature loader.
- * - **DON'T**: Switch to `domAnimation` when using layout, drag, or `layoutId` animations.
+ * Props for an independently mounted Motion feature boundary. Most applications receive this via
+ * ThemeProvider; the default asynchronous `domMax` supports the library's layout and drag features.
  */
 export interface MotionProviderProps {
   /** The React subtree that receives Framer Motion's feature context. */

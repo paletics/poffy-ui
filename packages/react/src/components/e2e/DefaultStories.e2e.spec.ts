@@ -36,7 +36,9 @@ const getComponentStories = (): ComponentStory[] =>
     .map((filePath) => {
       const absolutePath = resolve(COMPONENTS_ROOT, filePath);
       const source = readFileSync(absolutePath, 'utf8');
-      const title = /title:\s*['"]([^'"]+)['"]/.exec(source)?.[1];
+      // Restrict the match to the Storybook metadata. Component fixtures may
+      // legitimately contain unrelated `title` props before `meta`.
+      const title = /const meta[\s\S]*?title:\s*['"]([^'"]+)['"]/.exec(source)?.[1];
 
       if (!title || !source.includes('export const Default')) {
         return null;

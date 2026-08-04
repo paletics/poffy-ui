@@ -7,18 +7,18 @@ import { Code } from '@/components/typography/Code';
 import { Heading } from '@/components/typography/Heading';
 import { Text } from '@/components/typography/Text';
 
-/**
- * A flexible code component for rendering inline snippets and multi-line code blocks with optional Prism.js syntax highlighting.
- * Use the inline variant within paragraphs and the block variant for standalone code samples or configuration files.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS recipe (`code`), Prism.js (syntax highlighting), Radix Slot
- */
+
 const meta = {
   title: 'Display/Code',
   component: Code,
   tags: ['autodocs'],
+  decorators: [
+    (Story) => (
+      <Box w="[calc(100vw - 3rem)]" maxWidth="100%">
+        <Story />
+      </Box>
+    ),
+  ],
   argTypes: {
     variant: {
       control: 'select',
@@ -80,6 +80,23 @@ export const InlineExamples: Story = {
       <Text>
         Set background color using <Code>backgroundColor: &apos;blue&apos;</Code>
       </Text>
+    </Stack>
+  ),
+};
+
+export const ConstrainedInlineLongToken: Story = {
+  render: () => (
+    <Stack gap="md">
+      <Box width="[80px]" aria-label="Constrained inline code LTR">
+        <Text>
+          <Code>VeryLongInlineIdentifierWithoutBreakOpportunities</Code>
+        </Text>
+      </Box>
+      <Box width="[80px]" dir="rtl" aria-label="Constrained inline code RTL">
+        <Text>
+          <Code>VeryLongInlineIdentifierWithoutBreakOpportunities</Code>
+        </Text>
+      </Box>
     </Stack>
   ),
 };

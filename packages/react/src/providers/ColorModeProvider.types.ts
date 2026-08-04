@@ -45,4 +45,16 @@ export interface ColorModeProviderProps {
    * @defaultValue `true`
    */
   global?: boolean;
+  /**
+   * Document whose Window supplies system color preferences and whose root and
+   * storage receive global color-mode state.
+   */
+  ownerDocument?: Document;
+  /**
+   * When `global={false}`, renders a local DOM boundary with the resolved
+   * `data-theme` attribute and matching `light` / `dark` class.
+   *
+   * @defaultValue `false`
+   */
+  scope?: boolean;
 }

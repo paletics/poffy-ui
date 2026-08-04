@@ -4,14 +4,8 @@ import { Flex } from '@/components/layout/Flex';
 import { Stack } from '@/components/layout/Stack';
 import { Text } from '@/components/typography/Text';
 import { NumberTransition } from '@/components/animations/NumberTransition/NumberTransition';
+import { css } from '@/styled-system/css';
 
-/**
- * Smoothly interpolates a numeric value from a starting point to a target when the element enters the viewport. Used for statistics sections, dashboard widgets, and impact metrics.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (useMotionValue, animate, useInView), Radix Slot
- */
 const meta: Meta<typeof NumberTransition> = {
   title: 'Animations/NumberTransition',
   component: NumberTransition,
@@ -20,6 +14,18 @@ const meta: Meta<typeof NumberTransition> = {
 
 export default meta;
 type Story = StoryObj<typeof NumberTransition>;
+
+const metricGridClass = css({
+  width: '100%',
+  justifyContent: 'center',
+  flexWrap: 'wrap',
+});
+
+const metricClass = css({
+  flex: '1 1 8rem',
+  minInlineSize: '[8rem]',
+  maxInlineSize: '[12rem]',
+});
 
 export const Default: Story = {
   args: {
@@ -55,20 +61,20 @@ export const Currency: Story = {
 
 export const Staggered: Story = {
   render: () => (
-    <Flex gap="[32px]" fontSize="3xl" fontWeight="bold">
-      <Stack alignItems="center">
+    <Flex className={metricGridClass} gap="xl" fontSize="3xl" fontWeight="bold">
+      <Stack className={metricClass} alignItems="center">
         <NumberTransition to={85.4} decimals={1} delay={0} />
         <Text fontSize="sm" color="slate.500">
           Performance
         </Text>
       </Stack>
-      <Stack alignItems="center">
+      <Stack className={metricClass} alignItems="center">
         <NumberTransition to={92} delay={0.2} />
         <Text fontSize="sm" color="slate.500">
           Reliability
         </Text>
       </Stack>
-      <Stack alignItems="center">
+      <Stack className={metricClass} alignItems="center">
         <NumberTransition to={78} delay={0.4} />
         <Text fontSize="sm" color="slate.500">
           Efficiency
@@ -83,7 +89,7 @@ export const LargeNumber: Story = {
     from: 1000000,
     to: 10000000,
     duration: 3,
-    format: (val) => val.toLocaleString(),
+    format: (val) => Math.round(val).toLocaleString(),
   },
   render: (args) => (
     <Box fontSize="3xl" fontWeight="bold" color="slate.800">

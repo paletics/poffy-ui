@@ -37,4 +37,15 @@ export interface LocaleProviderProps {
    * @defaultValue `true`
    */
   global?: boolean;
+  /**
+   * Document whose root receives the global `lang` attribute. Use when rendering
+   * into an iframe or another document. Defaults to the current document.
+   */
+  ownerDocument?: Document;
+  /**
+   * When `global={false}`, renders a local DOM boundary with the active `lang`.
+   *
+   * @defaultValue `false`
+   */
+  scope?: boolean;
 }

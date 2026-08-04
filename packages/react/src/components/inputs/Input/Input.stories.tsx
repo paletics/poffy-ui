@@ -5,15 +5,9 @@ import { userEvent, within, expect } from 'storybook/test';
 import { Input } from './Input';
 import { Stack } from '../../layout/Stack';
 import { CalendarIcon, InlineTextIcon, SearchIcon } from '@/components/media/Icon/icons';
+import { Box } from '../../layout/Box';
 
-/**
- * The standard text input atom for Poffy UI forms. Supports multiple visual variants,
- * Silver Ratio sizing, error states with shake animation, and optional start/end adornments.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`input` + `inputGroup` recipes), Radix Slot, `ActionMotion`
- */
+
 const meta: Meta<typeof Input> = {
   title: 'Inputs/Input',
   component: Input,
@@ -21,7 +15,7 @@ const meta: Meta<typeof Input> = {
   argTypes: {
     appearance: {
       control: 'select',
-      options: ['outline', 'soft'],
+      options: ['outline', 'soft', 'flushed'],
     },
     size: {
       control: 'select',
@@ -41,6 +35,7 @@ type Story = StoryObj<typeof Input>;
 
 export const Default: Story = {
   args: {
+    'aria-label': 'Basic input',
     placeholder: 'Basic Input',
   },
   parameters: {
@@ -75,6 +70,7 @@ export const Variants = () => (
   <Stack gap="md">
     <Input appearance="outline" placeholder="Outline (Default)" />
     <Input appearance="soft" placeholder="Soft" />
+    <Input appearance="flushed" placeholder="Flushed" />
   </Stack>
 );
 
@@ -163,4 +159,17 @@ export const ErrorWithAdornment: Story = {
       },
     },
   },
+};
+
+export const CompactLongAdornment: Story = {
+  render: () => (
+    <Box width="[100px]" maxWidth="100%" dir="rtl">
+      <Input
+        aria-label="Compact adornment input"
+        defaultValue="value"
+        startElement="extremely-long-prefix"
+        endElement="extremely-long-suffix"
+      />
+    </Box>
+  ),
 };

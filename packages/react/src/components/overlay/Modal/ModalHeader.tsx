@@ -4,14 +4,7 @@ import { createOverlayHeader } from '../shared/factories';
 import type { ModalHeaderProps } from './Modal.types';
 import { useModalContext } from './ModalContext';
 
-/**
- * Header section of the Modal, typically containing the title and close button.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Standardized via `createOverlayHeader`
- * - **Props**: ModalHeaderProps
- */
+/** Header section of the Modal, typically containing the title and close button. */
 export const ModalHeader = createOverlayHeader(useModalContext, 'ModalHeader');
 
 /**

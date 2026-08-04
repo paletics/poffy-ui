@@ -1,6 +1,10 @@
 import { type FeedbackAppearance, type SemanticIntent, PrimitiveProps } from '@poffy-ui/types';
-import { ProgressBarVariantProps } from '@/styled-system/recipes';
-import { ReactNode } from 'react';
+import type { ReactNode } from 'react';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
 /**
  * Public fill pattern of the progress bar.
@@ -15,21 +19,21 @@ export type ProgressBarShape = 'rounded' | 'square';
 /**
  * Semantic accent color for ProgressBar.
  */
-export type ProgressBarIntent = Extract<
-  SemanticIntent,
-  'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'danger'
->;
+export type ProgressBarIntent = SemanticIntent;
 
 /**
  * Label display position for the progress percentage.
  *
  * ### Notes
  * `auto` chooses an inside label only when there is enough filled
- * width for the estimated label text. Otherwise it resolves to `right`.
+ * width for measurable text/native label content. Otherwise it resolves to
+ * logical inline-end. Opaque custom label components are not rendered a
+ * second time for measurement and therefore resolve to inline-end.
  *
- * - 'auto': Automatically determined by thickness (>=16px -> center, <16px -> right)
+ * - 'auto': Uses an inside label only when the filled width, thickness, and
+ *   measurable label width allow it; opaque custom labels resolve to inline-end.
  * - 'center': Overlaid at the center of the bar
- * - 'right': Displayed to the right of the bar
+ * - 'right': Displayed at the logical inline-end of the bar
  * - 'top': Displayed above the bar
  * - 'bottom': Displayed below the bar
  * - 'inside': Displayed inside the progress bar at the right end of the filled part
@@ -37,38 +41,27 @@ export type ProgressBarIntent = Extract<
 export type LabelPosition = 'auto' | 'center' | 'right' | 'top' | 'bottom' | 'inside';
 
 /**
- * Variants for the ProgressBar component, driven by Panda CSS recipes.
+ * Canonical public visual props for ProgressBar.
  *
  * ### Notes
- * Prefer `ProgressBarProps` for app usage. This type mirrors generated
- * recipe variants for wrapper authors.
+ * Prefer `ProgressBarProps` for app usage. Wrapper authors can use this type
+ * without exposing internal or removed recipe axes.
  */
-export type ProgressBarVariants = ProgressBarVariantProps;
+export interface ProgressBarVariants {
+  appearance?: Extract<FeedbackAppearance, 'solid' | 'soft' | 'outline'>;
+  intent?: ProgressBarIntent;
+  shape?: ProgressBarShape;
+  pattern?: ProgressBarPattern;
+  animationType?: 'progress' | 'load' | false;
+  borderType?: 'solid' | 'dashed' | 'dotted' | 'none';
+  labelPosition?: LabelPosition;
+}
 
 /**
- * Base props for the ProgressBar component.
- *
- * @example
- * ```tsx
- * import { ProgressBar } from '@poffy-ui/react/feedback';
- *
- * <ProgressBar progressPercent={64} showProgress aria-label="Import progress" />
- * ```
- *
- * ### Notes
- * Do: provide `aria-label` or `aria-labelledby`; the inner element renders
- * `role="progressbar"`.
- * Don't: use `animationType="load"` when a real percentage is known because
- * indeterminate loading omits `aria-valuenow`.
- *
- * ### AI Usage
- * - Use for determinate linear progress or unknown-duration loading in a single region.
- * - Prefer `progressPercent` over custom children for machine-readable progress state.
+ * Props for determinate linear progress or indeterminate loading. Supply `aria-label` or
+ * `aria-labelledby`; choose indeterminate loading only when no meaningful current value is known.
  */
-export interface ProgressBarOwnProps extends Omit<
-  ProgressBarVariants,
-  'size' | 'animationType' | 'labelPosition' | 'variant' | 'shape'
-> {
+export interface ProgressBarOwnProps extends ProgressBarVariants {
   /**
    * Public surface treatment.
    * @defaultValue 'solid'
@@ -85,34 +78,35 @@ export interface ProgressBarOwnProps extends Omit<
    */
   shape?: ProgressBarShape;
   /**
-   * Legacy semantic variant alias.
-   */
-  variant?: ProgressBarVariants['variant'];
-  /**
    * Public fill pattern.
    * @defaultValue 'simple'
    */
   pattern?: ProgressBarPattern;
   /**
-   * Custom label or content to show within the bar.
+   * Custom visual label shown when `showProgress` is enabled.
    *
    * ### Notes
-   * The visual label does not name the progressbar by itself. Keep an
-   * explicit `aria-label` or `aria-labelledby` on the component.
+   * Native element wrappers are reduced to their text descendants. Custom
+   * label components are preserved inside an inert, display-only subtree.
+   * The visual label does not name the progressbar by itself. Keep an explicit
+   * `aria-label` or `aria-labelledby` on the component.
    */
-  children?: ReactNode;
+  label?: ReactNode;
   /**
-   * Width of the progress bar in pixels.
+   * Width of the progress bar. Positive finite numbers are interpreted as
+   * pixels; non-empty strings are passed through as CSS widths. Invalid
+   * numbers and blank strings fall back to `300px`.
    * @defaultValue 300
    */
-  size?: number;
+  size?: number | string;
   /**
-   * Height/thickness of the progress bar in pixels.
+   * Height/thickness of the progress bar in pixels. Invalid values fall back to 10.
    * @defaultValue 10
    */
   thickness?: number;
   /**
-   * Progress percentage (0-100).
+   * Progress percentage (0-100). Non-finite values render as 0; finite
+   * out-of-range values are clamped.
    * @defaultValue 0
    */
   progressPercent?: number;
@@ -133,6 +127,10 @@ export interface ProgressBarOwnProps extends Omit<
   showProgress?: boolean;
   /**
    * Font size for the percentage label.
+   * When omitted, the label uses a thickness-based size clamped to 12–16px.
+   * Explicit values are supported for compact compositions; keep ordinary
+   * visible text at 12px or above. The progress value remains available via
+   * the component's ARIA semantics regardless of visual label size.
    */
   fontSize?: string | number;
   /** Border style for the track. */
@@ -145,8 +143,44 @@ export interface ProgressBarOwnProps extends Omit<
 }
 
 /**
- * Props for the ProgressBar component.
- * Uses PrimitiveProps to support the asChild (Slot) pattern,
- * replacing the legacy generic `as` prop approach.
+ * Default span-host props for ProgressBar.
  */
-export type ProgressBarProps = PrimitiveProps<'span', ProgressBarOwnProps>;
+type ProgressBarNativeProps = Omit<
+  PrimitiveProps<'span', ProgressBarOwnProps>,
+  'aria-valuemax' | 'aria-valuemin' | 'aria-valuenow' | 'children' | 'role'
+>;
+interface ProgressBarManagedSemantics {
+  role?: never;
+  'aria-valuemax'?: never;
+  'aria-valuemin'?: never;
+  'aria-valuenow'?: never;
+}
+
+/** Props for ProgressBar rendered with its default host. */
+export type ProgressBarDefaultProps = DefaultHostProps<ProgressBarNativeProps> &
+  ProgressBarManagedSemantics & {
+    /** Children are reserved for the delegated host branch. Use `label` for visual text. */
+    children?: never;
+  };
+
+/**
+ * Delegated flow-container props for ProgressBar.
+ *
+ * The child is the outer host only; use `label` for the visual progress label.
+ */
+export type ProgressBarAsChildProps = RetargetedAsChildHostProps<
+  ProgressBarNativeProps,
+  HTMLElement
+> &
+  ProgressBarManagedSemantics;
+
+/** Public ProgressBar props with distinct default and delegated host branches. */
+export type ProgressBarProps = ProgressBarDefaultProps | ProgressBarAsChildProps;
+
+/** Callable ProgressBar contract preserving default and delegated host refs. */
+export type ProgressBarComponent = PolymorphicAsChildComponent<
+  ProgressBarDefaultProps,
+  ProgressBarAsChildProps,
+  HTMLSpanElement,
+  HTMLElement
+>;

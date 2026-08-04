@@ -1,19 +1,12 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { SplitButton } from '@/components/inputs/SplitButton';
-import { Flex, Stack } from '@/components/layout';
+import { Box, Flex, Stack } from '@/components/layout';
 import { Text } from '@/components/typography/Text';
 import { DownloadIcon, SaveIcon, ShareIcon } from '@/components/media/Icon/icons';
 import { useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 
-/**
- * Storybook documentation and visual review surface for SplitButton.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta = {
   title: 'Inputs/SplitButton',
   component: SplitButton,
@@ -56,7 +49,9 @@ export const Default: Story = {
     await expect(chevron).toHaveAttribute('aria-expanded', 'false');
     await userEvent.click(chevron);
     await expect(chevron).toHaveAttribute('aria-expanded', 'true');
-    const menuItem = await canvas.findByRole('menuitem', { name: /save as draft/i });
+    const menuItem = await within(canvasElement.ownerDocument.body).findByRole('menuitem', {
+      name: /save as draft/i,
+    });
     await expect(menuItem).toBeVisible();
     await userEvent.keyboard('{Escape}');
     await expect(chevron).toHaveAttribute('aria-expanded', 'false');
@@ -85,7 +80,7 @@ export const Sizes: Story = {
     ];
 
     return (
-      <Flex gap="md" align="center">
+      <Flex gap="md" align="center" wrap="wrap" justify="center">
         <SplitButton size="sm" items={items}>
           Small
         </SplitButton>
@@ -334,5 +329,44 @@ export const ExportExample: Story = {
     >
       Export
     </SplitButton>
+  ),
+};
+
+export const ConstrainedViewport: Story = {
+  args: { children: 'Weitere Veröffentlichungsoptionen', items: [] },
+  render: () => (
+    <Box position="fixed" insetInlineEnd="2xs" bottom="2xs" width="[11rem]" overflow="hidden">
+      <SplitButton
+        items={Array.from({ length: 12 }, (_, index) => ({
+          id: String(index),
+          label:
+            index === 0
+              ? 'AlternativeVeröffentlichungsoptionOhneTrennmöglichkeit'
+              : `Alternative Veröffentlichungsoption ${index + 1}`,
+          icon: index === 0 ? <SaveIcon /> : undefined,
+          onClick: () => undefined,
+        }))}
+      >
+        Exportieren
+      </SplitButton>
+    </Box>
+  ),
+};
+
+export const TabOrder: Story = {
+  render: () => (
+    <Stack gap="md">
+      <button type="button">Before split button</button>
+      <SplitButton
+        items={[
+          { id: 'first', label: 'First secondary action', onClick: () => undefined },
+          { id: 'second', label: 'Second secondary action', onClick: () => undefined },
+        ]}
+        onClick={() => undefined}
+      >
+        Primary action
+      </SplitButton>
+      <button type="button">After split button</button>
+    </Stack>
   ),
 };

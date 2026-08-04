@@ -55,6 +55,7 @@ export const tokens = {
   },
   sizes: {
     full: { value: baseTokens.sizes.full },
+    'control.minimumTarget': { value: baseTokens.sizes.control.minimumTarget },
     sm: { value: baseTokens.sizes.sm },
     md: { value: baseTokens.sizes.md },
     lg: { value: baseTokens.sizes.lg },

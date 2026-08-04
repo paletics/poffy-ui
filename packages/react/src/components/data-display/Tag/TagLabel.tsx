@@ -1,40 +1,57 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
+import { getFallbackChildrenPreservingVoidHost } from '@/components/shared/asChild';
 import { cx } from '@/styled-system/css';
-import { tag } from '@/styled-system/recipes';
-import { ElementType, forwardRef } from 'react';
+import { Children, ElementType, forwardRef, isValidElement, type ReactNode } from 'react';
 import { useTagContext } from './TagContext';
-import { TagLabelProps } from './Tag.types';
+import { TagCloseButton } from './TagCloseButton';
+import type { TagLabelComponent, TagLabelProps } from './Tag.types';
+import { getTagInlineFallbackChildren, isTagLabelAsChildHost } from './Tag.utils';
+import { isPotentiallyInteractiveAsChildHost } from '@/components/shared/asChild';
+import { materializeReactNodeTree } from '@/components/shared/flattenFragmentChildren';
 
-/**
- * The text label inside a Tag, inheriting variant styles from TagContext.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: tag), React Context, Radix Slot
- * ### Variant Logic
- * - Inherits `variant` and `colorScheme` from TagRoot via context.
- * ### Notes
- * Must be a direct child of TagRoot.
- * @example
- * ```tsx
- * import { Tag } from '@poffy-ui/react/data-display';
- *
- * <Tag.Root appearance="soft" intent="danger">
- *   <Tag.Label>Critical</Tag.Label>
- * </Tag.Root>
- * ```
- */
-export const TagLabel = forwardRef<HTMLSpanElement, TagLabelProps>((props, ref) => {
+const containsTagCloseButton = (children: ReactNode): boolean =>
+  Children.toArray(children).some((child) => {
+    if (!isValidElement<{ children?: ReactNode }>(child)) return false;
+    if (child.type === TagCloseButton) return true;
+    return child.props.children !== undefined && containsTagCloseButton(child.props.children);
+  });
+
+const TagLabelImpl = forwardRef<HTMLElement, TagLabelProps>((props, ref) => {
   const { asChild, children, className, ...rest } = props;
-  const { size, appearance, intent, shape } = useTagContext();
-  const Component = asChild ? Slot : ('span' as ElementType);
-  const classes = tag({ size, appearance, intent, shape });
+  const { classes } = useTagContext();
+  const materializedChildren = materializeReactNodeTree(children);
+  const asChildElement =
+    asChild && isTagLabelAsChildHost(materializedChildren) ? materializedChildren : null;
+  const mustFallbackInteractiveLabel = Boolean(
+    asChildElement &&
+    containsTagCloseButton(asChildElement.props.children) &&
+    isPotentiallyInteractiveAsChildHost(asChildElement),
+  );
+  const canUseAsChild = Boolean(asChildElement && !mustFallbackInteractiveLabel);
+  const Component = (canUseAsChild ? Slot : 'span') as ElementType;
 
   return (
     <Component ref={ref} className={cx(classes.label, className)} {...rest}>
-      {children}
+      {asChild && !canUseAsChild
+        ? getTagInlineFallbackChildren(
+            mustFallbackInteractiveLabel
+              ? getFallbackChildrenPreservingVoidHost(asChildElement)
+              : materializedChildren,
+          )
+        : materializedChildren}
     </Component>
   );
 });
 
-TagLabel.displayName = 'Tag.Label';
+TagLabelImpl.displayName = 'Tag.Label';
+
+/**
+ * Renders the visible Tag label.
+ *
+ * It defaults to a `span`. `asChild` uses a supported inline host, but falls
+ * back when delegation would place `Tag.CloseButton` in an interactive label.
+ */
+
+export const TagLabel = TagLabelImpl as TagLabelComponent;

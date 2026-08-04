@@ -1,15 +1,9 @@
-﻿import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import { Divider } from './Divider';
 import { Flex } from '../Flex';
 import { Box } from '../Box';
 
-/**
- * A semantic layout primitive that renders a visual boundary between content groups, automatically applying the correct aria-orientation.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Recipe: dividerStyle), Radix Slot
- */
+
 const meta: Meta<typeof Divider> = {
   title: 'Layout/Divider',
   component: Divider,
@@ -37,7 +31,7 @@ export const Default: Story = {
     orientation: 'horizontal',
   },
   render: (args) => (
-    <Flex direction="column" gap="md" w="300px">
+    <Flex direction="column" gap="md" w="[300px]">
       <Box>Content Above</Box>
       <Divider {...args} />
       <Box>Content Below</Box>
@@ -55,7 +49,7 @@ export const Vertical: Story = {
     orientation: 'vertical',
   },
   render: (args) => (
-    <Flex h="100px" gap="md">
+    <Flex h="[100px]" gap="md">
       <Box>Left</Box>
       <Divider {...args} />
       <Box>Right</Box>
@@ -65,7 +59,7 @@ export const Vertical: Story = {
 
 export const Variants: Story = {
   render: () => (
-    <Flex direction="column" gap="md" w="300px">
+    <Flex direction="column" gap="md" w="[300px]">
       <Divider variant="solid" />
       <Divider variant="dashed" />
       <Divider variant="dotted" />

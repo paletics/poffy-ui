@@ -1,4 +1,9 @@
 import { defineSlotRecipe } from '@pandacss/dev';
+import {
+  floatingAvailableHeight,
+  floatingAvailableWidth,
+  floatingViewportFallbackStyles,
+} from '@/components/shared/floatingViewportFallback';
 
 /**
  * Slot recipe for the Dropdown component suite.
@@ -16,7 +21,15 @@ export const dropdownRecipe = defineSlotRecipe({
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
+      // Below 24px, preserve the interaction target and intentionally let the
+      // trigger exceed its containing block.
+      minInlineSize: '{sizes.control.minimumTarget}',
+      maxInlineSize: '{sizes.full}',
+      minBlockSize: '{sizes.control.minimumTarget}',
+      boxSizing: 'border-box',
       gap: '{spacing.sm}',
+      whiteSpace: 'normal',
+      overflowWrap: 'anywhere',
       fontWeight: 'medium',
       borderRadius: '{radii.md}',
       border: '1px solid',
@@ -26,6 +39,11 @@ export const dropdownRecipe = defineSlotRecipe({
       transitionProperty: 'background-color, border-color, color, box-shadow',
       transitionDuration: '{durations.fast}',
       transitionTimingFunction: '{easings.soft}',
+      _motionSubtle: { transitionDuration: '{durations.ultraFast}' },
+      _motionPop: {
+        transitionDuration: '{durations.standard}',
+        transitionTimingFunction: '{easings.bounce}',
+      },
       _hover: {
         bg: 'brand.surface',
         borderColor: 'layout.divider',
@@ -45,14 +63,22 @@ export const dropdownRecipe = defineSlotRecipe({
       },
     },
     menu: {
+      ...floatingViewportFallbackStyles,
       bg: 'layout.surface',
       borderRadius: '{radii.md}',
       border: '1px solid',
       borderColor: 'layout.divider',
       boxShadow: '{shadows.lg}',
+      margin: 0,
+      paddingInline: 0,
       py: '{spacing.2xs}',
+      listStyle: 'none',
       outline: 'none',
-      maxHeight: '300px',
+      boxSizing: 'border-box',
+      minWidth: 0,
+      maxWidth: floatingAvailableWidth,
+      maxHeight: `min(300px, ${floatingAvailableHeight})`,
+      overflowX: 'hidden',
       overflowY: 'auto',
       zIndex: 'popover',
     },
@@ -61,19 +87,26 @@ export const dropdownRecipe = defineSlotRecipe({
       alignItems: 'center',
       gap: '{spacing.sm}',
       width: '{sizes.full}',
+      minWidth: 0,
+      boxSizing: 'border-box',
+      overflowWrap: 'anywhere',
       cursor: 'pointer',
       bg: 'transparent',
       border: 'none',
-      textAlign: 'left',
+      textAlign: 'start',
       transitionProperty: 'background-color, color',
       transitionDuration: '{durations.fast}',
       transitionTimingFunction: '{easings.soft}',
+      _motionSubtle: { transitionDuration: '{durations.ultraFast}' },
+      _motionPop: { transitionDuration: '{durations.standard}' },
       _hover: {
         bg: 'brand.surface',
       },
       _focusVisible: {
         bg: 'brand.surface',
-        outline: 'none',
+        // Menu items live in a clipped scrollport. An inset ring remains fully
+        // visible while being distinct from the matching hover background.
+        boxShadow: 'inset 0 0 0 {focusRing.width} {colors.brand.main}',
       },
       _disabled: {
         opacity: 0.5,
@@ -113,7 +146,7 @@ export const dropdownRecipe = defineSlotRecipe({
           _focusVisible: {
             bg: 'transparent',
             color: 'brand.main',
-            outline: 'none',
+            boxShadow: 'inset 0 0 0 {focusRing.width} {colors.brand.main}',
           },
         },
       },
@@ -123,15 +156,15 @@ export const dropdownRecipe = defineSlotRecipe({
         trigger: {
           px: '{spacing.md}',
           py: '{spacing.xs}',
-          fontSize: 'xs',
+          fontSize: 'sm',
         },
         menu: {
-          minWidth: '160px',
+          minWidth: `min(160px, ${floatingAvailableWidth})`,
         },
         item: {
           px: '{spacing.sm}',
           py: '{spacing.xs}',
-          fontSize: 'xs',
+          fontSize: 'sm',
         },
       },
       md: {
@@ -141,7 +174,7 @@ export const dropdownRecipe = defineSlotRecipe({
           fontSize: 'md',
         },
         menu: {
-          minWidth: '200px',
+          minWidth: `min(200px, ${floatingAvailableWidth})`,
         },
         item: {
           px: '{spacing.md}',
@@ -156,7 +189,7 @@ export const dropdownRecipe = defineSlotRecipe({
           fontSize: 'lg',
         },
         menu: {
-          minWidth: '15rem',
+          minWidth: `min(15rem, ${floatingAvailableWidth})`,
         },
         item: {
           px: '{spacing.lg}',

@@ -2,28 +2,37 @@
 
 import { cx } from '@/styled-system/css';
 import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
+import { cloneElement, forwardRef, isValidElement, useId, useLayoutEffect } from 'react';
 import { ReferenceType } from '@floating-ui/react';
-import type { OverlayContext, OverlaySubComponentProps } from './types';
+import type {
+  OverlayContext,
+  OverlayPartComponent,
+  OverlaySubComponentProps,
+  OverlayTextAsChildElement,
+} from './types';
+
+const overlayTextHostNames = new Set(['div', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'span']);
+
+const isOverlayTextHost = (children: unknown): children is OverlayTextAsChildElement =>
+  isValidElement(children) &&
+  typeof children.type === 'string' &&
+  overlayTextHostNames.has(children.type);
 
 /**
- * Factory function to create a Description component for overlay patterns.
+ * Creates a description part that registers its resolved ID with the owning overlay.
  *
- * Provides a consistent descriptive paragraph for Modals, Drawers, and Popovers.
- * Automatically links to the parent overlay via the `descriptionId` for `aria-describedby` support.
+ * The generated part renders a paragraph by default, or slots a safe textual host with `asChild`.
+ * Its generated ID is used by content as `aria-describedby` unless the consumer supplies an
+ * explicit override.
  *
- * @param useContext - Hook to access the parent overlay's context.
- * @param displayName - Display name for the generated component in React DevTools.
- * @returns A forwardRef-wrapped Description component.
+ * @param useContext - Returns the owning overlay context, including the description-ID registrar.
+ * @param displayName - DevTools name assigned to the generated component.
+ * @returns A ref-forwarding description component for the overlay's public API.
  *
  * @example
  * ```tsx
  * export const ModalDescription = createOverlayDescription(useModalContext, 'ModalDescription');
  * ```
- *
- * ### AI Context & Architecture
- * Standardizes auxiliary text accessibility. Enforces link via `descriptionId`
- * (mapping to `aria-describedby`).
  */
 export const createOverlayDescription = <
   T extends ReferenceType,
@@ -34,22 +43,39 @@ export const createOverlayDescription = <
 ) => {
   const Component = forwardRef<HTMLParagraphElement, OverlaySubComponentProps<'p'>>(
     (props, ref) => {
-      const { className, asChild, ...rest } = props;
-      const { descriptionId, classes: rawClasses } = useContext();
+      const { className, asChild, children, id: idProp, ...rest } = props;
+      const { classes: rawClasses, registerDescription } = useContext();
       const classes = rawClasses as Record<'description', string>;
-      const DescriptionElement = asChild ? Slot : 'p';
+      const canUseAsChild = Boolean(asChild && isOverlayTextHost(children));
+      const DescriptionElement = canUseAsChild ? Slot : 'p';
+      const generatedId = useId();
+      const resolvedId = idProp ?? generatedId;
+      const renderedChildren =
+        canUseAsChild && isValidElement<{ id?: string }>(children)
+          ? cloneElement(children, { id: resolvedId })
+          : children;
+
+      useLayoutEffect(() => registerDescription(resolvedId), [registerDescription, resolvedId]);
 
       return (
         <DescriptionElement
-          ref={ref}
-          id={descriptionId}
-          className={cx(classes.description, className)}
           {...rest}
-        />
+          ref={ref}
+          id={resolvedId}
+          className={cx(classes.description, className)}
+        >
+          {renderedChildren}
+        </DescriptionElement>
       );
     },
   );
 
   Component.displayName = displayName;
-  return Component;
+  return Component as OverlayPartComponent<
+    'p',
+    HTMLParagraphElement,
+    object,
+    HTMLElement,
+    OverlayTextAsChildElement
+  >;
 };

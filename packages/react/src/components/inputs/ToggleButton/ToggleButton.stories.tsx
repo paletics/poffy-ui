@@ -1,4 +1,4 @@
-﻿import { Button } from '@/components/inputs/Button';
+import { Button } from '@/components/inputs/Button';
 import { ToggleButton } from '@/components/inputs/ToggleButton';
 import { Flex, Stack } from '@/components/layout';
 import { HeartIcon, StarIcon } from '@/components/media/Icon/icons';
@@ -8,14 +8,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 
-/**
- * Storybook documentation and visual review surface for ToggleButton.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta = {
   title: 'Inputs/ToggleButton',
   component: ToggleButton,
@@ -70,13 +63,13 @@ export const Sizes: Story = {
     docs: {
       description: {
         story:
-          'All four sizes: `xs`, `sm`, `md`, `lg`. Each scales padding and font proportionally via Silver Ratio tokens.',
+          'All four sizes: `xs`, `sm`, `md`, `lg`. Padding follows Silver Ratio tokens while font size follows the readable role scale.',
       },
     },
   },
   args: { children: 'Toggle' },
   render: () => (
-    <Flex gap="md" align="center">
+    <Flex gap="md" align="center" wrap="wrap" justify="center">
       <ToggleButton size="xs">Extra Small</ToggleButton>
       <ToggleButton size="sm">Small</ToggleButton>
       <ToggleButton size="md">Medium</ToggleButton>
@@ -143,14 +136,14 @@ export const WithIcons: Story = {
         <ToggleButton
           pressed={starred}
           onPressedChange={setStarred}
-          leftIcon={<StarIcon className={starred ? warningIconClass : undefined} />}
+          startIcon={<StarIcon className={starred ? warningIconClass : undefined} />}
         >
           {starred ? 'Starred' : 'Star'}
         </ToggleButton>
         <ToggleButton
           pressed={liked}
           onPressedChange={setLiked}
-          leftIcon={<HeartIcon className={liked ? dangerIconClass : undefined} />}
+          startIcon={<HeartIcon className={liked ? dangerIconClass : undefined} />}
           appearance="soft"
         >
           {liked ? 'Liked' : 'Like'}
@@ -286,4 +279,54 @@ export const FilterButtons: Story = {
       </Stack>
     );
   },
+};
+
+export const NarrowLongContent: Story = {
+  args: { children: 'Toggle' },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Narrow LTR/RTL examples verify wrapping, unbroken-token containment, and minimum target sizing.',
+      },
+    },
+  },
+  render: () => (
+    <Stack gap="sm" width="[96px]">
+      {(['xs', 'sm', 'md', 'lg'] as const).map((size) => (
+        <ToggleButton key={size} lang="ja" size={size} startIcon={<StarIcon />}>
+          長い切替ラベル{size}
+        </ToggleButton>
+      ))}
+      <ToggleButton size="xs">averylongunbrokentogglelabel</ToggleButton>
+      <div dir="rtl" lang="ar">
+        <ToggleButton size="sm" endIcon={<HeartIcon />}>
+          إعداد طويل جدًا
+        </ToggleButton>
+      </div>
+    </Stack>
+  ),
+};
+
+export const LogicalIconPlacement: Story = {
+  render: () => (
+    <Stack gap="sm">
+      <ToggleButton
+        data-testid="toggle-icons-ltr"
+        startIcon={<span data-testid="toggle-start-ltr">S</span>}
+        endIcon={<span data-testid="toggle-end-ltr">E</span>}
+      >
+        LTR
+      </ToggleButton>
+      <div dir="rtl">
+        <ToggleButton
+          data-testid="toggle-icons-rtl"
+          startIcon={<span data-testid="toggle-start-rtl">S</span>}
+          endIcon={<span data-testid="toggle-end-rtl">E</span>}
+        >
+          RTL
+        </ToggleButton>
+      </div>
+    </Stack>
+  ),
 };

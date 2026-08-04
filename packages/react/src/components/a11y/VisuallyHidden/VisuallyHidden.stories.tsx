@@ -5,14 +5,6 @@ import { SearchIcon } from '@/components/media/Icon/icons';
 import { Text } from '@/components/typography/Text';
 import { VisuallyHidden } from '@/components/a11y/VisuallyHidden';
 
-/**
- * Storybook documentation and visual review surface for VisuallyHidden.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
 const meta = {
   title: 'A11y/VisuallyHidden',
   component: VisuallyHidden,
@@ -64,5 +56,13 @@ export const AsDiv: Story = {
       </VisuallyHidden>
       <Text>Content after the visually hidden div</Text>
     </Stack>
+  ),
+};
+
+export const AsChildButton: Story = {
+  render: () => (
+    <VisuallyHidden asChild>
+      <button type="button">Skip to main content</button>
+    </VisuallyHidden>
   ),
 };

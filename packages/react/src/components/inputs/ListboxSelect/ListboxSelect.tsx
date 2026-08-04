@@ -2,76 +2,56 @@
 
 import { cx } from '@/styled-system/css';
 import { listboxSelect } from '@/styled-system/recipes';
-import { forwardRef, useEffect, useId, useRef } from 'react';
+import { forwardRef, useEffect, useId, useMemo, useRef, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent, PointerEvent as ReactPointerEvent } from 'react';
 import { ListboxPopover, ListboxPopoverAnchor } from '@/components/overlay/ListboxPopover';
-import { useMergeRefs } from '@poffy-ui/behavior/hooks';
+import { getTreeElementById, useMergeRefs } from '@poffy-ui/behavior/hooks';
+import { resolveNeoInputVariant, resolveNeoPopupVariant } from '@/components/inputs/inputVariant';
+import {
+  hasAriaInvalid,
+  resolveFormControlAria,
+} from '@/components/inputs/FormControl/formControlAria';
+import { useFormControl } from '@/components/inputs/FormControl/useFormControl';
 import { ListboxSelectProps } from './ListboxSelect.types';
 import { ListboxSelectNativeSelect } from './ListboxSelectNativeSelect';
 import { ListboxSelectPopup } from './ListboxSelectPopup';
 import { ListboxSelectTrigger } from './ListboxSelectTrigger';
-import { flattenListboxSelectOptions, getListboxSelectOptionId } from './ListboxSelect.utils';
+import { getListboxSelectOptionId, normalizeListboxSelectChildren } from './ListboxSelect.utils';
 import { useListboxSelectState } from './useListboxSelectState';
+import { resolveAccessibleLabel } from '@/components/shared/resolveAccessibleLabel';
+import { useFormControlBridge } from '@/components/inputs/shared/useFormControlBridge';
 
 /**
- * Custom listbox select that keeps the native select API through a visually hidden field.
- * The visible trigger and popup align with ComboBox and MultiSelect for interaction consistency.
+ * Single-choice custom listbox backed by a visually hidden native select.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`listboxSelect`), `ListboxPopover`, native hidden `<select>`
- * - **Props**: Native select props plus ListboxSelect appearance and size variants
- *
- * ### Design Tokens
- * - **spacing**: trigger, popup, and option spacing come from the `listboxSelect` recipe
- * - **color**: semantic field, popup, highlighted, selected, disabled, and error colors
- *
- * ### Variant Logic
- * - **appearance="outline"**: Default field treatment for forms and dense settings.
- * - **appearance="soft"**: Lower emphasis field surface, mapped to the filled recipe variant.
- * - **appearance="neo"**: Raised control surface while the popup remains outline for readability.
- * - **error**: Propagates invalid styling and `aria-invalid` to the visible combobox.
- *
- * ### Accessibility
- * - **Role**: combobox with listbox popup, backed by a native select for form submission.
- * - **Pattern**: WAI-ARIA Combobox with Listbox Popup
- * - **Keyboard**: Arrow keys move highlight, Home/End jump, Enter/Space select, Escape closes.
- * - **Required**: Provide visible labeling through `<label htmlFor>` or `aria-label`.
- *
- * ### AI Usage
- * - **DO**: Use native `<option>` and `<optgroup>` children so forms, labels, and tests stay native.
- * - **DON'T**: Pass custom option components; option parsing intentionally mirrors native select content.
- *
- * @example Native options
- * ```tsx
- * <ListboxSelect name="fruit" aria-label="Fruit">
- *   <option value="apple">Apple</option>
- *   <option value="pear">Pear</option>
- * </ListboxSelect>
- * ```
- *
- * @example Grouped and disabled options
- * ```tsx
- * <ListboxSelect defaultValue="available" aria-label="Status">
- *   <optgroup label="Unavailable" disabled>
- *     <option value="blocked">Blocked</option>
- *   </optgroup>
- *   <option value="available">Available</option>
- * </ListboxSelect>
- * ```
+ * The visible trigger provides keyboard navigation and active-descendant semantics, while the
+ * native field preserves `name`, validation, native labels, and form reset. `onChange` receives
+ * that native change event and may cancel a visible or native selection with `preventDefault()`.
+ * It is single-select only; controlled callers reflect the selected value. Disabled or read-only
+ * state blocks opening and selection changes.
  */
 export const ListboxSelect = forwardRef<HTMLSelectElement, ListboxSelectProps>((props, ref) => {
   const {
     size,
     appearance = 'outline',
-    variant,
-    error = false,
+    variant: _unsupportedVariant,
+    error,
     className,
     children,
     value: valueProp,
-    defaultValue: _defaultValue,
+    defaultValue,
+    multiple: _multiple,
     onChange,
     onFocus,
-    disabled = false,
+    onBlur,
+    onKeyDown,
+    onPointerDown,
+    onTriggerFocus,
+    onTriggerBlur,
+    onTriggerKeyDown,
+    onTriggerPointerDown,
+    disabled,
+    readOnly,
     name,
     required,
     form,
@@ -81,25 +61,68 @@ export const ListboxSelect = forwardRef<HTMLSelectElement, ListboxSelectProps>((
     'aria-labelledby': ariaLabelledBy,
     'aria-describedby': ariaDescribedBy,
     'aria-errormessage': ariaErrorMessage,
+    'aria-invalid': ariaInvalid,
     ...rest
-  } = props;
+  } = props as ListboxSelectProps & { variant?: unknown };
 
-  const resolvedVariant =
-    variant ?? (appearance === 'soft' ? 'filled' : appearance === 'neo' ? 'neo' : 'outline');
-  const popupVariant = resolvedVariant === 'neo' ? 'outline' : resolvedVariant;
-  const classes = listboxSelect({ size, variant: resolvedVariant, error });
-  const popupClasses = listboxSelect({ size, variant: popupVariant, error });
-  const isInvalid = !!error;
-  const options = flattenListboxSelectOptions(children);
+  const formControl = useFormControl();
+  const isDisabled = disabled ?? formControl.isDisabled ?? false;
+  const isReadOnly = readOnly ?? formControl.isReadOnly ?? false;
+  const isRequired = required ?? formControl.isRequired ?? false;
+  const isInvalid = error === true ? true : error === undefined && formControl.isInvalid === true;
+  const resolvedAriaInvalid =
+    typeof ariaInvalid === 'string'
+      ? ariaInvalid
+      : typeof ariaInvalid === 'boolean'
+        ? ariaInvalid
+        : undefined;
+  const hasExplicitInvalid = hasAriaInvalid(resolvedAriaInvalid);
+  const shouldAssociateErrorMessage = isInvalid ? true : hasExplicitInvalid;
+  const { describedBy, errorMessage } = resolveFormControlAria({
+    ariaDescribedBy,
+    ariaErrorMessage,
+    errorMessageIds: formControl.errorMessageIds,
+    helperTextIds: formControl.helperTextIds,
+    isInvalid: shouldAssociateErrorMessage,
+  });
+  const explicitAccessibleLabel = resolveAccessibleLabel({ ariaLabel, ariaLabelledBy });
+  const hasExplicitAccessibleLabel = Boolean(
+    explicitAccessibleLabel.ariaLabel ?? explicitAccessibleLabel.ariaLabelledBy,
+  );
+  const [nativeLabelledBy, setNativeLabelledBy] = useState<string | undefined>();
+  const accessibleLabel = resolveAccessibleLabel({
+    ariaLabel,
+    ariaLabelledBy,
+    autoLabelledBy: formControl.labelId ?? nativeLabelledBy,
+  });
+
+  const resolvedVariant = resolveNeoInputVariant(appearance);
+  const popupVariant = resolveNeoPopupVariant(appearance);
+  const resolvedError = error ?? formControl.isInvalid ?? false;
+  const classes = listboxSelect({ size, variant: resolvedVariant, error: resolvedError });
+  const popupClasses = listboxSelect({ size, variant: popupVariant, error: resolvedError });
+  const { nativeChildren, options } = useMemo(
+    () => normalizeListboxSelectChildren(children),
+    [children],
+  );
   const listId = useId();
   const generatedControlId = useId();
-  const controlId = idProp ?? generatedControlId;
+  const nativeLabelIdBase = useId();
+  const controlId = idProp ?? formControl.id ?? generatedControlId;
   const triggerId = `${controlId}-trigger`;
   const nativeSelectRef = useRef<HTMLSelectElement>(null);
   const triggerRef = useRef<HTMLDivElement>(null);
-  const mergedRef = useMergeRefs(nativeSelectRef, ref);
+  const formBridge = useFormControlBridge<HTMLSelectElement>({ disabled: isDisabled, form });
+  const isInteractionDisabled = [isDisabled, formBridge.effectivelyDisabled].some(Boolean);
+  const isInteractionDisabledNow = () =>
+    [formBridge.isEffectivelyDisabledNow(), isReadOnly].some(Boolean);
+  const ownedNativeLabelIdsRef = useRef(new Map<HTMLLabelElement, string>());
+  const nativeLabelReconciliationGenerationRef = useRef(0);
+  const isMountedRef = useRef(false);
   const {
+    formResetRef,
     handleKeyDown,
+    handleNativeChange,
     handleOpenChange,
     handleSelectOption,
     highlightedIndex,
@@ -109,47 +132,71 @@ export const ListboxSelect = forwardRef<HTMLSelectElement, ListboxSelectProps>((
     setHighlightedIndex,
     toggleFromTrigger,
   } = useListboxSelectState({
-    disabled,
+    disabled: isInteractionDisabled,
+    isInteractionDisabledNow,
+    readOnly: isReadOnly,
     nativeSelectRef,
     options,
     props,
     valueProp,
   });
+  const mergedRef = useMergeRefs(nativeSelectRef, formBridge.anchorRef, formResetRef, ref);
 
   useEffect(() => {
-    const trigger = triggerRef.current;
-    if (!trigger || ariaLabelledBy) return undefined;
-
-    if (ariaLabel || ariaLabelledBy) {
-      trigger.removeAttribute('aria-labelledby');
-      return undefined;
-    }
-
-    const labels = Array.from(nativeSelectRef.current?.labels ?? []);
-    if (labels.length === 0) {
-      trigger.removeAttribute('aria-labelledby');
-      return undefined;
-    }
-
-    const assignedIds: HTMLLabelElement[] = [];
-    const labelIds = labels.map((label, index) => {
-      if (label.id) return label.id;
-      label.id = `${controlId}-label-${index}`;
-      assignedIds.push(label);
-      return label.id;
-    });
-    const labelIdList = labelIds.join(' ');
-    trigger.setAttribute('aria-labelledby', labelIdList);
-
+    const ownedNativeLabelIds = ownedNativeLabelIdsRef.current;
+    isMountedRef.current = true;
     return () => {
-      if (trigger.getAttribute('aria-labelledby') === labelIdList) {
-        trigger.removeAttribute('aria-labelledby');
-      }
-      assignedIds.forEach((label) => {
-        label.removeAttribute('id');
+      isMountedRef.current = false;
+      nativeLabelReconciliationGenerationRef.current += 1;
+      ownedNativeLabelIds.forEach((ownedId, label) => {
+        if (label.id === ownedId) label.removeAttribute('id');
       });
+      ownedNativeLabelIds.clear();
     };
-  }, [ariaLabel, ariaLabelledBy, controlId]);
+  }, []);
+
+  useEffect(() => {
+    const ownedNativeLabelIds = ownedNativeLabelIdsRef.current;
+    const labels = Array.from(nativeSelectRef.current?.labels ?? []);
+    const currentLabels = new Set(labels);
+
+    ownedNativeLabelIds.forEach((ownedId, label) => {
+      if (currentLabels.has(label)) return;
+      if (label.id === ownedId) label.removeAttribute('id');
+      ownedNativeLabelIds.delete(label);
+    });
+
+    const usesNativeLabels = !hasExplicitAccessibleLabel && !formControl.labelId;
+    const labelIds = labels.flatMap((label, index) => {
+      const ownedId = ownedNativeLabelIds.get(label);
+      if (ownedId && label.id !== ownedId) ownedNativeLabelIds.delete(label);
+      if (label.id) return label.id;
+
+      if (!usesNativeLabels) return [];
+      let candidateIndex = index;
+      let assignedId = `${nativeLabelIdBase}-label-${candidateIndex}`;
+      const nativeSelect = nativeSelectRef.current;
+      while (nativeSelect && getTreeElementById(nativeSelect, assignedId)) {
+        candidateIndex += 1;
+        assignedId = `${nativeLabelIdBase}-label-${candidateIndex}`;
+      }
+      label.id = assignedId;
+      ownedNativeLabelIds.set(label, assignedId);
+      return assignedId;
+    });
+    const nextNativeLabelledBy =
+      usesNativeLabels && labelIds.length > 0 ? labelIds.join(' ') : undefined;
+    const generation = ++nativeLabelReconciliationGenerationRef.current;
+    if (nativeLabelledBy === nextNativeLabelledBy) return;
+    queueMicrotask(() => {
+      if (!isMountedRef.current || nativeLabelReconciliationGenerationRef.current !== generation) {
+        return;
+      }
+      setNativeLabelledBy((current) =>
+        current === nextNativeLabelledBy ? current : nextNativeLabelledBy,
+      );
+    });
+  });
 
   const activeDescendant =
     isOpen && highlightedIndex >= 0 && highlightedIndex < options.length
@@ -157,6 +204,26 @@ export const ListboxSelect = forwardRef<HTMLSelectElement, ListboxSelectProps>((
       : undefined;
 
   const selectedLabel = options[selectedIndex]?.label ?? '';
+  const handleTriggerKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    onTriggerKeyDown?.(event);
+    if (!event.defaultPrevented && nativeSelectRef.current?.matches(':disabled') !== true) {
+      handleKeyDown(event);
+    }
+  };
+  const handleTriggerPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    onTriggerPointerDown?.(event);
+    if (
+      event.defaultPrevented ||
+      nativeSelectRef.current?.matches(':disabled') === true ||
+      isReadOnly ||
+      event.button !== 0
+    )
+      return;
+
+    event.preventDefault();
+    triggerRef.current?.focus();
+    toggleFromTrigger();
+  };
 
   return (
     <ListboxPopover open={isOpen} onOpenChange={handleOpenChange}>
@@ -165,18 +232,36 @@ export const ListboxSelect = forwardRef<HTMLSelectElement, ListboxSelectProps>((
           {...rest}
           ref={mergedRef}
           controlId={controlId}
-          selectedValue={selectedValue}
-          onChange={onChange}
-          disabled={disabled}
+          selectedValue={valueProp === undefined ? undefined : selectedValue}
+          defaultValue={valueProp === undefined ? defaultValue : undefined}
+          onChange={(event) => {
+            const nextIndex = event.currentTarget.selectedIndex;
+            if (isInteractionDisabledNow() || nextIndex === selectedIndex) {
+              handleNativeChange(event.currentTarget.value, nextIndex);
+              return;
+            }
+            onChange?.(event);
+            if (event.defaultPrevented) {
+              event.currentTarget.selectedIndex = selectedIndex;
+              return;
+            }
+            const changed = handleNativeChange(event.currentTarget.value, nextIndex);
+            if (!changed) return;
+          }}
+          disabled={isDisabled}
           name={name}
-          required={required}
+          required={isRequired && !isReadOnly}
           form={form}
+          multiple={false}
           onNativeFocus={(event) => {
             onFocus?.(event);
             triggerRef.current?.focus();
           }}
+          onBlur={onBlur}
+          onKeyDown={onKeyDown}
+          onPointerDown={onPointerDown}
         >
-          {children}
+          {nativeChildren}
         </ListboxSelectNativeSelect>
         <ListboxPopoverAnchor asChild>
           <ListboxSelectTrigger
@@ -185,23 +270,23 @@ export const ListboxSelect = forwardRef<HTMLSelectElement, ListboxSelectProps>((
             className={classes.field}
             iconClassName={classes.icon}
             activeDescendant={activeDescendant}
-            ariaLabel={ariaLabel}
-            ariaLabelledBy={ariaLabelledBy}
-            ariaDescribedBy={ariaDescribedBy}
-            ariaErrorMessage={ariaErrorMessage}
-            disabled={disabled}
+            ariaLabel={accessibleLabel.ariaLabel}
+            ariaLabelledBy={accessibleLabel.ariaLabelledBy}
+            ariaDescribedBy={describedBy}
+            ariaErrorMessage={errorMessage}
+            ariaInvalid={resolvedAriaInvalid}
+            disabled={isInteractionDisabled}
             error={isInvalid}
             isOpen={isOpen}
-            listId={listId}
+            listId={isOpen && options.length > 0 ? listId : undefined}
+            readOnly={isReadOnly}
+            required={isRequired}
             selectedLabel={selectedLabel}
             tabIndex={tabIndex}
-            onPointerDown={(event) => {
-              if (disabled || event.button !== 0) return;
-              event.preventDefault();
-              triggerRef.current?.focus();
-              toggleFromTrigger();
-            }}
-            onKeyDown={handleKeyDown}
+            onPointerDown={handleTriggerPointerDown}
+            onKeyDown={handleTriggerKeyDown}
+            onFocus={onTriggerFocus}
+            onBlur={onTriggerBlur}
           />
         </ListboxPopoverAnchor>
         {options.length > 0 && (
@@ -211,8 +296,9 @@ export const ListboxSelect = forwardRef<HTMLSelectElement, ListboxSelectProps>((
             itemClassName={popupClasses.item}
             itemTextClassName={popupClasses.itemText}
             options={options}
+            triggerId={triggerId}
             highlightedIndex={highlightedIndex}
-            selectedValue={selectedValue}
+            selectedIndex={selectedIndex}
             onSelect={handleSelectOption}
             onHighlight={setHighlightedIndex}
           />

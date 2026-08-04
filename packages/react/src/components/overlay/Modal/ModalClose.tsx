@@ -4,14 +4,7 @@ import { createOverlayClose } from '../shared/factories';
 import type { ModalCloseProps } from './Modal.types';
 import { useModalContext } from './ModalContext';
 
-/**
- * Close button for the Modal.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Standardized via `createOverlayClose`
- * - **Props**: ModalCloseProps
- */
+/** Close button for the Modal. */
 export const ModalClose = createOverlayClose(useModalContext, 'ModalClose', 24);
 
 /**

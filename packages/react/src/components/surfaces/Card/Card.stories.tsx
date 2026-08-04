@@ -1,16 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Flex } from '@/components/layout/Flex';
 import { Card, CardHeader, CardBody, CardFooter } from '@/components/surfaces/Card';
+import { Button } from '@/components/inputs/Button';
 import { css } from '@/styled-system/css';
 
-/**
- * A versatile container that groups related content into a distinct visual surface using CardHeader, CardBody, and CardFooter sub-components.
- * Use to present homogeneous items or discrete UI actions with consistent padding and border treatment.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe (`card` - `defineSlotRecipe`), Radix Slot, CardContext
- */
+
 const meta: Meta<typeof Card> = {
   title: 'Display/Card',
   component: Card,
@@ -36,6 +30,7 @@ type Story = StoryObj<typeof Card>;
 
 const basicCardClass = css({ maxWidth: '[400px]' });
 const variantCardClass = css({ width: '[300px]' });
+const constrainedCardClass = css({ width: '[180px]', maxWidth: '100%' });
 
 export const Default: Story = {
   args: {
@@ -94,3 +89,35 @@ export const Appearances = () => (
     </Card>
   </Flex>
 );
+
+export const ConstrainedLongChrome: Story = {
+  render: () => (
+    <Card className={constrainedCardClass} aria-label="Constrained long-content card">
+      <CardHeader>release-configuration-with-an-unusually-long-unbroken-identifier</CardHeader>
+      <CardBody>CardBodyWithAnUnusuallyLongUnbrokenIdentifierThatMustWrapInsideTheCard</CardBody>
+      <CardFooter>https://example.com/releases/2026/07/long-footer-destination</CardFooter>
+    </Card>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: 'Header, body, and footer text wrap within a narrow card.',
+      },
+    },
+  },
+};
+
+export const FocusableContent: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'A direct action can use the full card width without clipping its focus ring.',
+      },
+    },
+  },
+  render: () => (
+    <Card className={variantCardClass} aria-label="Focusable card">
+      <Button width="100%">Focusable card action</Button>
+    </Card>
+  ),
+};

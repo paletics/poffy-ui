@@ -4,17 +4,14 @@ import { createOverlayContent } from '../shared/factories';
 import { useModalContext } from './ModalContext';
 
 /**
- * The content container for the Modal.
- * Handles portals, overlays, focus management, and accessibility attributes.
+ * Renders the portalled modal dialog surface for its owning `Modal`.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Standardized via `createOverlayContent`
- * - **Props**: ModalContentProps
- *
- * ### Component Details
- * Manages Backdrop, Portal, and Focus management automatically.
+ * The shared overlay factory manages focus trapping, dismissal, title and
+ * description ARIA relationships, and safe `asChild` fallback. Supply a
+ * `ModalTitle` unless another accessible name is provided.
  */
-export const ModalContent = createOverlayContent(useModalContext, 'ModalContent');
+export const ModalContent = createOverlayContent(useModalContext, 'ModalContent', {
+  fallbackLabelKey: 'dialog',
+});
 
 ModalContent.displayName = 'ModalContent';

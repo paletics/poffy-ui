@@ -3,7 +3,6 @@ import type { CalendarGrid } from './grid.types';
 /**
  * Builds the visible six-week calendar grid and localized weekday labels.
  *
- * ### Notes
  * The grid always contains 42 dates grouped into six rows, including leading
  * and trailing dates from adjacent months. `weekStartsOn` follows
  * `Date#getDay()` numbering (`0` Sunday through `6` Saturday). React calendar

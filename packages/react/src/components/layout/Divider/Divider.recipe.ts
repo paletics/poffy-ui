@@ -8,6 +8,7 @@ export const dividerRecipe = defineRecipe({
   className: 'divider',
   description: 'Divider styling for horizontal and vertical content separators',
   base: {
+    borderWidth: '0',
     borderColor: 'layout.divider',
     borderStyle: 'solid',
   },

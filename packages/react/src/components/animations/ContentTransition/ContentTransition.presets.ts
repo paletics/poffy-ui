@@ -1,12 +1,5 @@
 import { motionOffsets, springs, transitions } from '../presets';
 
-/**
- * Content Transition Animation Variants
- *
- * ### AI Context & Architecture
- * Defines animation behavior for content switching.
- * Inherits the logic from PageTransition but extends it for component-level usage.
- */
 export const contentVariants = {
   /**
    * Fade Animation
@@ -20,7 +13,8 @@ export const contentVariants = {
 
   /**
    * Crossfade Animation
-   * True overlap fade where both elements are visible during transition.
+   * Opacity fade for overlapping content. Use `mode="sync"` with caller-owned overlapping layout
+   * when both elements must occupy the same visual position.
    */
   crossfade: {
     initial: { opacity: 0 },
@@ -128,6 +122,7 @@ export const contentVariants = {
         ease: [0.7, 0, 0.84, 0],
       },
     },
+    transition: {},
   },
 
   /** No Animation */
@@ -135,6 +130,7 @@ export const contentVariants = {
     initial: {},
     animate: {},
     exit: {},
+    transition: {},
   },
 } as const;
 

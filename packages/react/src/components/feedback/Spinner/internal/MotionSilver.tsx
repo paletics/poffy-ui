@@ -1,5 +1,6 @@
 import { motion } from 'motion/react';
 import { SpinnerInternalProps } from '../Spinner.types';
+import { getSpinnerMotionDuration } from './motionTiming';
 
 const SQRT2 = Math.SQRT2;
 
@@ -12,6 +13,7 @@ export const MotionSilver = ({
   radius,
   circumference,
   classes,
+  motionStyle,
 }: SpinnerInternalProps) => {
   const cx = size / 2;
   const cy = size / 2;
@@ -42,8 +44,16 @@ export const MotionSilver = ({
           opacity: [0.08, 0.22, 0.08],
         }}
         transition={{
-          rotate: { duration: cycle, repeat: Infinity, ease: 'easeInOut' },
-          opacity: { duration: cycle, repeat: Infinity, ease: 'easeInOut' },
+          rotate: {
+            duration: getSpinnerMotionDuration(cycle, motionStyle),
+            repeat: Infinity,
+            ease: 'easeInOut',
+          },
+          opacity: {
+            duration: getSpinnerMotionDuration(cycle, motionStyle),
+            repeat: Infinity,
+            ease: 'easeInOut',
+          },
         }}
         strokeDasharray={`${arc3} ${circumference - arc3}`}
       />
@@ -61,8 +71,16 @@ export const MotionSilver = ({
           opacity: [0.28, 0.5, 0.28],
         }}
         transition={{
-          rotate: { duration: cycle / SQRT2, repeat: Infinity, ease: 'easeInOut' },
-          opacity: { duration: cycle / SQRT2, repeat: Infinity, ease: 'easeInOut' },
+          rotate: {
+            duration: getSpinnerMotionDuration(cycle / SQRT2, motionStyle),
+            repeat: Infinity,
+            ease: 'easeInOut',
+          },
+          opacity: {
+            duration: getSpinnerMotionDuration(cycle / SQRT2, motionStyle),
+            repeat: Infinity,
+            ease: 'easeInOut',
+          },
         }}
         strokeDasharray={`${arc2} ${arc2}`}
       />
@@ -80,7 +98,7 @@ export const MotionSilver = ({
           rotate: [0, 360 * t1, 360 * t2, 360],
         }}
         transition={{
-          duration: cycle,
+          duration: getSpinnerMotionDuration(cycle, motionStyle),
           repeat: Infinity,
           ease: 'easeInOut',
           times: [0, t1, t2, 1],

@@ -1,68 +1,46 @@
 'use client';
 
 import { cx } from '@/styled-system/css';
-import { Slot } from '@radix-ui/react-slot';
-import { type MouseEvent, forwardRef } from 'react';
+import { forwardRef } from 'react';
 import { ReferenceType } from '@floating-ui/react';
 import { CrossIcon } from '@/components/media/Icon/icons';
-import type { OverlayContext, OverlaySubComponentProps } from './types';
+import { OverlayDismissControl } from '../OverlayDismissControl';
+import type { OverlayCloseComponent, OverlayContext, OverlaySubComponentProps } from './types';
+import { getCommonMessages } from '@/components/shared/common.locales';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
 
 const getCloseIconSize = (iconSize: number) => (iconSize <= 16 ? 'sm' : 'md');
 
 /**
- * Factory function to create a Close button component for overlay patterns.
+ * Creates an overlay close control wired to the supplied overlay context.
  *
- * Provides a consistent dismissal button for Modals, Drawers, and Popovers.
- * Includes a default close icon and manages the open state transition.
- *
- * @param useContext - Hook to access the parent overlay's context.
- * @param displayName - Display name for the generated component in React DevTools.
- * @param iconSize - Size of the close SVG icon.
- * @returns A forwardRef-wrapped Close button component.
- *
- * @example
- * ```tsx
- * export const ModalClose = createOverlayClose(useModalContext, 'ModalClose', 24);
- * export const PopoverClose = createOverlayClose(usePopoverContext, 'PopoverClose', 16);
- * ```
- *
- * ### AI Context & Architecture
- * Standardizes close button behavior across different overlay types.
- * It automatically maps `onClick` to the context's `onOpenChange` or `setOpen` to ensure
- * the overlay closes without requiring explicit state management in the UI implementation.
+ * The generated button calls `onOpenChange(false)`, preserves consumer dismiss behavior through
+ * `OverlayDismissControl`, and supplies a localized accessible name and cross icon when omitted.
+ * `iconSize` controls only that fallback icon.
  */
 export const createOverlayClose = <T extends ReferenceType, TContext extends OverlayContext<T>>(
   useContext: () => TContext,
   displayName: string,
   iconSize = 24,
 ) => {
-  const Component = forwardRef<HTMLButtonElement, OverlaySubComponentProps<'button'>>(
-    (props, ref) => {
-      const { className, onClick, asChild, children, ...rest } = props;
-      const { classes: rawClasses, ...ctx } = useContext();
-      const classes = rawClasses as Record<'close', string>;
+  const Component = forwardRef<HTMLElement, OverlaySubComponentProps<'button'>>((props, ref) => {
+    const { className, 'aria-label': ariaLabel, ...rest } = props;
+    const messages = getCommonMessages(useOptionalLocale()?.locale);
+    const { classes: rawClasses, ...ctx } = useContext();
+    const classes = rawClasses as Record<'close', string>;
 
-      const onClose = ctx.onOpenChange;
-      const CloseElement = asChild ? Slot : 'button';
-
-      return (
-        <CloseElement
-          ref={ref}
-          type={asChild ? undefined : 'button'}
-          className={cx(classes.close, className)}
-          onClick={(e: MouseEvent<HTMLButtonElement>) => {
-            onClick?.(e);
-            onClose?.(false);
-          }}
-          aria-label="Close"
-          {...rest}
-        >
-          {children ?? <CrossIcon size={getCloseIconSize(iconSize)} />}
-        </CloseElement>
-      );
-    },
-  );
+    return (
+      <OverlayDismissControl
+        ref={ref}
+        {...rest}
+        className={cx(classes.close, className)}
+        aria-label={ariaLabel?.trim() || messages.close}
+        defaultContent={<CrossIcon size={getCloseIconSize(iconSize)} />}
+        onDismiss={() => ctx.onOpenChange?.(false)}
+      />
+    );
+  });
 
   Component.displayName = displayName;
-  return Component;
+  return Component as unknown as OverlayCloseComponent;
 };

@@ -17,6 +17,12 @@ export const avatarRecipe = defineSlotRecipe({
       userSelect: 'none',
       borderRadius: '{radii.full}',
       bg: 'brand.tint',
+      _focusVisible: {
+        position: 'relative',
+        zIndex: 1,
+        outline: '2px solid {colors.brand.main}',
+        outlineOffset: '-2px',
+      },
     },
     image: {
       width: '100%',
@@ -36,6 +42,7 @@ export const avatarRecipe = defineSlotRecipe({
       color: 'brand.border',
       fontSize: 'md',
       fontWeight: 'medium',
+      lineHeight: 'none',
       borderRadius: 'inherit',
     },
   },
@@ -47,11 +54,11 @@ export const avatarRecipe = defineSlotRecipe({
     size: {
       xs: {
         root: { width: '{sizes.silver.1}', height: '{sizes.silver.1}' },
-        fallback: { fontSize: 'sm' },
+        fallback: { fontSize: 'xs' },
       },
       sm: {
         root: { width: '{sizes.root.1}', height: '{sizes.root.1}' },
-        fallback: { fontSize: 'sm' },
+        fallback: { fontSize: 'xs' },
       },
       md: {
         root: { width: '{sizes.silver.2}', height: '{sizes.silver.2}' },

@@ -2,65 +2,73 @@
 
 import { forwardRef } from 'react';
 import { CheckIcon } from '@/components/media/Icon/icons';
+import { cx } from '@/styled-system/css';
 import { useComboBoxContext } from './ComboBoxContext';
 
 /**
  * Props for an option row rendered inside ComboBox.List.
  */
-export interface ComboBoxItemProps extends React.LiHTMLAttributes<HTMLLIElement> {
+export interface ComboBoxItemProps extends Omit<
+  React.LiHTMLAttributes<HTMLLIElement>,
+  'aria-disabled' | 'aria-selected' | 'id' | 'role'
+> {
   value: string;
   label: string;
   disabled?: boolean;
 }
 
 /**
- * Selectable option item for ComboBox listboxes.
+ * Selectable option row for a `ComboBox.List`.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`comboBox` slot recipe), ComboBox context
- * - **Props**: native `li` attributes plus `value`, `label`, and `disabled`
- *
- * ### Design Tokens
- * - **spacing**: option padding and text alignment come from the `comboBox` recipe
- * - **color**: highlighted, selected, disabled, and indicator colors use semantic tokens
- *
- * ### Variant Logic
- * - **selected**: Derived from `ComboBoxRoot` value and displayed with an indicator.
- * - **disabled**: Prevents selection and applies disabled styling.
- *
- * ### Accessibility
- * - **Role**: `option`.
- * - **Pattern**: WAI-ARIA listbox option.
- * - **Keyboard**: Selection is triggered by Enter/Space when active.
- * - **Required**: Provide a stable string `value` and human-readable `label`.
- *
- * ### AI Usage
- * - **DO**: Render inside `ComboBox.List`.
- * - **DON'T**: Do not render nested interactive elements inside an option.
- *
- * @example Standard usage
- * ```tsx
- * <ComboBox.Item value="react" label="React" />
- * ```
- *
- * @example Disabled option
- * ```tsx
- * <ComboBox.Item value="legacy" label="Legacy system" disabled />
- * ```
+ * The root's option collection controls visibility, disabled state, IDs, and highlighting. An
+ * unprevented click or Enter/Space selection requests the value, copies its label into the input,
+ * and closes the list. Disabled, read-only, and interaction-blocked roots ignore selection.
  */
 export const ComboBoxItem = forwardRef<HTMLLIElement, ComboBoxItemProps>((props, ref) => {
-  const { value: itemValue, label, disabled: itemDisabled, onClick, onKeyDown, ...rest } = props;
+  const {
+    value: itemValue,
+    label,
+    disabled: itemDisabled,
+    optionIndex: _legacyOptionIndex,
+    className,
+    id: _id,
+    role: _role,
+    'aria-selected': _ariaSelected,
+    'aria-disabled': _ariaDisabled,
+    'data-disabled': _dataDisabled,
+    'data-highlighted': _dataHighlighted,
+    onClick,
+    onKeyDown,
+    ...rest
+  } = props as ComboBoxItemProps & {
+    optionIndex?: unknown;
+    id?: unknown;
+    role?: unknown;
+    'aria-selected'?: unknown;
+    'aria-disabled'?: unknown;
+    'data-disabled'?: unknown;
+    'data-highlighted'?: unknown;
+  };
   const {
     value,
     onChange,
     setIsOpen,
     setInputValue,
+    isInteractionBlockedNow,
     highlightedIndex,
     filteredOptions,
+    options,
+    disabled,
+    readOnly,
     listId,
     classes,
   } = useComboBoxContext();
+
+  const resolvedOptionIndex = options.findIndex((option) => option.value === itemValue);
+  // Root options are the keyboard-navigation model. Prefer their disabled
+  // state so pointer selection and ARIA state cannot disagree with it.
+  const configuredOption = options.find((option) => option.value === itemValue);
+  const isItemDisabled = configuredOption?.disabled ?? itemDisabled ?? false;
 
   const isHighlighted = filteredOptions[highlightedIndex]?.value === itemValue;
 
@@ -74,7 +82,7 @@ export const ComboBoxItem = forwardRef<HTMLLIElement, ComboBoxItemProps>((props,
   }
 
   const handleSelect = () => {
-    if (itemDisabled) return;
+    if (isItemDisabled || disabled || readOnly || isInteractionBlockedNow()) return;
     onChange?.(itemValue);
     setInputValue(label);
     setIsOpen(false);
@@ -82,14 +90,15 @@ export const ComboBoxItem = forwardRef<HTMLLIElement, ComboBoxItemProps>((props,
 
   return (
     <li
+      {...rest}
       ref={ref}
-      id={`${listId}-option-${itemValue}`}
+      id={`${listId}-option-${resolvedOptionIndex}`}
       role="option"
       aria-selected={itemValue === value}
-      className={classes.item}
-      data-disabled={itemDisabled ? '' : undefined}
+      className={cx(classes.item, className)}
+      data-disabled={isItemDisabled ? '' : undefined}
       data-highlighted={isHighlighted ? '' : undefined}
-      aria-disabled={itemDisabled ? true : undefined}
+      aria-disabled={isItemDisabled ? true : undefined}
       onClick={(e) => {
         onClick?.(e);
         if (e.defaultPrevented) return;
@@ -103,7 +112,6 @@ export const ComboBoxItem = forwardRef<HTMLLIElement, ComboBoxItemProps>((props,
           handleSelect();
         }
       }}
-      {...rest}
     >
       <span className={classes.itemText}>{label}</span>
       {itemValue === value && (

@@ -4,7 +4,10 @@ import type { ReactNode } from 'react';
  * Built-in brands (`'blue'`, `'pome'`) resolve via static Panda CSS semantic tokens.
  * `'custom'` enables runtime color overrides via the `customBrand` prop on `PoffyBrandProvider`.
  */
-export type PoffyBrand = 'pome' | 'blue' | 'custom';
+export type PoffyBuiltInBrand = 'pome' | 'blue';
+
+/** Every brand identifier supported by the provider runtime. */
+export type PoffyBrand = PoffyBuiltInBrand | 'custom';
 
 /**
  * Color overrides for the `'custom'` brand.
@@ -29,8 +32,8 @@ export interface CustomBrandColors {
 export interface BrandContextType {
   /** The currently active brand. */
   brand: PoffyBrand;
-  /** Sets the active brand. */
-  setBrand: (brand: PoffyBrand) => void;
+  /** Activates a built-in brand. Use `setCustomBrand` for custom palettes. */
+  setBrand: (brand: PoffyBuiltInBrand) => void;
   /**
    * The current custom brand color overrides.
    * Only meaningful when `brand === 'custom'`. `undefined` otherwise.
@@ -46,25 +49,44 @@ export interface BrandContextType {
 /**
  * Props for the `PoffyBrandProvider` component.
  */
-export interface BrandProviderProps {
+interface BrandProviderBaseProps {
   /** The React subtree that receives brand context. */
   children: ReactNode;
   /**
-   * The brand applied on first render.
-   *
-   * @defaultValue `'blue'`
-   */
-  initialBrand?: PoffyBrand;
-  /**
-   * When `true`, syncs `data-brand` to `document.documentElement` and persists to `localStorage`.
+   * When `true`, syncs `data-brand` to `document.documentElement` and persists the brand,
+   * including a custom palette, to `localStorage`.
    * Set to `false` when scoping brand to a subtree only.
    *
    * @defaultValue `true`
    */
   global?: boolean;
+  /** Document whose root and storage receive global brand state. */
+  ownerDocument?: Document;
   /**
-   * Color values for the `'custom'` brand.
-   * Required when `initialBrand` is `'custom'`. Ignored for built-in brands.
+   * When `global={false}`, renders a local DOM boundary with `data-brand` and
+   * custom brand CSS variables when the active brand is `'custom'`.
+   *
+   * @defaultValue `false`
    */
-  customBrand?: CustomBrandColors;
+  scope?: boolean;
 }
+
+interface BuiltInBrandProviderProps extends BrandProviderBaseProps {
+  /**
+   * The built-in brand applied on first render.
+   *
+   * @defaultValue `'blue'`
+   */
+  initialBrand?: PoffyBuiltInBrand;
+  customBrand?: never;
+}
+
+interface CustomBrandProviderProps extends BrandProviderBaseProps {
+  /** Activates the supplied custom palette on first render. */
+  initialBrand: 'custom';
+  /** Custom colors required by the custom brand. */
+  customBrand: CustomBrandColors;
+}
+
+/** Props for a built-in or fully configured custom brand provider. */
+export type BrandProviderProps = BuiltInBrandProviderProps | CustomBrandProviderProps;

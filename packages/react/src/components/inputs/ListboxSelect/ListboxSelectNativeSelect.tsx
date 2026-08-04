@@ -8,35 +8,13 @@ interface ListboxSelectNativeSelectProps extends Omit<
 > {
   children: ReactNode;
   controlId: string;
-  selectedValue: string;
+  selectedValue?: string;
   onNativeFocus?: FocusEventHandler<HTMLSelectElement>;
 }
 
 const noopSelectChange: ChangeEventHandler<HTMLSelectElement> = () => undefined;
 
-/**
- * Renders the hidden native select that preserves form submission, labels, and refs.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Native `<select>` wrapped by `VisuallyHidden`
- * - **Props**: Native select attributes plus resolved `controlId` and `selectedValue`
- *
- * ### Design Tokens
- * - **spacing**: none; visual styling belongs to the custom trigger.
- * - **color**: none; this element is hidden from visual presentation.
- *
- * ### Accessibility
- * - **Role**: native select, removed from the accessibility tree via `aria-hidden`
- * - **Keyboard**: Delegates focus to the visible combobox trigger.
- *
- * @example Internal hidden field
- * ```tsx
- * <ListboxSelectNativeSelect controlId="fruit" selectedValue="apple">
- *   <option value="apple">Apple</option>
- * </ListboxSelectNativeSelect>
- * ```
- */
+
 export const ListboxSelectNativeSelect = forwardRef<
   HTMLSelectElement,
   ListboxSelectNativeSelectProps

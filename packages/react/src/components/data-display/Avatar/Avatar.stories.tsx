@@ -2,14 +2,6 @@ import { Avatar } from '@/components/data-display/Avatar';
 import { Flex } from '@/components/layout/Flex';
 import type { Meta, StoryObj } from '@storybook/react';
 
-/**
- * Displays a user's profile picture with automatic fallback to initials when the image is unavailable.
- * Use wherever a user identity needs to be represented visually.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (avatar recipe), Radix Slot
- */
 const meta: Meta<typeof Avatar> = {
   title: 'Display/Avatar',
   component: Avatar,

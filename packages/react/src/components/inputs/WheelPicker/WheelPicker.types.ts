@@ -1,59 +1,89 @@
 import type { WheelPickerColumn, WheelPickerValue } from '@poffy-ui/behavior/wheel-picker';
 import type { ComponentPropsWithoutRef } from 'react';
 
-/** Public size for WheelPicker. */
+/** Control size for `WheelPicker`. */
 export type WheelPickerSize = 'sm' | 'md' | 'lg';
 
-/** Format used for WheelPicker hidden form values. */
+/**
+ * Format used for WheelPicker hidden form values.
+ *
+ * `json` emits one `name` field, `entries` emits `name[columnId]` fields, and a callback emits
+ * one `name` field from the returned string.
+ */
 export type WheelPickerValueFormat = 'json' | 'entries' | ((value: WheelPickerValue) => string);
 
-/** Re-exported behavior types used by WheelPicker. */
-export type {
-  WheelPickerColumn,
-  WheelPickerOption,
-  WheelPickerValue,
-} from '@poffy-ui/behavior/wheel-picker';
+/** Describes one selectable WheelPicker column. */
+export type { WheelPickerColumn } from '@poffy-ui/behavior/wheel-picker';
+/** Describes one selectable option in a WheelPicker column. */
+export type { WheelPickerOption } from '@poffy-ui/behavior/wheel-picker';
+/** Maps WheelPicker column IDs to their selected values. */
+export type { WheelPickerValue } from '@poffy-ui/behavior/wheel-picker';
+
+/** Shared props for a controlled or uncontrolled multi-column wheel field. */
+export interface WheelPickerBaseProps extends Omit<
+  ComponentPropsWithoutRef<'div'>,
+  'defaultValue' | 'onChange' | 'role' | 'aria-disabled' | 'aria-readonly'
+> {
+  /**
+   * Ordered columns; each ID and each column's option value must be unique. Every occurrence of a
+   * duplicate is omitted before selection, with a development warning.
+   */
+  columns: WheelPickerColumn[];
+  /** Controlled value map. Reflect `onChange` to update it. */
+  value?: WheelPickerValue;
+  /** Initial uncontrolled value map, normalized and restored on native form reset. */
+  defaultValue?: WheelPickerValue;
+  /** Called after an accepted change with the normalized full map and changed column ID. */
+  onChange?: (value: WheelPickerValue, columnId: string) => void;
+  /** Visual control size. @defaultValue `'md'` */
+  size?: WheelPickerSize;
+  /**
+   * Blocks interaction and disables hidden form fields. The nearest FormControl disabled state
+   * applies when omitted.
+   */
+  disabled?: boolean;
+  /**
+   * Blocks selection changes while retaining listbox focus/navigation. The required validation
+   * proxy is disabled while read-only, so native required validation is not reported.
+   */
+  readOnly?: boolean;
+  /** Requires every column to select an enabled option not marked as a placeholder. */
+  required?: boolean;
+  /** Applies invalid styling and listbox `aria-invalid`; FormControl invalid state applies when omitted. */
+  error?: boolean;
+  /**
+   * Enables wraparound keyboard and scroll selection within a column.
+   *
+   * @defaultValue `true`
+   */
+  loop?: boolean;
+  /** Base hidden-field name. Omit it to keep the picker out of native form submission. */
+  name?: string;
+  /** Associates hidden fields and validation proxies with an external form. */
+  form?: string;
+  /** Hidden-field serialization policy. @defaultValue `'json'` */
+  valueFormat?: WheelPickerValueFormat;
+  role?: never;
+  'aria-disabled'?: never;
+  'aria-readonly'?: never;
+}
 
 /**
- * Props for a generic multi-column wheel picker.
+ * Props for a controlled or uncontrolled multi-column wheel field.
  *
- * ### Notes
- * `columns` defines the required structure: each column has a stable `id`,
- * label, and option list. `value` is controlled and keyed by column id; use
- * `defaultValue` for uncontrolled initial selections. Provide a visible label,
- * `aria-label`, or `aria-labelledby` for the picker region.
- *
- * Do: keep every selected value present in its column options.
- * Don't: reuse the same column `id` in multiple columns.
- *
- * @example
- * ```tsx
- * import { WheelPicker } from '@poffy-ui/react/inputs';
- *
- * <WheelPicker
- *   aria-label="Duration"
- *   columns={[{ id: 'minutes', label: 'Minutes', options: [{ label: '15', value: '15' }] }]}
- *   value={duration}
- *   onChange={setDuration}
- * />
- * ```
- *
- * Related: TimePickerProps for time-specific wheel and segment modes.
+ * Controlled use requires `onChange`; callback values are the normalized accepted map and changed
+ * column id.
  */
-export interface WheelPickerProps extends Omit<
-  ComponentPropsWithoutRef<'div'>,
-  'defaultValue' | 'onChange'
-> {
-  columns: WheelPickerColumn[];
-  value?: WheelPickerValue;
-  defaultValue?: WheelPickerValue;
-  onChange?: (value: WheelPickerValue, columnId: string) => void;
-  size?: WheelPickerSize;
-  disabled?: boolean;
-  readOnly?: boolean;
-  error?: boolean;
-  loop?: boolean;
-  name?: string;
-  form?: string;
-  valueFormat?: WheelPickerValueFormat;
-}
+export type WheelPickerProps = Omit<WheelPickerBaseProps, 'defaultValue' | 'onChange' | 'value'> &
+  (
+    | {
+        value: WheelPickerValue;
+        defaultValue?: never;
+        onChange: (value: WheelPickerValue, columnId: string) => void;
+      }
+    | {
+        value?: never;
+        defaultValue?: WheelPickerValue;
+        onChange?: (value: WheelPickerValue, columnId: string) => void;
+      }
+  );

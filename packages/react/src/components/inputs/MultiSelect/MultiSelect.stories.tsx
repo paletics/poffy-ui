@@ -1,16 +1,10 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { css } from '@/styled-system/css';
 import { MultiSelect } from './MultiSelect';
 
-/**
- * Storybook documentation and visual review surface for MultiSelect.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta: Meta<typeof MultiSelect> = {
   title: 'Inputs/MultiSelect',
   component: MultiSelect,
@@ -22,6 +16,9 @@ const meta: Meta<typeof MultiSelect> = {
           'Multi-value selector with tag chips. Type to filter options, click an option to add it, and use the remove button on each chip to clear selections.',
       },
     },
+  },
+  argTypes: {
+    appearance: { control: 'select', options: ['outline', 'soft', 'flushed', 'neo'] },
   },
 };
 
@@ -78,4 +75,96 @@ export const Interactive = () => {
   return (
     <MultiSelect aria-label="Interactive" options={options} value={value} onChange={setValue} />
   );
+};
+
+const constrainedExamplesClass = css({
+  display: 'grid',
+  gap: 'lg',
+  justifyItems: 'start',
+  maxWidth: '100%',
+});
+const width40Class = css({ width: '[40px]', maxWidth: '100%' });
+const width60Class = css({ width: '[60px]', maxWidth: '100%' });
+const practicalWidthClass = css({ width: '[10rem]', maxWidth: '100%' });
+
+export const UltraNarrow: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A below-minimum-width containment stress fixture. At 40–60px, readable selected-value labels are not part of the supported contract; selection and removal affordances remain the review target.',
+      },
+    },
+  },
+  render: () => (
+    <div className={constrainedExamplesClass}>
+      <MultiSelect
+        className={width40Class}
+        data-testid="multi-select-40"
+        aria-label="40 pixel frameworks"
+        messages={{ toggleOptions: 'Toggle 40 pixel options' }}
+        options={options}
+        defaultValue={['react']}
+      />
+      <MultiSelect
+        className={width60Class}
+        dir="rtl"
+        data-testid="multi-select-60"
+        aria-label="60 pixel frameworks"
+        messages={{ toggleOptions: 'Toggle 60 pixel options' }}
+        options={options}
+        defaultValue={['vue']}
+      />
+    </div>
+  ),
+};
+
+export const ConstrainedTags: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'The recommended 10rem practical minimum keeps selected labels, removal controls, and text entry readable together. Narrower stress fixtures guarantee containment and operability only.',
+      },
+    },
+  },
+  render: () => (
+    <MultiSelect
+      className={practicalWidthClass}
+      data-testid="multi-select-160"
+      aria-label="Constrained frameworks"
+      messages={{ toggleOptions: 'Toggle constrained options' }}
+      options={[
+        ...options,
+        { label: 'A framework with an intentionally long label', value: 'long' },
+      ]}
+      defaultValue={['react', 'vue', 'long']}
+    />
+  ),
+};
+
+export const UltraNarrowCustomTag: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A 40px containment stress fixture for consumer-supplied tags. Custom tag readability remains the renderer’s responsibility below the component’s practical minimum width.',
+      },
+    },
+  },
+  render: () => (
+    <MultiSelect
+      className={width40Class}
+      data-testid="multi-select-custom-40"
+      aria-label="40 pixel custom frameworks"
+      messages={{ toggleOptions: 'Toggle custom options' }}
+      options={options}
+      defaultValue={['react']}
+      renderTag={({ label, removeLabel, disabled, onRemove }) => (
+        <button type="button" aria-label={removeLabel} disabled={disabled} onClick={onRemove}>
+          Custom selected framework {label}
+        </button>
+      )}
+    />
+  ),
 };

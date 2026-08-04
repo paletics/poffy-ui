@@ -41,6 +41,29 @@ describe('useSplitButton', () => {
     expect(result.current.isOpen).toBe(false);
   });
 
+  it('closes and prevents menu-item activation when disabled after opening', () => {
+    const onClick = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ disabled }: { disabled: boolean }) => useSplitButton({ disabled, items: [{ onClick }] }),
+      { initialProps: { disabled: false } },
+    );
+
+    act(() => {
+      result.current.toggleMenu();
+      result.current.setFocusedIndex(0);
+    });
+    expect(result.current.isOpen).toBe(true);
+
+    rerender({ disabled: true });
+    expect(result.current.isOpen).toBe(false);
+    expect(result.current.focusedIndex).toBe(-1);
+
+    act(() => {
+      result.current.onMenuItemClick(0);
+    });
+    expect(onClick).not.toHaveBeenCalled();
+  });
+
   it('moves focus across enabled items only', () => {
     const { result } = renderHook(() =>
       useSplitButton({
@@ -124,6 +147,28 @@ describe('useSplitButton', () => {
 
     expect(result.current.isOpen).toBe(false);
     document.body.removeChild(root);
+  });
+
+  it('keeps the menu open when clicking inside the portalled menu', () => {
+    const { result } = renderHook(() => useSplitButton({ items: [] }));
+    const root = document.createElement('div');
+    const menu = document.createElement('div');
+    const item = document.createElement('button');
+    menu.appendChild(item);
+    document.body.append(root, menu);
+
+    act(() => {
+      result.current.rootRef.current = root;
+      result.current.menuRef.current = menu;
+      result.current.toggleMenu();
+    });
+    act(() => {
+      item.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+    });
+
+    expect(result.current.isOpen).toBe(true);
+    root.remove();
+    menu.remove();
   });
 
   it('closes when escape is pressed while open', () => {

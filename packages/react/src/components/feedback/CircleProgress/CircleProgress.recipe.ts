@@ -46,8 +46,18 @@ export const circleProgressRecipe = defineSlotRecipe({
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
+      inlineSize: 'var(--circle-size)',
+      maxInlineSize: '100%',
+      minInlineSize: 0,
+      aspectRatio: '1',
+      containerType: 'inline-size',
     },
-    svg: { transform: 'rotate(-90deg)', transformOrigin: 'center' },
+    svg: {
+      inlineSize: '100%',
+      blockSize: '100%',
+      transform: 'rotate(-90deg)',
+      transformOrigin: 'center',
+    },
     track: { fill: 'transparent', stroke: '{colors.layout.divider}' },
     indicator: {
       fill: 'transparent',
@@ -61,6 +71,14 @@ export const circleProgressRecipe = defineSlotRecipe({
       fontFamily: 'sans-serif',
       color: '{colors.text.secondary}',
       fontSize: 'var(--label-size)',
+      maxInlineSize: 'max(0px, calc(100% - {spacing.md}))',
+      overflow: 'hidden',
+      textAlign: 'center',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      '@supports (container-type: inline-size)': {
+        fontSize: 'min(var(--label-size), 25cqi)',
+      },
     },
   },
   variants: {
@@ -77,6 +95,12 @@ export const circleProgressRecipe = defineSlotRecipe({
       progress: {
         indicator: {
           transition: `stroke-dashoffset ${D_PROG} cubic-bezier(0.175, 0.885, 0.32, 1.275)`,
+          _motionSubtle: {
+            transition: 'stroke-dashoffset 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          },
+          _motionPop: {
+            transition: 'stroke-dashoffset 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          },
         },
       },
       none: {

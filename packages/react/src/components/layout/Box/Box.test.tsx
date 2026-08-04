@@ -23,6 +23,12 @@ describe('Box Component', () => {
     expect(container.firstChild?.nodeName).toBe('SPAN');
   });
 
+  it('falls back to a div when asChild receives text', () => {
+    const { container } = render(<Box asChild>Text content</Box>);
+    expect(container.firstChild?.nodeName).toBe('DIV');
+    expect(screen.getByText('Text content')).toBeInTheDocument();
+  });
+
   it('applies base recipe class', () => {
     const { container } = render(<Box>Content</Box>);
     expect(container.firstChild).toHaveClass(/box/);

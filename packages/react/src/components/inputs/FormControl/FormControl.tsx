@@ -2,57 +2,41 @@
 
 import { cx } from '@/styled-system/css';
 import { formControl } from '@/styled-system/recipes';
-import { forwardRef, useId } from 'react';
+import {
+  cloneElement,
+  type ElementType,
+  forwardRef,
+  Fragment,
+  isValidElement,
+  useCallback,
+  useId,
+  useState,
+} from 'react';
 import { Slot } from '@radix-ui/react-slot';
-import type { FormControlProps } from './FormControl.types';
+import type { FormControlComponent, FormControlProps } from './FormControl.types';
 import { FormControlProvider } from './useFormControl';
 import { FormLabel } from './FormLabel';
 
-/**
- * A context-providing wrapper that wires form field IDs and states (`isInvalid`, `isRequired`,
- * `isDisabled`, `isReadOnly`) to child `FormLabel`, `FormHelperText`, and `FormErrorMessage`
- * components via `FormControlContext`.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`formControl` recipe), Radix Slot, `FormControlProvider`
- * - **Sub-components**: `FormLabel`, `FormHelperText`, `FormErrorMessage`
- *
- * ### Design Tokens
- * - **spacing**: gap between label / input / helper → Silver Ratio tokens
- * - **color**: `isRequired` indicator → `danger.main`; helper text → `neutral.muted`
- *
- * ### Variant Logic
- * - N/A — layout and spacing are fixed by the recipe.
- *
- * ### Accessibility
- * - **Role**: `group` (explicit)
- * - **Auto-wiring**: `id`, `labelId`, `helperTextId`, `errorMessageId` are generated via `useId`
- *   and propagated through context so each sub-component injects the correct `id`/`aria-*`.
- *
- * @example Basic
- * ```tsx
- * <FormControl>
- *   <FormLabel>Email</FormLabel>
- *   <Input placeholder="you@example.com" />
- *   <FormHelperText>We'll never share your email.</FormHelperText>
- * </FormControl>
- * ```
- *
- * @example Invalid with error message
- * ```tsx
- * <FormControl isInvalid>
- *   <FormLabel>Password</FormLabel>
- *   <Input type="password" />
- *   <FormErrorMessage>Password is required.</FormErrorMessage>
- * </FormControl>
- * ```
- *
- * ### AI Usage
- * - **DO**: Use as the semantic wrapper for one labeled input and its helper/error text.
- * - **DON'T**: Do not wrap unrelated fields in one `FormControl`; each field needs its own context.
- */
-export const FormControl = forwardRef<HTMLDivElement, FormControlProps>((props, ref) => {
+const formControlAsChildElements = new Set(['div', 'fieldset', 'section']);
+
+const normalizeIds = (value: string | string[] | undefined): string[] => [
+  ...new Set((Array.isArray(value) ? value : [value]).filter((id): id is string => Boolean(id))),
+];
+
+const useRegisteredIds = (explicitIds: string | string[] | undefined) => {
+  const [registeredIds, setRegisteredIds] = useState<string[]>([]);
+  const ids = [...new Set([...normalizeIds(explicitIds), ...registeredIds])];
+  const register = useCallback((id: string) => {
+    setRegisteredIds((currentIds) => (currentIds.includes(id) ? currentIds : [...currentIds, id]));
+    return () =>
+      setRegisteredIds((currentIds) => currentIds.filter((currentId) => currentId !== id));
+  }, []);
+
+  return { ids, register };
+};
+
+
+const FormControlImpl = forwardRef<Element, FormControlProps>((props, ref) => {
   const {
     isInvalid,
     isRequired,
@@ -63,17 +47,33 @@ export const FormControl = forwardRef<HTMLDivElement, FormControlProps>((props, 
     className,
     asChild,
     id: idProp,
+    labelTarget = 'control',
+    describedByIds: describedByIdsProp,
+    errorMessageIds: errorMessageIdsProp,
+    role: _role,
     ...rest
-  } = props;
+  } = props as FormControlProps & { label?: string; role?: unknown };
 
   const generatedId = useId();
   const id = idProp ?? generatedId;
   const labelId = `${id}-label`;
-  const helperTextId = `${id}-helper-text`;
-  const errorMessageId = `${id}-error-message`;
+  const { ids: helperTextIds, register: registerHelperText } = useRegisteredIds(describedByIdsProp);
+  const { ids: errorMessageIds, register: registerErrorMessage } =
+    useRegisteredIds(errorMessageIdsProp);
 
   const classes = formControl();
-  const Component = asChild ? Slot : 'div';
+  const canUseAsChild =
+    asChild &&
+    !label &&
+    isValidElement(children) &&
+    children.type !== Fragment &&
+    typeof children.type === 'string' &&
+    formControlAsChildElements.has(children.type);
+  const Component = (canUseAsChild ? Slot : 'div') as ElementType;
+  const renderedChildren =
+    canUseAsChild && isValidElement<{ role?: string }>(children)
+      ? cloneElement(children, { role: 'group' })
+      : children;
 
   const context = {
     isInvalid,
@@ -81,19 +81,39 @@ export const FormControl = forwardRef<HTMLDivElement, FormControlProps>((props, 
     isDisabled,
     isReadOnly,
     labelId,
-    helperTextId,
-    errorMessageId,
+    labelTarget,
+    helperTextIds,
+    errorMessageIds,
     id,
+    registerHelperText,
+    registerErrorMessage,
   };
 
   return (
     <FormControlProvider value={context}>
-      <Component ref={ref} className={cx(classes.root, className)} role="group" {...rest}>
-        {label && <FormLabel>{label}</FormLabel>}
-        {children}
+      <Component ref={ref} className={cx(classes.root, className)} {...rest} role="group">
+        {canUseAsChild ? (
+          renderedChildren
+        ) : (
+          <>
+            {label && <FormLabel>{label}</FormLabel>}
+            {children}
+          </>
+        )}
       </Component>
     </FormControlProvider>
   );
 });
 
-FormControl.displayName = 'FormControl';
+FormControlImpl.displayName = 'FormControl';
+
+/**
+ * Coordinates one field's label, state, and registered help/error descriptions in a `role="group"`.
+ *
+ * Descendants consume the state through context; direct field props can override it. Use
+ * `labelTarget="group"` for composite widgets so the label is referenced with
+ * `aria-labelledby` rather than an invalid native `for` association. `asChild` accepts only a
+ * `div`, `fieldset`, or `section` and cannot be combined with the `label` shorthand.
+ */
+
+export const FormControl = FormControlImpl as FormControlComponent;

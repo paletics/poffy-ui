@@ -1,19 +1,13 @@
-﻿import { Button } from '@/components/inputs/Button';
+import { Button } from '@/components/inputs/Button';
 import { Box, Flex } from '@/components/layout';
 import { InfoIcon } from '@/components/media/Icon/icons';
 import { Text } from '@/components/typography/Text';
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from 'storybook/test';
+import { useState } from 'react';
 import { Tooltip } from './index';
 
-/**
- * Storybook documentation and visual review surface for Tooltip.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, overlay primitives
- */
+
 const meta: Meta<typeof Tooltip> = {
   title: 'Overlay/Tooltip',
   component: Tooltip,
@@ -22,6 +16,28 @@ const meta: Meta<typeof Tooltip> = {
 
 export default meta;
 type Story = StoryObj<typeof Tooltip>;
+
+const LongContentShortViewportFixture = () => {
+  const [open, setOpen] = useState(true);
+
+  return (
+    <Box p="sm">
+      <Tooltip
+        open={open}
+        onOpenChange={setOpen}
+        content={[
+          'This tooltip intentionally contains enough supplemental guidance to exceed a short viewport.',
+          'The surface must remain bounded by Floating UI’s available height.',
+          'Pointer and touch users can scroll the tooltip without moving the page behind it.',
+          'Assistive technology still receives the complete description through the tooltip relationship.',
+          'For interactive or primary content, use Popover instead of Tooltip.',
+        ].join(' ')}
+      >
+        <Button>Long tooltip target</Button>
+      </Tooltip>
+    </Box>
+  );
+};
 
 export const Default: Story = {
   args: {
@@ -74,7 +90,7 @@ export const Interaction: Story = {
 
 export const Brands: Story = {
   render: () => (
-    <Flex p="3xl" gap="lg">
+    <Flex p="3xl" gap="lg" wrap="wrap">
       <Tooltip content="Pome brand tooltip" brand="pome">
         <Button>Pome (Dark)</Button>
       </Tooltip>
@@ -105,6 +121,23 @@ export const CustomContent: Story = {
       </Tooltip>
     </Box>
   ),
+};
+
+export const LongContentShortViewport: Story = {
+  render: () => <LongContentShortViewportFixture />,
+  parameters: {
+    layout: 'fullscreen',
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const body = within(canvasElement.ownerDocument.body);
+    const target = canvas.getByRole('button', { name: /long tooltip target/i });
+
+    expect(await body.findByRole('tooltip')).toBeVisible();
+    target.focus();
+    await userEvent.keyboard('{Escape}');
+    await expect(body.queryByRole('tooltip')).not.toBeInTheDocument();
+  },
 };
 
 export const AsChild: Story = {

@@ -3,14 +3,6 @@ import { motionOffsets, motionScales, overlay, springs } from '../presets';
 import { CustomData } from '../types';
 import { getCustomValue } from '../utils';
 
-/**
- * Overlay Transition Presets
- *
- * ### AI Context & Architecture
- * Defines variants for overlays such as modals, popovers, drawers, and puffs.
- * Orchestrates entrance and exit animations including opacity, scale, and position.
- * Integration with `AnimatePresence` is expected for most presets.
- */
 export const overlayVariants = {
   /**
    * Fade: Simple opacity transition.

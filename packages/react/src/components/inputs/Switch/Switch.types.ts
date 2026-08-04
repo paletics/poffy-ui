@@ -1,34 +1,36 @@
 import { type ControlIntent, NativeProps } from '@poffy-ui/types';
-import { SwitchControlVariantProps } from '@/styled-system/recipes';
-import { ReactNode } from 'react';
+import type { SwitchControlVariantProps } from '@/styled-system/recipes';
+import type { ReactNode } from 'react';
 
-/**
- * Variants for the Switch component based on Panda CSS recipe.
- */
+/** Visual recipe options for Switch; checked state continues to use the native input props. */
 export type SwitchVariants = SwitchControlVariantProps;
 
-/**
- * Public Switch variant props with shared control intent names.
- */
+/** Switch recipe options using shared intent names. */
 export interface SwitchVariantSubset extends Omit<SwitchControlVariantProps, 'intent'> {
   /** Semantic accent color. */
   intent?: ControlIntent;
 }
 
-/**
- * Own props for Switch.
- */
+/** Props owned by the switch wrapper. */
 export interface SwitchOwnProps extends SwitchVariantSubset {
   /**
-   * The label or content to display next to the switch.
+   * Visible label content displayed next to the switch.
+   *
+   * Omit it only when an accessible name is supplied with `aria-label` or
+   * `aria-labelledby`.
    */
   children?: ReactNode;
 }
 
 /**
- * Properties for the Switch component.
- * Wraps a fixed `<input type="checkbox">` element; no polymorphism needed.
- * Uses NativeProps to inherit all standard input attributes while allowing
- * SwitchVariantSubset (including `size`) to take precedence over conflicting HTML attrs.
+ * Native checkbox props with a fixed `role="switch"` and `type="checkbox"`.
+ *
+ * Use React's `checked` with `onChange` for controlled state, or `defaultChecked` for native
+ * uncontrolled state. Direct `disabled`, `readOnly`, `required`, and `id` values override the
+ * nearest FormControl; read-only remains focusable and cannot change through pointer or Space-key
+ * activation.
  */
-export type SwitchProps = NativeProps<'input', SwitchOwnProps>;
+export type SwitchProps = Omit<
+  NativeProps<'input', SwitchOwnProps>,
+  'role' | 'type' | 'aria-checked' | 'aria-disabled' | 'aria-readonly' | 'aria-required'
+>;

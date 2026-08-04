@@ -8,29 +8,24 @@ export type PaginationItem = number | PaginationEllipsis;
  * Options used to build a compact pagination item list.
  */
 export interface BuildPaginationItemsOptions {
-  /** Total number of pages. */
+  /** Total number of pages. Invalid values fall back to one. */
   count: number;
-  /** Current active page. */
+  /** Current one-based active page, clamped to the normalized count. */
   page: number;
   /**
    * Number of always visible pages before and after the current page.
    *
+   * Invalid values fall back to one; large requests are capped with boundary
+   * pages so the full result contains at most 100 display items.
    * @defaultValue `1`
    */
   siblingCount?: number;
   /**
    * Number of always visible pages at the beginning and end.
    *
+   * Invalid values fall back to one; large requests are capped so the full
+   * result contains at most 100 display items.
    * @defaultValue `1`
    */
   boundaryCount?: number;
 }
-
-/** Backward-compatible alias for pagination ellipsis values. */
-export type PaginationDot = PaginationEllipsis;
-
-/** Backward-compatible alias for pagination display items. */
-export type PaginationRangeItem = PaginationItem;
-
-/** Backward-compatible alias for pagination item builder options. */
-export type BuildPaginationRangeOptions = BuildPaginationItemsOptions;

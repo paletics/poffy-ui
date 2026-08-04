@@ -5,6 +5,7 @@ import {
   MiddlewareData,
   offset,
   Placement,
+  Strategy,
   shift,
   size,
   useClick,
@@ -12,34 +13,16 @@ import {
   useFloating,
   useInteractions,
   useRole,
+  type FloatingNodeType,
   VirtualElement,
   ReferenceType,
 } from '@floating-ui/react';
 import type { CSSProperties, HTMLProps } from 'react';
-import { useMemo } from 'react';
-
-// Hooks for floating elements (tooltips, popovers, menus, context menus) via @floating-ui/react.
-// These wrap Floating UI to provide a simplified API for common positioning and interaction needs.
+import { useEffect, useMemo } from 'react';
 
 /**
- * Props for `useAnchorPosition`.
- *
- * Shared positioning hook for anchored overlays such as Popover, Tooltip, and
- * listbox popovers. The caller owns the controlled `open` state and receives
- * state changes through `onOpenChange`.
- *
- * ### Notes
- * This hook is controlled. It never stores open state internally, and
- * it always returns `transform: false` floating styles so consumers can compose
- * positioning with transform-based animation wrappers.
- *
- * ### AI Usage
- * - **DO**: Use for anchored overlays with a trigger/reference element.
- * - **DO**: Pass `virtualRef` for context menus, chart tooltips, and canvas coordinates.
- * - **DON'T**: Use for fixed modal or drawer surfaces; use `useOverlay`.
- *
- * Related: import('@poffy-ui/react/overlay').PopoverProps
- * Related: import('@poffy-ui/react/overlay').TooltipProps
+ * Props for controlled positioning of an overlay anchored to a reference or virtual element.
+ * The hook reports state changes through `onOpenChange`; callers retain the open state.
  */
 export interface UseAnchorPositionProps {
   /** Whether the floating element is currently open. */
@@ -58,10 +41,18 @@ export interface UseAnchorPositionProps {
    * @defaultValue `8`
    */
   offset?: number;
+  /**
+   * CSS positioning strategy. Use `fixed` for viewport-constrained portalled surfaces.
+   *
+   * @defaultValue `'absolute'`
+   */
+  strategy?: Strategy;
   /** Ref to the arrow element, if applicable. */
   arrowElement?: Element | null;
   /** Virtual element to act as the anchor point, if not using a physical DOM element. */
   virtualRef?: VirtualElement | null;
+  /** Internal Floating UI node ID used to coordinate nested overlay dismissal. */
+  nodeId?: FloatingNodeType['id'];
 }
 
 /**
@@ -70,7 +61,9 @@ export interface UseAnchorPositionProps {
  * ### Notes
  * Attach `refs.setReference` to the trigger/anchor and
  * `refs.setFloating` to the positioned surface. Apply `floatingStyles` to the
- * floating element before animation styles.
+ * floating element before animation styles. Positioning also sets
+ * `--floating-reference-width`, `--floating-available-width`, and
+ * `--floating-available-height` on the floating element for CSS sizing rules.
  */
 export interface UseAnchorPositionReturn<T extends ReferenceType> {
   refs: ReturnType<typeof useFloating<T>>['refs'];
@@ -92,7 +85,6 @@ export interface UseAnchorPositionReturn<T extends ReferenceType> {
  * const floating = useAnchorPosition({ open, onOpenChange, placement: 'bottom-start' });
  * ```
  *
- * @param props - Configuration properties for positioning.
  * @returns Floating UI context and position data.
  */
 export const useAnchorPosition = <T extends ReferenceType>({
@@ -100,58 +92,73 @@ export const useAnchorPosition = <T extends ReferenceType>({
   onOpenChange,
   placement = 'bottom',
   offset: offsetValue = 8,
+  strategy = 'absolute',
   arrowElement,
   virtualRef,
+  nodeId,
 }: UseAnchorPositionProps): UseAnchorPositionReturn<T> => {
   const { refs, floatingStyles, context, middlewareData } = useFloating<T>({
     open,
     onOpenChange,
     placement,
+    strategy,
     whileElementsMounted: autoUpdate,
     transform: false,
     middleware: [
       offset(offsetValue),
-      flip(),
-      shift(),
+      flip({ padding: 8 }),
+      shift({ padding: 8 }),
       size({
-        apply({ elements, rects }) {
+        padding: 8,
+        apply({ availableHeight, availableWidth, elements, rects }) {
           elements.floating.style.setProperty(
             '--floating-reference-width',
             `${rects.reference.width}px`,
+          );
+          elements.floating.style.setProperty(
+            '--floating-available-width',
+            `${Math.max(0, availableWidth)}px`,
+          );
+          elements.floating.style.setProperty(
+            '--floating-available-height',
+            `${Math.max(0, availableHeight)}px`,
           );
         },
       }),
       ...(arrowElement ? [arrow({ element: arrowElement })] : []),
     ],
-    ...(virtualRef ? { elements: { reference: virtualRef as Element } } : {}),
+    nodeId,
   });
+
+  useEffect(() => {
+    if (!virtualRef) return;
+    refs.setPositionReference(virtualRef);
+    return () => refs.setPositionReference(refs.domReference.current);
+  }, [refs, virtualRef]);
 
   return { refs, floatingStyles, context, middlewareData };
 };
 
 /**
- * Props for `useOverlay`.
- *
- * Shared fixed-overlay hook for Modal and Drawer. The caller owns the
- * controlled `open` state and receives dismiss requests through
+ * Props for a controlled fixed overlay; rendering, focus traps, and scroll locking remain
+ * caller-owned. The returned trigger props use click interaction, and dismissal reports through
  * `onOpenChange`.
- *
- * ### Notes
- * This hook manages Floating UI interactions and dialog role props,
- * but it does not render portals, backdrops, focus traps, or scroll locking.
- *
- * ### AI Usage
- * - **DO**: Use for fixed overlays where position is not anchored to a trigger.
- * - **DON'T**: Use for Popover, Tooltip, Select, or ContextMenu surfaces.
- *
- * Related: import('@poffy-ui/react/overlay').ModalProps
- * Related: import('@poffy-ui/react/overlay').DrawerProps
  */
 export interface UseOverlayProps {
   /** Whether the overlay is currently open. */
   open: boolean;
   /** Callback triggered when the open state changes. */
   onOpenChange: (open: boolean) => void;
+  /** Role exposed through Floating UI's role interaction. */
+  role?: 'dialog' | 'alertdialog';
+  /**
+   * Whether a mousedown outside the overlay should close it.
+   *
+   * @defaultValue `true`
+   */
+  outsidePress?: boolean;
+  /** Internal Floating UI node ID used to coordinate nested overlay dismissal. */
+  nodeId?: FloatingNodeType['id'];
 }
 
 /**
@@ -172,8 +179,8 @@ export interface UseOverlayReturn<T extends ReferenceType> {
  * Manages fixed-position overlays such as Modal and Drawer.
  *
  * Provides Floating UI refs, dismiss behavior, and dialog role props for the
- * generated content component. Do not use this for coordinate-positioned
- * popovers or tooltips.
+ * generated content component. Do not use this for coordinate-positioned popovers or tooltips;
+ * the hook intentionally does not provide positioning styles.
  *
  * @example
  * ```tsx
@@ -182,21 +189,28 @@ export interface UseOverlayReturn<T extends ReferenceType> {
  * const { refs, getReferenceProps, getFloatingProps } = useOverlay({ open, onOpenChange });
  * ```
  *
- * @param props - Configuration properties for the overlay.
  * @returns Ref handlers and transition context.
  */
 export const useOverlay = <T extends ReferenceType>({
   open,
   onOpenChange,
+  role: roleName = 'dialog',
+  outsidePress = true,
+  nodeId,
 }: UseOverlayProps): UseOverlayReturn<T> => {
   const { refs, context } = useFloating<T>({
     open,
     onOpenChange,
+    nodeId,
   });
 
   const click = useClick(context);
-  const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown', bubbles: false });
-  const role = useRole(context);
+  const dismiss = useDismiss(context, {
+    outsidePress,
+    outsidePressEvent: 'mousedown',
+    bubbles: false,
+  });
+  const role = useRole(context, { role: roleName });
 
   const { getReferenceProps, getFloatingProps } = useInteractions([click, dismiss, role]);
 
@@ -204,31 +218,9 @@ export const useOverlay = <T extends ReferenceType>({
 };
 
 /**
- * Creates a virtual anchor element from viewport coordinates.
- *
- * Useful for ContextMenu and canvas/chart tooltips where no stable DOM anchor
- * exists. Returns null until both coordinates are available.
- *
- * ### Notes
- * Pass the returned virtual element to `useAnchorPosition` as
- * `virtualRef`. The coordinate object is read by value (`x`, `y`) so callers can
- * reuse object identities without stale placement.
- *
- * ### AI Usage
- * - **DO**: Use for right-click menus and pointer-positioned inspection UI.
- * - **DON'T**: Use when a real DOM reference exists; real refs preserve size and collision data.
- *
- * @example
- * ```tsx
- * import { useAnchorPosition, useVirtualAnchor } from '@poffy-ui/react';
- *
- * const virtualRef = useVirtualAnchor(pointerPosition);
- * const floating = useAnchorPosition({ open, onOpenChange, virtualRef });
- * ```
- *
- * @param position - The x and y coordinates for the anchor.
- * @param contextElement - Optional reference element for coordinate calculation.
- * @returns A Floating UI VirtualElement or null.
+ * Creates a memoized virtual floating-element anchor from viewport coordinates, or `null` until
+ * both coordinates exist. Pass `contextElement` when the coordinates belong to a specific DOM
+ * context, such as a scroll container.
  */
 export const useVirtualAnchor = (
   position?: { x: number; y: number } | null,

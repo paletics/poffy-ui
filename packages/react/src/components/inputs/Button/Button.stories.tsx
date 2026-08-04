@@ -8,15 +8,6 @@ import { Spinner } from '@/components/feedback/Spinner';
 import { Box, Flex, Stack } from '@/components/layout';
 import { Text } from '@/components/typography';
 
-/**
- * The primary action element for Poffy UI. Use for all click-triggered operations.
- * Supports an `intent` x `appearance` two-axis variant system and polymorphic rendering
- * via `asChild` for seamless router integration (e.g., Next.js `Link`).
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`button` recipe), Radix Slot, `ActionMotion`
- */
 const meta = {
   title: 'Inputs/Button',
   component: Button,
@@ -78,7 +69,7 @@ const meta = {
   },
   decorators: [
     (Story) => (
-      <Flex justify="center" align="center" minH="[150px]" p="10" bg="layout.background">
+      <Flex justify="center" align="center" minH="[150px]" p="2xl" bg="layout.background">
         <Story />
       </Flex>
     ),
@@ -114,6 +105,39 @@ export const Default: Story = {
 export const Playground: Story = {
   args: Default.args,
   render: Default.render,
+};
+
+export const ConstrainedLocalizedLabel: Story = {
+  render: () => (
+    <Box width="[10rem]" aria-label="Constrained button container">
+      <Button lang="de" startIcon={<span aria-hidden="true">+</span>}>
+        Einstellungen dauerhaft übernehmen
+      </Button>
+    </Box>
+  ),
+};
+
+export const LogicalIconPlacement: Story = {
+  render: () => (
+    <Stack gap="sm">
+      <Button
+        data-testid="button-icons-ltr"
+        startIcon={<span data-testid="button-start-ltr">S</span>}
+        endIcon={<span data-testid="button-end-ltr">E</span>}
+      >
+        LTR
+      </Button>
+      <div dir="rtl">
+        <Button
+          data-testid="button-icons-rtl"
+          startIcon={<span data-testid="button-start-rtl">S</span>}
+          endIcon={<span data-testid="button-end-rtl">E</span>}
+        >
+          RTL
+        </Button>
+      </div>
+    </Stack>
+  ),
 };
 
 export const HyperPop: Story = {

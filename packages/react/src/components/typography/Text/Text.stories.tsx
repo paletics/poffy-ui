@@ -2,14 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Stack } from '@/components/layout/Stack';
 import { Text } from '@/components/typography/Text';
 
-/**
- * A flexible typography primitive for rendering body copy, secondary text, and captions with consistent Silver Ratio scaling.
- * Use `asChild` to delegate the rendered HTML element while retaining the design-system text styles.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS recipe (`text`), Radix Slot
- */
+
 const meta: Meta<typeof Text> = {
   title: 'Display/Text',
   component: Text,
@@ -27,7 +20,7 @@ const meta: Meta<typeof Text> = {
     },
     align: {
       control: 'select',
-      options: ['left', 'center', 'right', 'justify'],
+      options: ['start', 'end', 'left', 'center', 'right', 'justify'],
       description: 'Text alignment',
     },
     transform: {
@@ -91,6 +84,26 @@ export const Alignments: Story = {
       <Text align="justify">
         Justified text. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod
         tempor incididunt ut labore et dolore magna aliqua.
+      </Text>
+    </Stack>
+  ),
+};
+
+export const RtlLogicalAndPhysicalAlignments: Story = {
+  render: () => (
+    <Stack gap="md" width="[320px]" maxWidth="100%" dir="rtl">
+      <Text data-testid="rtl-default">Default logical start</Text>
+      <Text align="start" data-testid="rtl-start">
+        Explicit logical start
+      </Text>
+      <Text align="end" data-testid="rtl-end">
+        Explicit logical end
+      </Text>
+      <Text align="left" data-testid="rtl-left">
+        Physical left
+      </Text>
+      <Text align="right" data-testid="rtl-right">
+        Physical right
       </Text>
     </Stack>
   ),

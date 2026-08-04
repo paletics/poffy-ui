@@ -6,16 +6,6 @@ import {
 } from '@poffy-ui/behavior/pagination';
 
 /**
- * Ellipsis marker emitted by the pagination range helper.
- */
-export type PaginationDot = PaginationEllipsis;
-
-/**
- * Numeric page item emitted by the pagination range helper.
- */
-export type PaginationRangeItem = PaginationItem;
-
-/**
  * Raw pagination range item types from the behavior package.
  */
 export type { PaginationEllipsis, PaginationItem };
@@ -30,28 +20,15 @@ export type { PaginationEllipsis, PaginationItem };
 export type UsePaginationRangeProps = BuildPaginationItemsOptions;
 
 /**
- * Custom hook to calculate the array of page numbers and "dots" to display.
- * Implements logic to handle truncation and boundary cases.
- *
- * @param props - Hook configuration options.
- * @returns An array of page numbers or stable dot sentinel strings ('dots-left' | 'dots-right').
- *
- * @example
- * ```tsx
- * import { usePaginationRange } from '@poffy-ui/react/navigation';
- * ```
- *
- * ### AI Context & Architecture
- * 'dots-left' and 'dots-right' are used instead of a generic 'dots' string to provide
- * stable React keys that do not change as the current page changes, avoiding unnecessary
- * re-mounts of the PaginationEllipsis component.
+ * Builds visible one-based page items with stable left/right ellipsis sentinels. Invalid values are
+ * normalized by the underlying pagination utility.
  */
 export const usePaginationRange = ({
   count,
   page,
   siblingCount = 1,
   boundaryCount = 1,
-}: UsePaginationRangeProps): PaginationRangeItem[] => {
+}: UsePaginationRangeProps): PaginationItem[] => {
   return buildPaginationItems({
     count,
     page,

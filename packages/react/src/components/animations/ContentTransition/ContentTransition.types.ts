@@ -6,16 +6,7 @@ import { ContentTransitionType } from './ContentTransition.presets';
 export type ContentAnimationType = ContentTransitionType;
 
 /**
- * Base props for `ContentTransition`.
- *
- * ### Notes
- * This is a keyed, controlled transition. Change `transitionKey` when
- * the displayed content identity changes; changing children without changing the
- * key may skip enter/exit animation.
- *
- * ### AI Usage
- * - **DO**: Use for route panels, tab panels, wizard steps, and other mutually exclusive content.
- * - **DON'T**: Use for list item add/remove animations; use `ReorderTransition` or `ListTransition`.
+ * Props for a controlled, keyed content transition. Change `transitionKey` when content identity changes.
  */
 export interface ContentTransitionBaseProps {
   /**
@@ -54,5 +45,5 @@ export interface ContentTransitionBaseProps {
   initial?: boolean;
 }
 
-/** Props for `ContentTransition`. */
+/** Public props for ContentTransition. */
 export type ContentTransitionProps = MotionPrimitiveProps<'div', ContentTransitionBaseProps>;

@@ -4,6 +4,8 @@
 export const selectionBaseStyles = {
   display: 'inline-flex',
   alignItems: 'center',
+  minInlineSize: 0,
+  maxInlineSize: '100%',
   cursor: 'pointer',
   position: 'relative',
   _disabled: {
@@ -23,6 +25,9 @@ export const hiddenInputStyles = {
  * Shared label text styles for selection controls.
  */
 export const labelStyles = {
+  minInlineSize: 0,
+  maxInlineSize: '100%',
+  overflowWrap: 'anywhere',
   userSelect: 'none',
   color: 'text.primary',
   fontWeight: 'medium',

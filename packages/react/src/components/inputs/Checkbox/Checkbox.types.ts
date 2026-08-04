@@ -1,29 +1,17 @@
 import { CheckboxVariantProps } from '@/styled-system/recipes';
-import { type ControlIntent, PrimitiveProps } from '@poffy-ui/types';
+import type { ControlIntent, NativeProps, PrimitiveProps } from '@poffy-ui/types';
+import type { AriaAttributes, ReactNode } from 'react';
 
-/**
- * Variants for the Checkbox component based on Panda CSS recipe.
- * ### AI Usage
- * - Use this when extending checkbox styles.
- */
+/** Visual recipe options for `Checkbox`. */
 export type CheckboxVariants = CheckboxVariantProps;
 
-/**
- * Public checkbox variant props with shared control intent names.
- */
+/** Checkbox recipe options using shared intent names. */
 export interface CheckboxVariantSubset extends Omit<CheckboxVariantProps, 'intent'> {
   /** Visual intent mapped to the shared control intent token set. */
   intent?: ControlIntent;
 }
 
-/**
- * Shared props for CheckboxGroup.
- *
- * ### Notes
- * `value` is controlled and must be updated from `onChange`; use `defaultValue`
- * for uncontrolled initial checked values. Group children should be Checkbox
- * controls with stable string `value` props.
- */
+/** Shared layout, form, and state options for `CheckboxGroup`. */
 export interface CheckboxGroupBaseProps extends CheckboxVariantSubset {
   /** Orientation of the group layout. */
   orientation?: 'horizontal' | 'vertical';
@@ -35,12 +23,39 @@ export interface CheckboxGroupBaseProps extends CheckboxVariantSubset {
   onChange?: (value: string[]) => void;
   /** Whether the entire group is disabled. */
   disabled?: boolean;
+  /** Whether group values cannot be changed. */
+  readOnly?: boolean;
+  /** Whether at least one checkbox must be selected. */
+  required?: boolean;
+  /** ID of an associated form outside the group's DOM subtree. */
+  form?: string;
 }
 
+type CheckboxGroupNativeProps = Omit<
+  NativeProps<'div', Omit<CheckboxGroupBaseProps, 'defaultValue' | 'onChange' | 'value'>>,
+  'role'
+>;
+
 /**
- * Props for the CheckboxGroup component.
+ * Props for a controlled or uncontrolled multi-value checkbox field.
+ *
+ * Controlled usage requires both `value` and `onChange`. Otherwise omit `value`, optionally seed
+ * local state with `defaultValue`, and use `onChange` only as a notification callback. Values are
+ * canonicalized without duplicates; each rendered Checkbox item must still use a unique `value`.
  */
-export type CheckboxGroupProps = PrimitiveProps<'div', CheckboxGroupBaseProps>;
+export type CheckboxGroupProps = CheckboxGroupNativeProps &
+  (
+    | {
+        value: readonly string[];
+        defaultValue?: never;
+        onChange: (value: string[]) => void;
+      }
+    | {
+        value?: never;
+        defaultValue?: readonly string[];
+        onChange?: (value: string[]) => void;
+      }
+  );
 
 /**
  * Values shared via CheckboxGroupContext.
@@ -50,8 +65,28 @@ export interface CheckboxGroupContextValue extends CheckboxVariantSubset {
   value?: string[];
   /** Whether all checkboxes in the group are disabled. */
   disabled?: boolean;
+  /** Whether group values cannot be changed. */
+  readOnly?: boolean;
+  /** ID of the form shared by every checkbox input in the group. */
+  form?: string;
+  /** Whether the group is in an invalid state. */
+  isInvalid?: boolean;
+  /** The group-level ARIA invalid state forwarded to each native checkbox. */
+  ariaInvalid?: AriaAttributes['aria-invalid'];
   /** Updates a single item value inside the group. */
   onItemChange: (itemValue: string, checked: boolean) => void;
+  /** Values shared by more than one group item. */
+  ambiguousValues: ReadonlySet<string>;
+  /** Whether opaque SSR topology must remain non-interactive until registration. */
+  failClosedAll: boolean;
+  /** Registers one native checkbox occurrence and its form participation state. */
+  registerCheckbox: (instanceId: string, entry: CheckboxGroupRegistration) => () => void;
+}
+
+/** Native input metadata used to keep group validation aligned with form participation. */
+export interface CheckboxGroupRegistration {
+  value: string;
+  input: HTMLInputElement;
 }
 
 /**
@@ -66,58 +101,92 @@ export interface CheckboxContextValue extends CheckboxVariantSubset {
   indeterminate?: boolean;
   /** Whether the checkbox is disabled. */
   disabled?: boolean;
+  /** Whether group values cannot be changed. */
+  readOnly?: boolean;
   /** Whether the checkbox should render error styling. */
   error?: boolean;
   /** Whether selection indicators should use motion primitives. */
   animated?: boolean;
   /** Change handler forwarded to the underlying checkbox input. */
   onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Restores the uncontrolled state when the owning form resets. */
+  onFormReset?: () => void;
 }
 
 /**
  * Props for the Checkbox Root container.
  */
-export type CheckboxRootProps = PrimitiveProps<
+type CheckboxRootBaseProps = PrimitiveProps<
   'label',
   CheckboxVariantSubset & {
     /** Value submitted by the underlying checkbox input. */
     value?: string;
     /** Whether the checkbox should render error styling. */
     error?: boolean;
-    /** Controlled checked state. */
-    checked?: boolean;
-    /** Initial checked state for uncontrolled usage. */
-    defaultChecked?: boolean;
     /** Whether the checkbox is in a mixed state. */
     indeterminate?: boolean;
     /** Whether the checkbox is disabled. */
     disabled?: boolean;
     /** Whether selection indicators should use motion primitives. */
     animated?: boolean;
-    /** Change handler forwarded to the underlying checkbox input. */
-    onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
   }
 >;
 
 /**
+ * Props for Checkbox.Root's owned or delegated label container.
+ *
+ * Controlled usage requires both `checked` and `onChange`; otherwise `defaultChecked` initializes
+ * local state. `indeterminate` controls presentation only and does not change the submitted value.
+ */
+export type CheckboxRootProps = Omit<
+  CheckboxRootBaseProps,
+  'checked' | 'defaultChecked' | 'onChange'
+> &
+  (
+    | {
+        checked: boolean;
+        defaultChecked?: never;
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+      }
+    | {
+        checked?: never;
+        defaultChecked?: boolean;
+        onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+      }
+  );
+
+/**
  * Props for the Checkbox Input element.
  */
-export type CheckboxInputProps = PrimitiveProps<'input'>;
+export type CheckboxInputProps = Omit<
+  NativeProps<'input'>,
+  | 'aria-checked'
+  | 'aria-disabled'
+  | 'checked'
+  | 'defaultChecked'
+  | 'disabled'
+  | 'onChange'
+  | 'role'
+  | 'type'
+  | 'value'
+>;
 
 /**
  * Props for the Checkbox Control element (the stylized box).
  */
-export type CheckboxControlProps = PrimitiveProps<'span'>;
+export type CheckboxControlProps = Omit<PrimitiveProps<'span'>, 'asChild'>;
 
 /**
  * Props for the Checkbox Label text.
  */
-export type CheckboxLabelProps = PrimitiveProps<'span'>;
+export type CheckboxLabelProps = Omit<PrimitiveProps<'span'>, 'asChild'>;
 
 /**
  * Base properties for the Checkbox molecule.
  */
 export interface CheckboxBaseProps extends CheckboxVariantSubset {
+  /** The visible label content rendered by the shorthand Checkbox. */
+  children?: ReactNode;
   /** Value submitted by the underlying checkbox input. */
   value?: string;
   /** Whether the checkbox is in a mixed state. */
@@ -131,31 +200,27 @@ export interface CheckboxBaseProps extends CheckboxVariantSubset {
   animated?: boolean;
 }
 
+type CheckboxNativeProps = Omit<
+  NativeProps<'input', CheckboxBaseProps>,
+  'checked' | 'defaultChecked' | 'onChange' | 'type'
+>;
+
 /**
- * Props for the Checkbox molecule.
+ * Props for the Checkbox shorthand in controlled or uncontrolled mode.
  *
- * ### Notes
- * The shorthand Checkbox renders a labeled native checkbox input. Use `checked`
- * with `onChange` for controlled state, or `defaultChecked` for uncontrolled
- * initial state. The `indeterminate` state is visual and should be paired with
- * application state that explains the mixed selection.
- *
- * Do: provide children text or an accessible name when the visible label is not
- * rendered.
- * Don't: use `indeterminate` as a submitted form value; only `checked` submits.
- *
- * @example
- * ```tsx
- * import { Checkbox } from '@poffy-ui/react/inputs';
- *
- * <Checkbox checked={accepted} onChange={event => setAccepted(event.target.checked)}>
- *   Accept terms
- * </Checkbox>
- * ```
- *
- * Related: CheckboxGroupProps for grouped multi-select checkbox state.
- *
- * ### Formula
- * - Silver Ratio (1:1.414) is applied to all spacing variants inside the recipe.
+ * Controlled usage requires both `checked` and `onChange`; otherwise `defaultChecked` initializes
+ * local state. Use visible children or an accessible name for icon-only checkboxes.
  */
-export type CheckboxProps = PrimitiveProps<'input', CheckboxBaseProps>;
+export type CheckboxProps = CheckboxNativeProps &
+  (
+    | {
+        checked: boolean;
+        defaultChecked?: never;
+        onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+      }
+    | {
+        checked?: never;
+        defaultChecked?: boolean;
+        onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
+      }
+  );

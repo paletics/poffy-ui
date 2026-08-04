@@ -1,50 +1,27 @@
 'use client';
 
 import { useSplitButton } from '@poffy-ui/behavior/split-button';
+import { focusAdjacentTabStop, getDeepActiveElement, useMergeRefs } from '@poffy-ui/behavior/hooks';
+import type { ReferenceType } from '@floating-ui/react';
 import { cx } from '@/styled-system/css';
 import { splitButton } from '@/styled-system/recipes';
-import { forwardRef, type MutableRefObject } from 'react';
+import { forwardRef, useEffect, useId, useRef } from 'react';
 import { ButtonPrimitive } from '@/components/inputs/ButtonPrimitive';
 import { DisclosureIconButton } from '@/components/inputs/DisclosureIconButton';
+import { FloatingPortalScope } from '@/components/overlay/Portal/FloatingPortalScope';
+import { useAnchorPosition } from '@/hooks/overlay/useFloating';
 import type { SplitButtonProps } from './SplitButton.types';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
+import { getSplitButtonLabels } from './SplitButton.locales';
 
 /**
- * A compound button that pairs a primary action with a dropdown menu of secondary options.
- * Manages internal `isOpen` state and implements manual keyboard navigation
- * (Arrow Up/Down, Enter, Escape) for WAI-ARIA `menu` pattern compliance.
+ * Paired primary action and menu of related secondary actions.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`splitButton` SlotRecipe: `root` + `mainButton` + `dropdownButton` + `menu` + `menuItem`)
- * - **Props**: `SplitButtonProps`
- *
- * ### Design Tokens
- * - **spacing/sizing**: button height, menu item padding → Silver Ratio tokens per `size`
- * - **color**: `intent` x `appearance` follows the same semantic action vocabulary as `Button`
- *
- * ### Variant Logic
- * - **appearance="solid"**: Default. High-emphasis primary + dropdown.
- * - **appearance="soft"**: Framed but lower-contrast split action.
- * - **appearance="outline"**: Secondary-emphasis. Use when the split-button is not the primary CTA.
- * - **size**: sm / md / lg scales both buttons and menu items uniformly.
- *
- * ### Accessibility
- * - **Role**: Root `<div>` is a toolbar container; dropdown `<button>` has `aria-haspopup="menu"` + `aria-expanded`.
- * - **Menu role**: `<ul role="menu">` / `<li role="none">` / `<button role="menuitem">`.
- * - **Keyboard**: Arrow Down/Up: navigate items | Enter / Space: activate | Escape: close
- *
- * @example
- * ```tsx
- * <SplitButton
- *   onClick={() => save()}
- *   items={[
- *     { id: 'draft', label: 'Save as Draft', onClick: () => saveAsDraft() },
- *     { id: 'template', label: 'Save as Template', onClick: () => saveAsTemplate() },
- *   ]}
- * >
- *   Publish
- * </SplitButton>
- * ```
+ * The primary segment invokes `onClick`; the disclosure segment opens the menu and supports
+ * Arrow Down/Up to focus the first/last enabled item. If no enabled items exist, that segment is
+ * disabled. The portalled menu manages roving focus, restores trigger focus after menu actions or
+ * Escape, and moves Tab/Shift+Tab to the trigger's adjacent document tab stop rather than trapping
+ * focus in the portal.
  */
 export const SplitButton = forwardRef<HTMLDivElement, SplitButtonProps>(
   (
@@ -59,72 +36,205 @@ export const SplitButton = forwardRef<HTMLDivElement, SplitButtonProps>(
       shape = 'rounded',
       className,
       disabled = false,
+      portalContainer,
+      locale,
+      labels,
       ...props
     },
     ref,
   ) => {
+    const providerLocale = useOptionalLocale()?.locale;
+    const resolvedLabels = getSplitButtonLabels(locale ?? providerLocale ?? 'en-US', labels);
+    const firstEnabledIndex = items.findIndex((item) => !item.disabled);
+    const lastEnabledIndex = items.reduce(
+      (enabledIndex, item, index) => (item.disabled ? enabledIndex : index),
+      -1,
+    );
+    const isMenuUnavailable = firstEnabledIndex < 0;
     const {
+      closeMenu,
       focusedIndex,
       isOpen,
+      menuRef,
       onMenuItemClick,
       onMenuKeyDown,
       rootRef,
       setFocusedIndex,
       toggleMenu,
     } = useSplitButton({
-      disabled,
+      disabled: disabled === true ? true : isMenuUnavailable,
       items,
     });
+    const { refs, floatingStyles } = useAnchorPosition<ReferenceType>({
+      open: isOpen,
+      onOpenChange: (nextOpen) => {
+        if (!nextOpen) closeMenu();
+      },
+      placement: 'bottom-start',
+      offset: 4,
+      strategy: 'fixed',
+    });
+    const mergedRef = useMergeRefs(rootRef, refs.setReference, ref);
+    const mergedMenuRef = useMergeRefs(menuRef, refs.setFloating);
+    const mainButtonRef = useRef<HTMLButtonElement | null>(null);
+    const triggerRef = useRef<HTMLButtonElement | null>(null);
+    const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const restoreFocusOnCloseRef = useRef(false);
+    const previousIsOpenRef = useRef(isOpen);
+    const menuId = useId();
+    const triggerId = useId();
+
+    useEffect(() => {
+      if (!isOpen) return;
+      if (focusedIndex >= 0 && !items[focusedIndex]?.disabled) {
+        itemRefs.current[focusedIndex]?.focus();
+        return;
+      }
+      if (firstEnabledIndex >= 0) {
+        setFocusedIndex(firstEnabledIndex);
+        return;
+      }
+      menuRef.current?.focus();
+    }, [firstEnabledIndex, focusedIndex, isOpen, items, menuRef, setFocusedIndex]);
+
+    useEffect(() => {
+      const closedSinceLastCommit = previousIsOpenRef.current && !isOpen;
+      previousIsOpenRef.current = isOpen;
+      if (!closedSinceLastCommit) return;
+      if (isMenuUnavailable) {
+        restoreFocusOnCloseRef.current = false;
+        mainButtonRef.current?.focus();
+        return;
+      }
+      if (!restoreFocusOnCloseRef.current) return;
+      restoreFocusOnCloseRef.current = false;
+      const trigger = triggerRef.current;
+      if (!trigger) return;
+      const activeElement = getDeepActiveElement(trigger.ownerDocument);
+      if (
+        activeElement === trigger.ownerDocument.body ||
+        activeElement === trigger ||
+        (activeElement !== null && menuRef.current?.contains(activeElement))
+      ) {
+        trigger.focus();
+      }
+    }, [isMenuUnavailable, isOpen, menuRef]);
 
     const classes = splitButton({ size, intent, variant: appearance, shape, isOpen });
+    const openMenuAt = (index: number) => {
+      if (disabled || isMenuUnavailable || isOpen) return;
+      toggleMenu();
+      setFocusedIndex(index);
+    };
+
+    const handleTriggerClick = () => {
+      if (isOpen) {
+        toggleMenu();
+        return;
+      }
+      openMenuAt(firstEnabledIndex);
+    };
 
     return (
-      <div
-        ref={(node) => {
-          rootRef.current = node;
-          if (typeof ref === 'function') ref(node);
-          else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = node;
-        }}
-        className={cx(classes.root, className)}
-        {...props}
-      >
-        <ButtonPrimitive className={classes.mainButton} onClick={onClick} disabled={disabled}>
+      <div ref={mergedRef} className={cx(classes.root, className)} {...props}>
+        <ButtonPrimitive
+          ref={mainButtonRef}
+          className={classes.mainButton}
+          onClick={onClick}
+          disabled={disabled}
+        >
           {icon && <span className={classes.icon}>{icon}</span>}
           {children}
         </ButtonPrimitive>
 
         <DisclosureIconButton
+          ref={triggerRef}
+          id={triggerId}
           className={classes.dropdownButton}
           size={size}
           intent={intent}
           appearance={appearance === 'soft' ? 'soft' : appearance}
           shape="square"
           open={isOpen}
-          onClick={toggleMenu}
-          disabled={disabled}
+          onClick={handleTriggerClick}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowDown') {
+              event.preventDefault();
+              openMenuAt(firstEnabledIndex);
+            } else if (event.key === 'ArrowUp') {
+              event.preventDefault();
+              openMenuAt(lastEnabledIndex);
+            }
+          }}
+          disabled={disabled === true ? true : isMenuUnavailable}
           aria-haspopup="menu"
-          aria-label="More options"
+          aria-controls={isMenuUnavailable ? undefined : menuId}
+          aria-label={resolvedLabels.moreOptions}
         />
 
-        {isOpen && (
-          <ul className={classes.menu} role="menu" onKeyDown={onMenuKeyDown}>
-            {items.map((item, index) => (
-              <li key={item.id} role="none">
-                <ButtonPrimitive
-                  className={classes.menuItem}
-                  role="menuitem"
-                  disabled={item.disabled}
-                  onClick={() => onMenuItemClick(index)}
-                  onMouseEnter={() => setFocusedIndex(index)}
-                  data-highlighted={index === focusedIndex ? '' : undefined}
-                >
-                  {item.icon && <span className={classes.icon}>{item.icon}</span>}
-                  {item.label}
-                </ButtonPrimitive>
-              </li>
-            ))}
-          </ul>
-        )}
+        <FloatingPortalScope portalContainer={portalContainer} referenceRef={refs.reference}>
+          {isOpen && (
+            <ul
+              ref={mergedMenuRef}
+              id={menuId}
+              className={classes.menu}
+              style={floatingStyles}
+              role="menu"
+              aria-labelledby={triggerId}
+              tabIndex={-1}
+              onKeyDown={(event) => {
+                if (event.key === 'Tab') {
+                  // The menu is portalled, so its DOM position is unrelated to
+                  // the trigger's tab order. Resolve the adjacent tab stop from
+                  // the trigger rather than from the portalled menu item.
+                  if (triggerRef.current) {
+                    const moved = focusAdjacentTabStop({
+                      origin: triggerRef.current,
+                      reverse: event.shiftKey,
+                      excludeRoot: menuRef.current,
+                    });
+                    if (moved) event.preventDefault();
+                    else triggerRef.current.focus();
+                  }
+                  restoreFocusOnCloseRef.current = false;
+                  closeMenu();
+                  return;
+                }
+                if (
+                  event.key === 'Escape' ||
+                  ((event.key === 'Enter' || event.key === ' ') && focusedIndex >= 0)
+                ) {
+                  restoreFocusOnCloseRef.current = true;
+                }
+                onMenuKeyDown(event);
+              }}
+            >
+              {items.map((item, index) => (
+                <li key={item.id} role="none">
+                  <ButtonPrimitive
+                    ref={(node) => {
+                      itemRefs.current[index] = node;
+                    }}
+                    className={classes.menuItem}
+                    role="menuitem"
+                    tabIndex={-1}
+                    disabled={disabled === true ? true : item.disabled}
+                    onClick={() => {
+                      restoreFocusOnCloseRef.current = true;
+                      onMenuItemClick(index);
+                    }}
+                    onFocus={() => setFocusedIndex(index)}
+                    onMouseEnter={() => setFocusedIndex(index)}
+                    data-highlighted={index === focusedIndex ? '' : undefined}
+                  >
+                    {item.icon && <span className={classes.icon}>{item.icon}</span>}
+                    {item.label}
+                  </ButtonPrimitive>
+                </li>
+              ))}
+            </ul>
+          )}
+        </FloatingPortalScope>
       </div>
     );
   },

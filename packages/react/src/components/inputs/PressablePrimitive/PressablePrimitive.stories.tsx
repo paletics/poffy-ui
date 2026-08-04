@@ -7,11 +7,11 @@ const pressableClass = css({
   display: 'inline-flex',
   alignItems: 'center',
   justifyContent: 'center',
-  minW: '10rem',
-  h: '2.5rem',
+  minW: '[10rem]',
+  h: '[2.5rem]',
   px: 'md',
   borderRadius: 'md',
-  borderWidth: '1px',
+  borderWidth: 'thin',
   borderStyle: 'solid',
   borderColor: 'border.default',
   bg: 'bg.canvas',
@@ -19,18 +19,17 @@ const pressableClass = css({
   fontWeight: 'semibold',
   cursor: 'pointer',
   _hover: { bg: 'bg.subtle' },
-  _focusVisible: { outline: '2px solid token(colors.focus)', outlineOffset: '2px' },
+  _focusVisible: {
+    outlineWidth: '[var(--poffy-focus-ring-width)]',
+    outlineStyle: 'solid',
+    outlineColor: 'brand.main',
+    outlineOffset: '[var(--poffy-focus-ring-offset)]',
+  },
   _disabled: { opacity: 0.45, cursor: 'not-allowed' },
   '&[aria-disabled="true"]': { opacity: 0.45, cursor: 'not-allowed' },
 });
 
-/**
- * Behavior-only pressable primitive for custom interactive controls.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: native button or Radix Slot via `asChild`
- */
+
 const meta: Meta<typeof PressablePrimitive> = {
   title: 'Inputs/PressablePrimitive',
   component: PressablePrimitive,

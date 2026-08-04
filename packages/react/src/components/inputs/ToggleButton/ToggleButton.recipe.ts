@@ -17,7 +17,15 @@ export const toggleButtonRecipe = defineRecipe({
     fontFamily: 'body',
     textAlign: 'center',
     textDecoration: 'none',
-    whiteSpace: 'nowrap',
+    whiteSpace: 'normal',
+    overflowWrap: 'break-word',
+    wordBreak: 'normal',
+    hyphens: 'auto',
+    minWidth: '0',
+    minInlineSize: '{sizes.control.minimumTarget}',
+    minBlockSize: '{sizes.control.minimumTarget}',
+    maxWidth: '{sizes.full}',
+    boxSizing: 'border-box',
     userSelect: 'none',
     outline: 'none',
     position: 'relative',
@@ -26,6 +34,11 @@ export const toggleButtonRecipe = defineRecipe({
     transitionProperty: 'background-color, color, border-color, box-shadow, transform',
     transitionDuration: '{durations.fast}',
     transitionTimingFunction: '{easings.soft}',
+    _motionSubtle: { transitionDuration: '{durations.ultraFast}' },
+    _motionPop: {
+      transitionDuration: '{durations.standard}',
+      transitionTimingFunction: '{easings.bounce}',
+    },
 
     _focusVisible: {
       outline: '2px solid',
@@ -38,23 +51,51 @@ export const toggleButtonRecipe = defineRecipe({
       opacity: 0.5,
       filter: 'grayscale(0.8)',
     },
+    '&[aria-disabled="true"]': {
+      cursor: 'not-allowed',
+      opacity: 0.5,
+      filter: 'grayscale(0.8)',
+    },
 
     '& svg': {
       width: '1.4em',
       height: '1.4em',
+      flexShrink: '0',
     },
     '& [data-slot="icon"]': {
       display: 'inline-flex',
       alignItems: 'center',
+      flexShrink: '0',
     },
   },
 
   variants: {
     size: {
-      xs: { px: '{spacing.sm}', h: '{sizes.silver.1}', textStyle: 'caption', fontSize: 'xs' },
-      sm: { px: '{spacing.md}', h: '{sizes.root.1}', textStyle: 'caption' },
-      md: { px: '{spacing.lg}', h: '{sizes.silver.2}', textStyle: 'button' },
-      lg: { px: '{spacing.xl}', h: '{sizes.root.2}', textStyle: 'h6' },
+      xs: {
+        px: '{spacing.sm}',
+        py: '{spacing.2xs}',
+        minH: '{sizes.control.minimumTarget}',
+        textStyle: 'caption',
+        fontSize: 'xs',
+      },
+      sm: {
+        px: '{spacing.md}',
+        py: '{spacing.2xs}',
+        minH: '{sizes.control.minimumTarget}',
+        textStyle: 'caption',
+      },
+      md: {
+        px: '{spacing.lg}',
+        py: '{spacing.xs}',
+        minH: '{sizes.silver.2}',
+        textStyle: 'button',
+      },
+      lg: {
+        px: '{spacing.xl}',
+        py: '{spacing.sm}',
+        minH: '{sizes.root.2}',
+        textStyle: 'h6',
+      },
     },
 
     variant: {

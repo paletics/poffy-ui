@@ -1,11 +1,18 @@
-import { useCallback, useState } from 'react';
+import { useControllableState } from '@poffy-ui/behavior/hooks';
+import { useCallback, useLayoutEffect, useMemo } from 'react';
 import { getCalendarInitialSelection } from '@poffy-ui/behavior/calendar';
 import type { CalendarProps, DateRange } from './Calendar.types';
 
 type CalendarSelectionValue = Date | Date[] | DateRange | undefined;
+type CalendarMode = NonNullable<CalendarProps['mode']>;
+
+interface CalendarSelectionState {
+  mode: CalendarMode;
+  value: CalendarSelectionValue;
+}
 
 const callCalendarOnSelect = (
-  mode: NonNullable<CalendarProps['mode']>,
+  mode: CalendarMode,
   onSelect: CalendarProps['onSelect'],
   value: CalendarSelectionValue,
 ) => {
@@ -28,6 +35,7 @@ const callCalendarOnSelect = (
 
 interface UseCalendarControlledSelectionParams {
   defaultValue: CalendarProps['defaultValue'];
+  isControlled: boolean;
   mode: NonNullable<CalendarProps['mode']>;
   onSelect: CalendarProps['onSelect'];
   selectedProp: CalendarProps['selected'];
@@ -38,35 +46,49 @@ interface UseCalendarControlledSelectionParams {
  */
 export const useCalendarControlledSelection = ({
   defaultValue,
+  isControlled,
   mode,
   onSelect,
   selectedProp,
 }: UseCalendarControlledSelectionParams) => {
-  const [uncontrolledState, setUncontrolledState] = useState(() => ({
-    defaultValue,
-    mode,
-    value: getCalendarInitialSelection(mode, defaultValue) as CalendarSelectionValue,
-  }));
+  const controlledState = useMemo<CalendarSelectionState | undefined>(
+    () => (!isControlled ? undefined : { mode, value: selectedProp as CalendarSelectionValue }),
+    [isControlled, mode, selectedProp],
+  );
+  const currentModeDefault = useMemo<CalendarSelectionState>(
+    () => ({
+      mode,
+      value: getCalendarInitialSelection(mode, defaultValue) as CalendarSelectionValue,
+    }),
+    [defaultValue, mode],
+  );
+  const { value: selectionState, setValue: setSelectionState } =
+    useControllableState<CalendarSelectionState>({
+      value: controlledState,
+      defaultValue: currentModeDefault,
+    });
+  const resolvedState = selectionState.mode === mode ? selectionState : currentModeDefault;
 
-  let selected =
-    selectedProp === undefined ? uncontrolledState.value : (selectedProp as CalendarSelectionValue);
-  if (
-    selectedProp === undefined &&
-    (uncontrolledState.defaultValue !== defaultValue || uncontrolledState.mode !== mode)
-  ) {
-    selected = getCalendarInitialSelection(mode, defaultValue) as CalendarSelectionValue;
-    setUncontrolledState({ defaultValue, mode, value: selected });
-  }
+  useLayoutEffect(() => {
+    if (selectionState.mode !== mode) {
+      setSelectionState(currentModeDefault);
+    }
+  }, [currentModeDefault, mode, selectionState.mode, setSelectionState]);
 
   const handleSelect = useCallback(
     (value: CalendarSelectionValue) => {
-      if (selectedProp === undefined) {
-        setUncontrolledState({ defaultValue, mode, value });
-      }
+      setSelectionState({ mode, value });
       callCalendarOnSelect(mode, onSelect, value);
     },
-    [defaultValue, mode, onSelect, selectedProp],
+    [mode, onSelect, setSelectionState],
   );
 
-  return { handleSelect, selected };
+  const resetSelection = useCallback(
+    (value: CalendarSelectionValue) => {
+      setSelectionState({ mode, value: getCalendarInitialSelection(mode, value) });
+    },
+    [mode, setSelectionState],
+  );
+
+  return { handleSelect, resetSelection, selected: resolvedState.value };
 };

@@ -1,24 +1,26 @@
 import { MultiSelectVariantProps } from '@/styled-system/recipes';
-import { type InputAppearance, NativeProps } from '@poffy-ui/types';
+import { NativeProps } from '@poffy-ui/types';
 import type { ReactNode } from 'react';
+import type {
+  NeoInputAppearanceProp,
+  NeoInputAppearanceValue,
+} from '@/components/inputs/inputVariant';
 
 /**
- * Variants for the MultiSelect component based on Panda CSS recipe.
+ * Public visual props for the MultiSelect component.
  */
-export type MultiSelectVariants = Omit<MultiSelectVariantProps, 'error'>;
+export type MultiSelectVariants = MultiSelectVariantSubset;
 
 /** Public surface treatment for MultiSelect. */
-export type MultiSelectAppearance = InputAppearance | 'neo';
+export type MultiSelectAppearance = NeoInputAppearanceValue;
 
 /** Public MultiSelect variant props with shared input appearance names. */
 export interface MultiSelectVariantSubset extends Omit<
   MultiSelectVariantProps,
   'error' | 'variant'
 > {
-  /** Surface treatment. */
-  appearance?: MultiSelectAppearance;
-  /** Legacy recipe variant alias. */
-  variant?: MultiSelectVariantProps['variant'];
+  /** Surface treatment. @defaultValue `'outline'` */
+  appearance?: NeoInputAppearanceProp;
 }
 
 /**
@@ -30,13 +32,24 @@ export interface MultiSelectOption {
    */
   label: string;
   /**
-   * Unique value for the option.
+   * Unique value for the option. Duplicate definitions are ignored so option
+   * selection and ARIA IDs remain unambiguous.
    */
   value: string;
   /**
    * Whether the option is selectable.
    */
   disabled?: boolean;
+}
+
+/** Facade-local text overrides for the input, disclosure button, and tag removal actions. */
+export interface MultiSelectMessages {
+  /** Placeholder shown by the managed input. */
+  placeholder: string;
+  /** Accessible label for the non-tabbable disclosure control. */
+  toggleOptions: string;
+  /** Accessible label factory for one selected-value removal action. */
+  removeOption: (label: string) => string;
 }
 
 /** Slot class names produced for MultiSelect internals. */
@@ -103,37 +116,15 @@ export interface MultiSelectRenderTagProps {
   onRemove: () => void;
 }
 
-/**
- * Props for a searchable multi-value combobox.
- *
- * ### Notes
- * `value` is controlled and must be updated from `onChange`; use `defaultValue`
- * for uncontrolled initial selections. Provide `aria-label` or `aria-labelledby`
- * when the visible label is composed outside the component. Selected values are
- * submitted as repeated hidden inputs when `name` is set.
- *
- * Do: use `renderTag` only for selected-value chips and wire `onRemove`.
- * Don't: rely on `required` alone for native validation; validate multi-select
- * requirements in your form logic.
- *
- * @example
- * ```tsx
- * import { MultiSelect } from '@poffy-ui/react/inputs';
- *
- * <MultiSelect
- *   aria-label="Skills"
- *   options={[{ label: 'TypeScript', value: 'ts' }]}
- *   value={skills}
- *   onChange={setSkills}
- * />
- * ```
- *
- * Related: ComboBoxProps for single-value searchable selection.
- */
+/** Shared props for a controlled or uncontrolled searchable multi-value field. */
 export interface MultiSelectOwnProps extends MultiSelectVariantSubset {
+  /** BCP 47 locale overriding the nearest LocaleProvider for default text. */
+  locale?: string;
+  /** Partial localized default text overrides. */
+  messages?: Partial<MultiSelectMessages>;
   /**
-   * Placeholder text shown when no options are selected.
-   * @defaultValue `'Select options...'`
+ * Placeholder text shown when no options are selected. When omitted, uses the
+ * resolved LocaleProvider multi-select message.
    */
   placeholder?: string;
 
@@ -142,18 +133,21 @@ export interface MultiSelectOwnProps extends MultiSelectVariantSubset {
    */
   options?: MultiSelectOption[];
 
+  /** Custom option matcher used instead of the locale-aware default label matching. */
+  filterOption?: (option: MultiSelectOption, inputValue: string) => boolean;
+
   /**
-   * The currently selected values.
+   * Controlled selected values. Reflect `onChange` to update them.
    */
   value?: string[];
 
   /**
-   * Initial selected values for uncontrolled usage.
+   * Initial uncontrolled values, restored by native form reset.
    */
   defaultValue?: string[];
 
   /**
-   * Callback fired when the selection changes.
+   * Called after an accepted add, remove, or custom-value operation with canonical unique values.
    * @param values The updated list of selected values.
    */
   onChange?: (values: string[]) => void;
@@ -165,7 +159,8 @@ export interface MultiSelectOwnProps extends MultiSelectVariantSubset {
   renderTag?: (props: MultiSelectRenderTagProps) => ReactNode;
 
   /**
-   * Allows the typed input text to be added as a selected value when no option matches.
+   * Allows normalized unmatched text to be added as a selected value. Text colliding with an
+   * ambiguous duplicate option is ignored.
    * @defaultValue `false`
    */
   allowCustomValues?: boolean;
@@ -183,8 +178,8 @@ export interface MultiSelectOwnProps extends MultiSelectVariantSubset {
   name?: string;
 
   /**
-   * Whether the selection is required.
-   * Native hidden inputs do not enforce this; pair it with custom validation.
+   * Whether the selection is required. A hidden validation proxy enforces at
+   * least one value during form validation, unless the field is read-only.
    * @defaultValue `false`
    */
   required?: boolean;
@@ -238,9 +233,29 @@ export interface MultiSelectOwnProps extends MultiSelectVariantSubset {
   'aria-errormessage'?: string;
 }
 
+/** Native root props shared by controlled and uncontrolled MultiSelect branches. */
+type MultiSelectBaseProps = NativeProps<
+  'div',
+  Omit<MultiSelectOwnProps, 'defaultValue' | 'onChange' | 'value'>
+>;
+
 /**
- * Properties for the MultiSelect component.
- * Mirrors other input primitives: the component owns the control shell only and
- * expects labels to be composed externally via FormControl or native labeling.
+ * Props for a controlled or uncontrolled searchable multi-value field.
+ *
+ * Controlled usage requires both `value` and `onChange`. Otherwise omit `value`, optionally seed
+ * local state with `defaultValue`, and use `onChange` only as a notification callback. Values and
+ * defaults are canonicalized to unique strings; a controlled caller must reflect callbacks.
  */
-export type MultiSelectProps = NativeProps<'div', MultiSelectOwnProps>;
+export type MultiSelectProps = MultiSelectBaseProps &
+  (
+    | {
+        value: readonly string[];
+        defaultValue?: never;
+        onChange: (values: string[]) => void;
+      }
+    | {
+        value?: never;
+        defaultValue?: readonly string[];
+        onChange?: (values: string[]) => void;
+      }
+  );

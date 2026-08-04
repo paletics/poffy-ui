@@ -1,5 +1,5 @@
 import { Button } from '@/components/inputs/Button';
-import { Stack } from '@/components/layout';
+import { Box, Stack } from '@/components/layout';
 import { CrossIcon, InfoIcon } from '@/components/media/Icon';
 import type { Meta, StoryObj } from '@storybook/react';
 import { EmptyState } from './EmptyState';
@@ -8,14 +8,6 @@ import { EmptyStateDescription } from './EmptyStateDescription';
 import { EmptyStateIcon } from './EmptyStateIcon';
 import { EmptyStateTitle } from './EmptyStateTitle';
 
-/**
- * Placeholder layout composed of an icon, title, description, and optional actions shown when a content region has no data.
- * Use to guide users toward a meaningful next step when a list or feed is empty.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (emptyState recipe), Radix Slot, EmptyStateContext
- */
 const meta = {
   title: 'Feedback/EmptyState',
   component: EmptyState,
@@ -25,6 +17,10 @@ const meta = {
     intent: {
       control: 'select',
       options: ['primary', 'secondary', 'info', 'success', 'warning', 'danger'],
+    },
+    live: {
+      control: 'select',
+      options: ['off', 'polite', 'assertive'],
     },
   },
 } satisfies Meta<typeof EmptyState>;
@@ -119,5 +115,24 @@ export const Appearances: Story = {
         </EmptyStateDescription>
       </EmptyState>
     </Stack>
+  ),
+};
+
+export const ConstrainedLongContent: Story = {
+  render: () => (
+    <Box width="[180px]" aria-label="Constrained empty state">
+      <EmptyState size="sm">
+        <EmptyStateTitle>Searchresultsfromanexternalintegration</EmptyStateTitle>
+        <EmptyStateDescription>
+          https://example.com/results/without-any-natural-break-opportunities
+        </EmptyStateDescription>
+        <EmptyStateActions>
+          <Button size="sm">Try again</Button>
+          <Button size="sm" appearance="outline">
+            Clear filters
+          </Button>
+        </EmptyStateActions>
+      </EmptyState>
+    </Box>
   ),
 };

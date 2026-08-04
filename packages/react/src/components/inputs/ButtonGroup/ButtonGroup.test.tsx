@@ -50,6 +50,35 @@ describe('ButtonGroup', () => {
     expect(screen.getByRole('group')).toHaveAttribute('data-orientation', 'vertical');
   });
 
+  it('exposes wrapping as an explicit layout contract without leaking a native attribute', () => {
+    render(
+      <ButtonGroup aria-label="Wrapping group" wrap>
+        <Button>Long primary action</Button>
+        <Button>Long secondary action</Button>
+      </ButtonGroup>,
+    );
+
+    const group = screen.getByRole('group', { name: 'Wrapping group' });
+    expect(group).toHaveAttribute('data-wrap', '');
+    expect(group).not.toHaveAttribute('wrap');
+  });
+
+  it.each([
+    ['connected', { connected: true } as const],
+    ['vertical', { orientation: 'vertical' } as const],
+  ])('treats wrap as a no-op for %s groups', (_name, props) => {
+    render(
+      <ButtonGroup aria-label="Unsupported wrapping group" wrap {...props}>
+        <Button>Primary action</Button>
+        <Button>Secondary action</Button>
+      </ButtonGroup>,
+    );
+
+    const group = screen.getByRole('group', { name: 'Unsupported wrapping group' });
+    expect(group).not.toHaveAttribute('data-wrap');
+    expect(group).not.toHaveAttribute('wrap');
+  });
+
   it('forwards ref to the underlying div element', () => {
     const ref = { current: null };
     render(
@@ -58,5 +87,56 @@ describe('ButtonGroup', () => {
       </ButtonGroup>,
     );
     expect(ref.current).toBeInstanceOf(HTMLDivElement);
+  });
+
+  it('preserves managed group semantics when callers provide conflicting attributes', () => {
+    render(
+      <ButtonGroup
+        {...({ role: 'presentation' } as never)}
+        aria-label="Group"
+        data-orientation="vertical"
+      >
+        <Button>A</Button>
+      </ButtonGroup>,
+    );
+    expect(screen.getByRole('group', { name: 'Group' })).toHaveAttribute(
+      'data-orientation',
+      'horizontal',
+    );
+  });
+
+  it('uses a supplied non-interactive host for asChild', () => {
+    render(
+      <ButtonGroup asChild aria-label="Actions">
+        <section data-testid="group-host">
+          <Button>A</Button>
+        </section>
+      </ButtonGroup>,
+    );
+    expect(screen.getByTestId('group-host')).toHaveAttribute('role', 'group');
+  });
+
+  it('falls back to a div for asChild text content', () => {
+    render(
+      <ButtonGroup asChild aria-label="Actions">
+        Actions
+      </ButtonGroup>,
+    );
+    expect(screen.getByRole('group', { name: 'Actions' }).tagName).toBe('DIV');
+  });
+
+  it('rejects interactive asChild hosts to avoid nested buttons', async () => {
+    const { container } = render(
+      <ButtonGroup asChild aria-label="Actions">
+        <button data-testid="unsafe-host">
+          <Button>Save</Button>
+        </button>
+      </ButtonGroup>,
+    );
+
+    expect(screen.queryByTestId('unsafe-host')).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Actions' }).tagName).toBe('DIV');
+    expect(screen.getByRole('button', { name: 'Save' }).parentElement?.tagName).toBe('DIV');
+    expect(await axe(container)).toHaveNoViolations();
   });
 });

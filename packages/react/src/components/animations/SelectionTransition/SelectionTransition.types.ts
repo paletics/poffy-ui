@@ -7,15 +7,7 @@ import { SelectionTransitionType } from './SelectionTransition.presets';
 export type SelectionAnimationType = SelectionTransitionType;
 
 /**
- * Base props for `SelectionTransition`.
- *
- * ### Notes
- * This is a controlled indicator transition. The owning input, option,
- * or menu item remains responsible for selected/checked state and semantics.
- *
- * ### AI Usage
- * - **DO**: Use for checkmarks, radio dots, and active item markers.
- * - **DON'T**: Store selection state in this component.
+ * Props for a controlled selection-indicator transition; the owner supplies state and semantics.
  */
 export interface SelectionTransitionBaseProps {
   /**

@@ -1,38 +1,28 @@
 import { PrimitiveProps } from '@poffy-ui/types';
 import { ReactNode } from 'react';
+import type {
+  AsChildHostProps,
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Base properties for VisuallyHidden.
- *
- * ### Notes
- * Do: use for labels, descriptions, and status text that must remain available to
- * screen readers.
- * Don't: hide focusable interactive controls with this component.
- */
+/** Base props for visually hidden accessible content. */
 export interface VisuallyHiddenBaseProps {
   /** The content to be accessible only to screen readers. */
   children: ReactNode;
 }
 
-/**
- * Props for the VisuallyHidden component.
- *
- * @example
- * ```tsx
- * import { VisuallyHidden } from '@poffy-ui/react/a11y';
- *
- * <button>
- *   <Icon aria-hidden />
- *   <VisuallyHidden>Close dialog</VisuallyHidden>
- * </button>
- * ```
- *
- * ### Notes
- * The element remains in the accessibility tree and reading order. It is not a
- * general-purpose visibility toggle.
- *
- * Related: `VisuallyHiddenBaseProps`
- *
- * Extends PrimitiveProps for asChild Slot support.
- */
-export type VisuallyHiddenProps = PrimitiveProps<'span', VisuallyHiddenBaseProps>;
+/** Native span props for visually hidden accessible content. */
+type VisuallyHiddenNativeProps = PrimitiveProps<'span', VisuallyHiddenBaseProps>;
+/** Props for VisuallyHidden rendered with its default host. */
+export type VisuallyHiddenDefaultProps = DefaultHostProps<VisuallyHiddenNativeProps>;
+/** Props for VisuallyHidden delegated to an asChild host. */
+export type VisuallyHiddenAsChildProps = AsChildHostProps<VisuallyHiddenNativeProps>;
+/** Public props for VisuallyHidden. */
+export type VisuallyHiddenProps = VisuallyHiddenDefaultProps | VisuallyHiddenAsChildProps;
+/** Polymorphic component call signatures for VisuallyHidden. */
+export type VisuallyHiddenComponent = PolymorphicAsChildComponent<
+  VisuallyHiddenDefaultProps,
+  VisuallyHiddenAsChildProps,
+  HTMLSpanElement
+>;

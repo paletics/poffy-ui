@@ -1,4 +1,9 @@
 import { defineSlotRecipe } from '@pandacss/dev';
+import {
+  floatingAvailableHeight,
+  floatingAvailableWidth,
+  floatingViewportFallbackStyles,
+} from '@/components/shared/floatingViewportFallback';
 
 /**
  * Slot recipe for the Tooltip component.
@@ -13,6 +18,7 @@ export const tooltipRecipe = defineSlotRecipe({
       display: 'inline-block',
     },
     content: {
+      ...floatingViewportFallbackStyles,
       bg: 'text.primary',
       color: 'text.inverse',
       px: '{spacing.sm}',
@@ -21,7 +27,14 @@ export const tooltipRecipe = defineSlotRecipe({
       fontSize: '2xs',
       fontWeight: 'medium',
       boxShadow: '{shadows.sm}',
-      maxWidth: '{sizes.ratio.sm}',
+      boxSizing: 'border-box',
+      minWidth: 0,
+      maxWidth: `min({sizes.ratio.sm}, ${floatingAvailableWidth})`,
+      maxBlockSize: floatingAvailableHeight,
+      overflowY: 'auto',
+      overscrollBehavior: 'contain',
+      scrollbarGutter: 'stable',
+      overflowWrap: 'anywhere',
       zIndex: 'tooltip',
 
       _pome: {

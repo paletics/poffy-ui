@@ -22,6 +22,15 @@ export const wheelPickerRecipe = defineSlotRecipe({
       alignItems: 'stretch',
       gap: '{spacing.sm}',
       color: '{colors.text.primary}',
+      maxWidth: '100%',
+      overflowX: 'auto',
+      overscrollBehaviorX: 'contain',
+      scrollPaddingInline: 'calc({focusRing.width} + {focusRing.offset})',
+      px: 'calc({focusRing.width} + {focusRing.offset})',
+      // The scroll container clips both axes; reserve the complete external
+      // focus ring so future focus-token changes remain safe.
+      py: 'calc({focusRing.width} + {focusRing.offset})',
+      scrollPaddingBlock: 'calc({focusRing.width} + {focusRing.offset})',
       '&[data-disabled]': {
         opacity: 0.6,
         pointerEvents: 'none',
@@ -32,6 +41,7 @@ export const wheelPickerRecipe = defineSlotRecipe({
       flexDirection: 'column',
       gap: '{spacing.xs}',
       minW: 'var(--wheel-picker-column-width)',
+      flexShrink: 0,
     },
     columnLabel: {
       color: '{colors.text.secondary}',
@@ -74,6 +84,14 @@ export const wheelPickerRecipe = defineSlotRecipe({
       cursor: 'pointer',
       transition:
         'background-color {durations.fast}, color {durations.fast}, opacity {durations.fast}',
+      _motionSubtle: {
+        transition:
+          'background-color {durations.ultraFast}, color {durations.ultraFast}, opacity {durations.ultraFast}',
+      },
+      _motionPop: {
+        transition:
+          'background-color {durations.standard}, color {durations.standard}, opacity {durations.standard}',
+      },
       _hover: {
         bg: '{colors.brand.tint}',
         color: '{colors.text.primary}',
@@ -103,6 +121,14 @@ export const wheelPickerRecipe = defineSlotRecipe({
       opacity: 0.72,
       transition:
         'background-color {durations.fast}, border-color {durations.fast}, opacity {durations.fast}',
+      _motionSubtle: {
+        transition:
+          'background-color {durations.ultraFast}, border-color {durations.ultraFast}, opacity {durations.ultraFast}',
+      },
+      _motionPop: {
+        transition:
+          'background-color {durations.standard}, border-color {durations.standard}, opacity {durations.standard}',
+      },
     },
   },
   variants: {

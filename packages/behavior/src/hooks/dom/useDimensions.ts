@@ -6,7 +6,6 @@ import type { Dimensions } from './useDimensions.types';
 /**
  * Shared DOM measurement hook that re-measures when the ref target changes.
  *
- * ### Notes
  * Returns `{ width: 0, height: 0 }` until a target element is mounted. The hook
  * uses `ResizeObserver` and measures `offsetWidth`/`offsetHeight`, so React
  * components should call it only in client-rendered surfaces and avoid using it
@@ -31,6 +30,13 @@ export const useDimensions = <T extends HTMLElement>(ref: RefObject<T | null>) =
         height: node.offsetHeight,
       });
     };
+    const ResizeObserver = node.ownerDocument.defaultView?.ResizeObserver;
+    if (!ResizeObserver) {
+      updateDimensions();
+      const ownerWindow = node.ownerDocument.defaultView;
+      ownerWindow?.addEventListener('resize', updateDimensions);
+      return () => ownerWindow?.removeEventListener('resize', updateDimensions);
+    }
     const resizeObserver = new ResizeObserver(updateDimensions);
 
     resizeObserver.observe(node);

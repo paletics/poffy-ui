@@ -3,6 +3,7 @@ import { expect, userEvent, within } from 'storybook/test';
 import { useState } from 'react';
 
 import { Button } from '@/components/inputs/Button';
+import { DirectionProvider } from '@/providers/DirectionProvider';
 import { css } from '@/styled-system/css';
 import type { DrawerProps } from './Drawer.types';
 import {
@@ -16,14 +17,7 @@ import {
   DrawerTitle,
 } from './index';
 
-/**
- * Storybook documentation and visual review surface for Drawer.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, overlay primitives
- */
+
 const meta: Meta<typeof Drawer> = {
   title: 'Overlay/Drawer',
   component: Drawer,
@@ -35,7 +29,7 @@ const meta: Meta<typeof Drawer> = {
     },
     placement: {
       control: 'select',
-      options: ['left', 'right', 'top', 'bottom'],
+      options: ['left', 'right', 'top', 'bottom', 'start', 'end'],
     },
   },
 };
@@ -44,7 +38,7 @@ export default meta;
 type Story = StoryObj<typeof Drawer>;
 
 const DrawerWithState = (args: DrawerProps) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(args.defaultOpen ?? false);
   return (
     <>
       <Button onClick={() => setOpen(true)}>Open {args.placement ?? 'right'} Drawer</Button>
@@ -58,7 +52,7 @@ const DrawerWithState = (args: DrawerProps) => {
           <DrawerBody>
             <p>This is the body content of the drawer.</p>
             {Array.from({ length: 20 }).map((_, i) => (
-              <p key={i} className={css({ my: '2.5' })}>
+              <p key={i} className={css({ my: 'md' })}>
                 Scrollable content line {i + 1}
               </p>
             ))}
@@ -98,9 +92,18 @@ export const Interaction: Story = {
   },
 };
 
+export const AccessibilityOpen: Story = {
+  args: {
+    appearance: 'soft',
+    placement: 'right',
+    defaultOpen: true,
+  },
+  render: (args) => <DrawerWithState {...args} />,
+};
+
 export const Placements: Story = {
   render: () => (
-    <div className={css({ display: 'flex', gap: '2.5', flexWrap: 'wrap' })}>
+    <div className={css({ display: 'flex', gap: 'md', flexWrap: 'wrap' })}>
       <DrawerWithState placement="left" />
       <DrawerWithState placement="right" />
       <DrawerWithState placement="top" />
@@ -111,7 +114,7 @@ export const Placements: Story = {
 
 export const Sizes: Story = {
   render: () => (
-    <div className={css({ display: 'flex', gap: '2.5', flexWrap: 'wrap' })}>
+    <div className={css({ display: 'flex', gap: 'md', flexWrap: 'wrap' })}>
       <DrawerWithState size="sm" placement="right" />
       <DrawerWithState size="md" placement="right" />
       <DrawerWithState size="lg" placement="right" />
@@ -121,9 +124,34 @@ export const Sizes: Story = {
   ),
 };
 
+export const ExtraLargeRight: Story = {
+  render: () => <DrawerWithState size="xl" placement="right" />,
+};
+
+export const FullBottom: Story = {
+  render: () => <DrawerWithState size="full" placement="bottom" />,
+};
+
+export const RtlLogicalStart: Story = {
+  render: () => (
+    <DirectionProvider defaultDir="rtl" global={false} scope>
+      <Drawer defaultOpen placement="start">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>RTL logical start drawer</DrawerTitle>
+            <DrawerDescription>Logical start resolves to the right edge in RTL.</DrawerDescription>
+            <DrawerClose />
+          </DrawerHeader>
+          <DrawerBody>Direction-aware drawer content.</DrawerBody>
+        </DrawerContent>
+      </Drawer>
+    </DirectionProvider>
+  ),
+};
+
 export const Brands: Story = {
   render: () => (
-    <div className={css({ display: 'flex', gap: '2.5', flexWrap: 'wrap' })}>
+    <div className={css({ display: 'flex', gap: 'md', flexWrap: 'wrap' })}>
       <DrawerWithState brand="pome" placement="right" />
       <DrawerWithState brand="blue" placement="right" />
     </div>
@@ -140,20 +168,20 @@ const AsChildDemo = (args: DrawerProps) => {
           <aside
             className={css({
               bg: 'white',
-              width: '300px',
-              height: '100vh',
+              width: '[300px]',
+              height: '[100vh]',
               position: 'fixed',
               right: '0',
               top: '0',
               boxShadow: 'lg',
-              p: '5',
+              p: 'lg',
               borderLeftWidth: '5px',
               borderLeftStyle: 'solid',
               borderLeftColor: 'indigo.500',
             })}
           >
             <DrawerClose asChild>
-              <Button onClick={() => setOpen(false)} className={css({ mb: '5' })}>
+              <Button onClick={() => setOpen(false)} className={css({ mb: 'lg' })}>
                 Close
               </Button>
             </DrawerClose>

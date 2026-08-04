@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 import { ComboBox } from './ComboBox';
+import { Box, Stack } from '@/components/layout';
 
 const options = [
   { label: 'Apple', value: 'apple' },
@@ -11,14 +12,6 @@ const options = [
   { label: 'Pineapple', value: 'pineapple' },
 ];
 
-/**
- * Storybook documentation and visual review surface for ComboBox.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
 const meta: Meta<typeof ComboBox> = {
   title: 'Inputs/ComboBox',
   component: ComboBox,
@@ -32,7 +25,7 @@ const meta: Meta<typeof ComboBox> = {
     },
   },
   argTypes: {
-    appearance: { control: 'select', options: ['outline', 'soft'] },
+    appearance: { control: 'select', options: ['outline', 'soft', 'flushed', 'neo'] },
     size: { control: 'select', options: ['sm', 'md', 'lg'] },
     disabled: { control: 'boolean' },
   },
@@ -76,3 +69,33 @@ export const Controlled = () => {
   const [value, setValue] = useState<string | null>('banana');
   return <ComboBox label="Controlled" options={options} value={value} onChange={setValue} />;
 };
+
+export const ResponsiveSizes = () => (
+  <Stack gap="md" width="[240px]" maxWidth="100%" aria-label="Responsive ComboBox container">
+    <ComboBox size="sm" aria-label="Small fruit" options={options} />
+    <ComboBox size="md" aria-label="Medium fruit" options={options} />
+    <ComboBox size="lg" aria-label="Large fruit" options={options} />
+  </Stack>
+);
+
+export const UltraNarrowRtl = () => (
+  <Stack gap="md">
+    <Box width="[60px]" maxWidth="100%" dir="rtl">
+      <ComboBox
+        style={{ minInlineSize: 0 }}
+        size="md"
+        aria-label="Narrow RTL fruit"
+        options={options}
+        defaultValue="banana"
+      />
+    </Box>
+    <Box width="[40px]" maxWidth="100%">
+      <ComboBox
+        style={{ minInlineSize: 0 }}
+        size="sm"
+        aria-label="Ultra narrow fruit"
+        options={options}
+      />
+    </Box>
+  </Stack>
+);

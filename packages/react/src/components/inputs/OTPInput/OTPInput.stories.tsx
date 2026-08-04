@@ -1,18 +1,11 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { OTPInput } from '@/components/inputs/OTPInput';
-import { Stack } from '@/components/layout';
+import { Box, Stack } from '@/components/layout';
 import { Text } from '@/components/typography';
 import { useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
 
-/**
- * Storybook documentation and visual review surface for OTPInput.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta: Meta<typeof OTPInput> = {
   title: 'Inputs/OTPInput',
   component: OTPInput,
@@ -73,12 +66,34 @@ export const Interactive: Story = {
     },
   },
   render: function InteractiveOtpInputStory() {
-    const [code, setCode] = useState('');
+    const [code, setCode] = useState<string[]>([]);
     return (
       <Stack gap="sm">
         <OTPInput value={code} onChange={setCode} onComplete={() => undefined} />
-        <Text>Current: {code}</Text>
+        <Text>Current: {code.join('')}</Text>
       </Stack>
     );
   },
+};
+
+export const NarrowContainer: Story = {
+  render: () => (
+    <Box width="[200px]" aria-label="Constrained OTP container">
+      <OTPInput aria-label="Constrained verification code" length={8} size="lg" />
+    </Box>
+  ),
+};
+
+export const NarrowRtl: Story = {
+  render: () => (
+    <Box width="[200px]" aria-label="Constrained RTL OTP container">
+      <OTPInput
+        aria-label="Constrained RTL verification code"
+        dir="rtl"
+        locale="ja-JP"
+        length={8}
+        size="lg"
+      />
+    </Box>
+  ),
 };

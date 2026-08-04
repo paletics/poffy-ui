@@ -1,60 +1,71 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
-import { forwardRef, useContext, useMemo } from 'react';
+import { forwardRef, Fragment, isValidElement, type ReactNode, useContext, useMemo } from 'react';
 import { useOptionalAnimation } from '@/providers/AnimationProvider';
-import { getMotionComponent } from '../utils';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
+import { getMotionComponent, resolvePresetKey } from '../utils';
+import { useHydrated } from '../useHydrated';
 import { staggerItemVariants } from './StaggerTransition.presets';
 import { StaggerContext } from './StaggerTransitionContext';
 import type { StaggerItemType } from './StaggerTransition.presets';
 import type { StaggerTransitionItemProps } from './StaggerTransition.types';
 
-/**
- * Individual item that follows the stagger orchestration rhythm established by its parent container.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Framer Motion (Variant propagation), Radix Slot
- * ### Design Tokens
- * - inherits from parent Container presets.
- * ### Variant Logic
- * - animationType: Can optionally override the parent's `itemAnimationType` for a specific child.
- * @example
- * ```tsx
- * import { StaggerTransition } from '@poffy-ui/react';
- *
- * <StaggerTransition.Item animationType="reveal" asChild>
- *   <Card>Content</Card>
- * </StaggerTransition.Item>
- * ```
- * ### Notes
- * Must be rendered inside a parent `<StaggerTransition>`.
- * ### Accessibility
- * - Renders as a `<div>` by default.
- * ### AI Usage
- * - **DO**: Designate the specific DOM node that receives the staggered entrance trigger.
- */
-export const StaggerTransitionItem = forwardRef<HTMLDivElement, StaggerTransitionItemProps>(
+const StaggerTransitionItemImpl = forwardRef<HTMLDivElement, StaggerTransitionItemProps>(
   ({ asChild, children, animationType, customData, className, style, ...rest }, ref) => {
     const { itemAnimationType: parentType } = useContext(StaggerContext);
-    const effectiveType = (animationType ?? parentType) as StaggerItemType;
+    const animationKey = resolvePresetKey<typeof staggerItemVariants, StaggerItemType>(
+      staggerItemVariants,
+      animationType ?? parentType,
+      'fade',
+    );
 
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'div'), [asChild]);
-    const { isAnimating } = useOptionalAnimation();
-    const variants = staggerItemVariants[effectiveType];
+    const canUseAsChild = Boolean(
+      asChild && isValidElement(children) && children.type !== Fragment,
+    );
+    const Component = useMemo(
+      () => getMotionComponent(canUseAsChild ? Slot : 'div'),
+      [canUseAsChild],
+    );
+    const { isAnimating, resolvedMotionStyle } = useOptionalAnimation();
+    const isHydrated = useHydrated();
+    const variants = staggerItemVariants[animationKey];
+    const safeRest = sanitizeControlledMotionProps(rest);
+    const fallbackChildren =
+      asChild && isValidElement<{ children?: ReactNode }>(children) && children.type !== Fragment
+        ? children.props.children
+        : children;
 
     return (
       // eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support.
       <Component
         ref={ref}
         className={className}
-        style={style}
-        variants={isAnimating ? variants : undefined}
+        style={sanitizeStaticStyle(style)}
+        {...safeRest}
+        variants={
+          isHydrated
+            ? applyMotionStyle(variants, isAnimating ? resolvedMotionStyle : 'none')
+            : undefined
+        }
         custom={customData}
-        {...rest}
       >
-        {children}
+        {(canUseAsChild ? children : fallbackChildren) as ReactNode}
       </Component>
     );
   },
 );
 
-StaggerTransitionItem.displayName = 'StaggerTransition.Item';
+StaggerTransitionItemImpl.displayName = 'StaggerTransition.Item';
+
+/** Renders one generic child using the entrance timing supplied by `StaggerTransition`. */
+
+export const StaggerTransitionItem = defineMotionSlotComponent<
+  HTMLDivElement,
+  StaggerTransitionItemProps
+>(StaggerTransitionItemImpl);

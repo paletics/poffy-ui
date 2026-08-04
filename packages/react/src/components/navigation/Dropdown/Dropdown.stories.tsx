@@ -1,4 +1,5 @@
-﻿import { useState } from 'react';
+﻿import { forwardRef, useState } from 'react';
+import type { ComponentPropsWithoutRef } from 'react';
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from 'storybook/test';
 import { css } from '@/styled-system/css';
@@ -11,14 +12,7 @@ import {
   DropdownLabel,
 } from './index';
 
-/**
- * Storybook documentation and visual review surface for Dropdown.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta: Meta<typeof Dropdown> = {
   title: 'Navigation/Dropdown',
   component: Dropdown,
@@ -33,6 +27,17 @@ const meta: Meta<typeof Dropdown> = {
 
 export default meta;
 type Story = StoryObj<typeof Dropdown>;
+
+const StoryRouterLink = forwardRef<
+  HTMLAnchorElement,
+  Omit<ComponentPropsWithoutRef<'a'>, 'href'> & { to: string }
+>(({ to, ...props }, ref) => <a ref={ref} href={to} {...props} />);
+StoryRouterLink.displayName = 'StoryRouterLink';
+
+const StoryButton = forwardRef<HTMLButtonElement, ComponentPropsWithoutRef<'button'>>(
+  (props, ref) => <button ref={ref} {...props} />,
+);
+StoryButton.displayName = 'StoryButton';
 
 export const Default: Story = {
   render: () => (
@@ -74,6 +79,45 @@ export const Interaction: Story = {
   },
 };
 
+export const TabOrder: Story = {
+  render: () => (
+    <div className={css({ display: 'flex', flexDirection: 'column', gap: 'md' })}>
+      <button type="button">Before dropdown</button>
+      <Dropdown>
+        <DropdownTrigger>Tab order menu</DropdownTrigger>
+        <DropdownMenu>
+          <DropdownItem>First action</DropdownItem>
+          <DropdownItem>Second action</DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+      <button type="button">After dropdown</button>
+    </div>
+  ),
+};
+
+const AllDisabledPortalTabOrderExample = () => {
+  const [portalContainer, setPortalContainer] = useState<HTMLDivElement | null>(null);
+
+  return (
+    <div className={css({ display: 'flex', flexDirection: 'column', gap: 'md' })}>
+      <button type="button">Before disabled menu</button>
+      <div ref={setPortalContainer} />
+      <Dropdown>
+        <DropdownTrigger>All disabled menu</DropdownTrigger>
+        <DropdownMenu portalContainer={portalContainer}>
+          <DropdownItem disabled>Unavailable action</DropdownItem>
+          <DropdownItem disabled>Also unavailable</DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+      <button type="button">After disabled menu</button>
+    </div>
+  );
+};
+
+export const AllDisabledPortalTabOrder: Story = {
+  render: () => <AllDisabledPortalTabOrderExample />,
+};
+
 export const WithLabelsAndGroups: Story = {
   render: () => (
     <Dropdown>
@@ -104,6 +148,29 @@ export const WithDisabledItems: Story = {
       </DropdownMenu>
     </Dropdown>
   ),
+};
+
+export const ConstrainedLongTrigger: Story = {
+  render: () => (
+    <div className={css({ width: '[6rem]' })} aria-label="Constrained dropdown trigger" dir="rtl">
+      <Dropdown>
+        <DropdownTrigger>Triggerwithanunusuallylongunbrokenlocalizedlabel</DropdownTrigger>
+        <DropdownMenu>
+          <DropdownItem>First action</DropdownItem>
+          <DropdownItem>Second action</DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+    </div>
+  ),
+};
+
+ConstrainedLongTrigger.parameters = {
+  docs: {
+    description: {
+      story:
+        'Long text wraps inside the parent down to 24px. Below 24px the trigger intentionally preserves the minimum interaction target.',
+    },
+  },
 };
 
 export const Sizes: Story = {
@@ -159,7 +226,7 @@ export const PolymorphicUsage: Story = {
   render: () => (
     <div className={css({ display: 'flex', flexDirection: 'column', gap: 'xl' })}>
       <div>
-        <h3 className={css({ mb: 'sm' })}>Trigger as Link</h3>
+        <h3 className={css({ mb: 'sm' })}>Anchor host as menu button</h3>
         <Dropdown>
           <DropdownTrigger asChild>
             <a href="#actions">Link Trigger</a>
@@ -203,6 +270,52 @@ export const PolymorphicUsage: Story = {
           </DropdownMenu>
         </Dropdown>
       </div>
+    </div>
+  ),
+};
+
+export const TriggerHostContracts: Story = {
+  render: () => (
+    <div className={css({ display: 'flex', flexDirection: 'column', gap: 'md' })}>
+      <Dropdown>
+        <DropdownTrigger asChild>
+          <StoryRouterLink to="/unsafe-navigation">Router host fallback</StoryRouterLink>
+        </DropdownTrigger>
+        <DropdownMenu>
+          <DropdownItem>Fallback action</DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+      <Dropdown>
+        <DropdownTrigger asChild>
+          <StoryButton>Forwarding custom button</StoryButton>
+        </DropdownTrigger>
+        <DropdownMenu>
+          <DropdownItem>Custom action</DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
+    </div>
+  ),
+};
+
+export const SemanticListConstrained: Story = {
+  render: () => (
+    <div
+      aria-label="Constrained semantic dropdown"
+      className={css({ minInlineSize: 0, maxInlineSize: '10rem' })}
+    >
+      <Dropdown>
+        <DropdownTrigger>Semantic actions</DropdownTrigger>
+        <DropdownMenu asChild>
+          <ul>
+            <DropdownItem asChild>
+              <li>Rename a long project title</li>
+            </DropdownItem>
+            <DropdownItem asChild>
+              <li>Archive</li>
+            </DropdownItem>
+          </ul>
+        </DropdownMenu>
+      </Dropdown>
     </div>
   ),
 };

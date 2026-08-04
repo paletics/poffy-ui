@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext } from 'react';
+import { createContext, useContext, type ReactElement } from 'react';
 
 /**
  * Value provided by the StepperContext.
@@ -10,6 +10,8 @@ interface StepperContextValue {
    * The current active step index.
    */
   activeStep: number;
+  /** Whether the entire workflow is in its terminal completed state. */
+  isComplete: boolean;
   /**
    * Generated recipe classes for Stepper slots.
    */
@@ -33,6 +35,8 @@ interface StepperContextValue {
    * Whether the stepper follows a linear progression.
    */
   linear?: boolean;
+  /** Whether steps should suppress their automatic separator. */
+  suppressAutomaticSeparators: boolean;
   /**
    * Callback to notify when a step is selected.
    */
@@ -53,6 +57,7 @@ export const StepperContext = createContext<StepperContextValue | null>(null);
 interface StepContextValue {
   index: number;
   isLast: boolean;
+  manualSeparator?: ReactElement;
 }
 
 /**

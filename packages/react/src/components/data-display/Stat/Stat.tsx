@@ -2,12 +2,23 @@
 
 import { cx } from '@/styled-system/css';
 import { stat } from '@/styled-system/recipes';
-import { ElementType, createContext, forwardRef, useContext } from 'react';
+import { ElementType, createContext, forwardRef, useContext, useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
-import { StatProps } from './Stat.types';
+import {
+  getFallbackChildrenForNativeContainer,
+  getFallbackChildrenPreservingVoidHost,
+} from '@/components/shared/asChild';
+import type { StatComponent, StatProps } from './Stat.types';
+import { StatLabel } from './StatLabel';
+import { StatNumber } from './StatNumber';
+import { StatHelpText } from './StatHelpText';
+import { StatArrow } from './StatArrow';
+import { isStatAsChildHost } from './Stat.utils';
 
 interface StatContextValue {
   intent?: StatProps['intent'];
+  size?: StatProps['size'];
+  classes: ReturnType<typeof stat>;
 }
 
 const StatContext = createContext<StatContextValue | null>(null);
@@ -17,46 +28,37 @@ const StatContext = createContext<StatContextValue | null>(null);
  */
 export const useStatContext = () => useContext(StatContext);
 
-/**
- * A data display block for presenting key metrics and KPIs.
- * ### AI Context & Architecture
- * - Tier: Molecules, Stack: Panda CSS (Recipe: stat), Radix Slot
- * ### Design Tokens
- * - spacing/typography: silver-ratio tokens
- * ### Variant Logic
- * - N/A
- * ### Notes
- * Composed of StatLabel, StatNumber, StatHelpText, and StatArrow sub-components.
- * ### Accessibility
- * - Use descriptive labels to ensure metric content is understood by screen readers.
- * ### AI Usage
- * - Use in dashboard or analytics contexts to highlight a single important figure.
- * @example
- * ```tsx
- * import { Stat } from '@poffy-ui/react/data-display';
- *
- * <Stat>
- *   <Stat.Label>Monthly Revenue</Stat.Label>
- *   <Stat.Number>$1,234,567</Stat.Number>
- *   <Stat.HelpText>
- *     <Stat.Arrow type="increase" />
- *     +12.5% from last month
- *   </Stat.HelpText>
- * </Stat>
- * ```
- */
-export const Stat = forwardRef<HTMLDivElement, StatProps>((props, ref) => {
-  const { asChild, children, className, intent, ...rest } = props;
-  const Component = asChild ? Slot : ('div' as ElementType);
-  const classes = stat({ intent });
+const StatRootImpl = forwardRef<HTMLElement, StatProps>((props, ref) => {
+  const { asChild, children, className, intent, size, ...rest } = props;
+  const canUseAsChild = Boolean(asChild && isStatAsChildHost(children));
+  const Component = (canUseAsChild ? Slot : 'div') as ElementType;
+  const classes = useMemo(() => stat({ intent, size }), [intent, size]);
+  const contextValue = useMemo(() => ({ intent, size, classes }), [intent, size, classes]);
 
   return (
-    <StatContext.Provider value={{ intent }}>
+    <StatContext.Provider value={contextValue}>
       <Component ref={ref} className={cx(classes.root, className)} {...rest}>
-        {children}
+        {asChild && !canUseAsChild
+          ? getFallbackChildrenForNativeContainer(getFallbackChildrenPreservingVoidHost(children))
+          : children}
       </Component>
     </StatContext.Provider>
   );
 });
+StatRootImpl.displayName = 'Stat.Root';
+const StatRoot = StatRootImpl as StatComponent;
 
-Stat.displayName = 'Stat';
+/**
+ * Groups a metric label, value, and optional supporting context.
+ *
+ * `size` and `intent` are inherited by the compound parts. It renders a `div`
+ * by default and accepts `article`, `div`, or `section` for `asChild`; an
+ * incompatible child falls back to a safe native container.
+ */
+
+export const Stat = Object.assign(StatRoot, {
+  Label: StatLabel,
+  Number: StatNumber,
+  HelpText: StatHelpText,
+  Arrow: StatArrow,
+});

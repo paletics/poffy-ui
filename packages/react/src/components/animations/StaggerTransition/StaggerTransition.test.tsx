@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { axe } from 'vitest-axe';
 import 'vitest-axe/extend-expect';
@@ -28,6 +28,39 @@ describe('StaggerTransition', () => {
     );
     expect(container.querySelector('section')).toBeInTheDocument();
     expect(container.querySelector('article')).toBeInTheDocument();
+  });
+
+  it('falls back to div wrappers for invalid asChild children', () => {
+    const { container } = render(
+      <StaggerTransition asChild>
+        <>Plain transition content</>
+      </StaggerTransition>,
+    );
+
+    expect(container.firstElementChild).toBeInstanceOf(HTMLDivElement);
+    expect(screen.getByText('Plain transition content')).toBeInTheDocument();
+
+    render(
+      <StaggerTransition>
+        <StaggerTransition.Item asChild>Plain item content</StaggerTransition.Item>
+      </StaggerTransition>,
+    );
+    expect(screen.getByText('Plain item content').parentElement).toBeInstanceOf(HTMLDivElement);
+  });
+
+  it('renders an item for an invalid runtime animation type', () => {
+    render(
+      <StaggerTransition
+        animationType={'unknown' as 'base'}
+        itemAnimationType={'unknown' as 'fade'}
+      >
+        <StaggerTransition.Item animationType={'unknown' as 'fade'}>
+          Fallback item
+        </StaggerTransition.Item>
+      </StaggerTransition>,
+    );
+
+    expect(screen.getByText('Fallback item')).toBeInTheDocument();
   });
 
   it('has no accessibility violations', async () => {

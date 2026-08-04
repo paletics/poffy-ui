@@ -4,7 +4,10 @@ export { AlertDescription } from './AlertDescription';
 export { AlertIcon } from './AlertIcon';
 export type {
   AlertAppearance,
+  AlertAsChildProps,
   AlertBaseProps,
+  AlertComponent,
+  AlertDefaultProps,
   AlertProps,
   AlertStatus,
   AlertTitleProps,

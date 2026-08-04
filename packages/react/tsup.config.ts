@@ -20,11 +20,15 @@ const categories = [
   'surfaces',
   'media',
   'tree-view',
+  'screen-composer',
 ];
 
 export default defineConfig({
   entry: {
     index: 'src/index.ts',
+    'ssr/index': 'src/ssr/index.ts',
+    'providers/index': 'src/providers/index.ts',
+    'hooks/index': 'src/hooks/index.ts',
     ...Object.fromEntries(
       categories.map((cat) => [cat + '/index', `src/components/${cat}/index.ts`]),
     ),

@@ -1,7 +1,6 @@
 /**
  * Result of applying an OTP editing action.
  *
- * ### Notes
  * Consumers should render `otp` by segment and submit `value`. `nextFocusIndex`
  * is `null` when focus should remain on the current segment.
  */

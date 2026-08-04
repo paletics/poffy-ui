@@ -8,13 +8,6 @@ import { Code, Text } from '@/components/typography';
 import { useState } from 'react';
 import type { DateRange } from '@/components/inputs/Calendar/Calendar.types';
 
-/**
- * ### AI Context & Architecture
- * - **Tier**: Molecules - headless calendar grid
- * - **Modes**: `single` (default) | `multiple` | `range`
- * - **Stack**: Panda CSS (`calendar` SlotRecipe), keyboard-navigable `role="grid"`
- * - **Silver Law**: Cell size and padding scale via Silver Ratio tokens
- */
 const meta: Meta<typeof Calendar> = {
   title: 'Inputs/Calendar',
   component: Calendar,
@@ -49,6 +42,8 @@ const customDayDotClass = css({
   borderRadius: 'full',
   bg: 'variants.danger.main',
 });
+const narrowCalendarClass = css({ width: '[200px]', maxWidth: '100%' });
+const ultraNarrowCalendarClass = css({ width: '[150px]', maxWidth: '100%' });
 
 const REVIEW_MONTH = new Date(2026, 3, 1);
 const REVIEW_DATE_5 = new Date(2026, 3, 5);
@@ -321,5 +316,39 @@ export const AutoFocus: Story = {
     const canvas = within(canvasElement);
     const focusedButton = canvas.getByRole('button', { name: fullDateLabel(REVIEW_MONTH) });
     await expect(focusedButton).toHaveFocus();
+  },
+};
+
+export const ConstrainedWidth: Story = {
+  render: (args) => (
+    <Box className={narrowCalendarClass} aria-label="Constrained calendar container">
+      <Calendar {...args} defaultMonth={REVIEW_MONTH} />
+    </Box>
+  ),
+};
+
+export const UltraNarrowFocus: Story = {
+  render: (args) => (
+    <Box className={ultraNarrowCalendarClass} aria-label="Ultra narrow calendar container">
+      <Calendar {...args} defaultMonth={REVIEW_MONTH} />
+    </Box>
+  ),
+};
+
+export const SmallTargets: Story = {
+  args: {
+    size: 'sm',
+    defaultMonth: REVIEW_MONTH,
+    'aria-label': 'Small calendar targets',
+  },
+};
+
+export const RtlRange: Story = {
+  args: {
+    'aria-label': 'RTL date range',
+    dir: 'rtl',
+    mode: 'range',
+    month: new Date(2025, 0, 1),
+    selected: { from: new Date(2025, 0, 10), to: new Date(2025, 0, 15) },
   },
 };

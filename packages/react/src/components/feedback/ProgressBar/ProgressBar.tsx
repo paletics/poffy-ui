@@ -1,31 +1,127 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
+import { INTENTS } from '@poffy-ui/types';
 import { cx } from '@/styled-system/css';
 import { progressBar } from '@/styled-system/recipes';
-import { CSSProperties, cloneElement, forwardRef, isValidElement } from 'react';
-import type { LabelPosition, ProgressBarProps } from './ProgressBar.types';
+import { useOptionalAnimation } from '@/providers/AnimationProvider';
+import { createNoMotionStyle, sanitizeStaticStyle } from '@/types/motion';
+import { withNoMotionStyle } from '@/components/shared/withNoMotionStyle';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
+import { getProgressBarLabels } from './ProgressBar.locales';
+import {
+  cloneElement,
+  Fragment,
+  forwardRef,
+  isValidElement,
+  type CSSProperties,
+  type ReactNode,
+  useRef,
+} from 'react';
+import type {
+  LabelPosition,
+  ProgressBarComponent,
+  ProgressBarIntent,
+  ProgressBarProps,
+} from '@/components/feedback/ProgressBar/ProgressBar.types';
+import { useProgressLabelPlacement } from './useProgressLabelPlacement';
+import { materializeReactNodeTree } from '@/components/shared/flattenFragmentChildren';
 
 const MIN_INSIDE_THICKNESS = 16;
 const LABEL_HORIZONTAL_PADDING = 16;
+const AUTO_POSITION_HYSTERESIS = 2;
 const AVERAGE_CHARACTER_WIDTH = 0.62;
 const LOAD_PROGRESS_PERCENT = 70.7;
+const progressBarAppearances = new Set(['solid', 'soft', 'outline']);
+const progressBarShapes = new Set(['rounded', 'square']);
+const progressBarPatterns = new Set(['simple', 'dashed']);
+const progressBarBorderTypes = new Set(['solid', 'dashed', 'dotted', 'none']);
+const progressBarLabelPositions = new Set(['auto', 'center', 'right', 'top', 'bottom', 'inside']);
 type ResolvedLabelPosition = Exclude<LabelPosition, 'auto'>;
+// Native and custom hosts must accept the span-based progressbar subtree.
+// Native elements are restricted to known flow containers; custom components
+// must forward props and refs to an HTML flow container.
+const safeProgressBarAsChildNativeElements = new Set([
+  'article',
+  'aside',
+  'blockquote',
+  'div',
+  'figcaption',
+  'figure',
+  'footer',
+  'header',
+  'main',
+  'nav',
+  'p',
+  'section',
+  'span',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'h5',
+  'h6',
+]);
+const isSafeProgressBarAsChildHost = (children: ReactNode) =>
+  isValidElement(children) &&
+  children.type !== Fragment &&
+  (typeof children.type === 'string'
+    ? safeProgressBarAsChildNativeElements.has(children.type)
+    : true);
 
-const clampProgress = (value: number) => Math.min(100, Math.max(0, value));
+const clampProgress = (value: number) =>
+  Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : 0;
 
-const getLabelText = (children: ProgressBarProps['children'], progressPercent: number) => {
-  if (typeof children === 'string' || typeof children === 'number') {
-    return String(children);
+const normalizeIntent = (intent: unknown): ProgressBarIntent | undefined =>
+  typeof intent === 'string' && INTENTS.includes(intent as (typeof INTENTS)[number])
+    ? (intent as ProgressBarIntent)
+    : undefined;
+
+const normalizeStringValue = <T extends string>(
+  value: unknown,
+  values: Set<string>,
+  fallback: T,
+): T => (typeof value === 'string' && values.has(value) ? (value as T) : fallback);
+
+const normalizeAnimationType = (value: unknown): 'progress' | 'load' | false =>
+  value === 'progress' || value === 'load' || value === false ? value : 'progress';
+
+const normalizeProgressWidth = (
+  size: number | string,
+): { cssWidth: string; estimatedWidth?: number } => {
+  if (typeof size === 'number') {
+    const estimatedWidth = Number.isFinite(size) && size > 0 ? size : 300;
+    return { cssWidth: `${estimatedWidth}px`, estimatedWidth };
+  }
+
+  const cssWidth = size.trim();
+  return cssWidth ? { cssWidth } : { cssWidth: '300px', estimatedWidth: 300 };
+};
+
+const getLabelText = (label: ProgressBarProps['label'], progressPercent: number) => {
+  if (typeof label === 'string' || typeof label === 'number') {
+    return String(label);
   }
 
   return `${progressPercent}%`;
 };
 
+/**
+ * Flattens native wrappers, whose content model may be invalid inside the label span,
+ * while preserving custom components so public ReactNode labels keep rendering.
+ */
+const getSafeProgressLabelChildren = (children: ReactNode): ReactNode => {
+  if (Array.isArray(children)) return children.map(getSafeProgressLabelChildren);
+  if (!isValidElement<{ children?: ReactNode }>(children)) {
+    return typeof children === 'object' && children !== null ? null : children;
+  }
+  return getSafeProgressLabelChildren(children.props.children);
+};
+
 const resolveLabelPosition = ({
   animationType,
-  children,
   fontSize,
+  label,
   labelPosition,
   progressPercent,
   showProgress,
@@ -33,9 +129,9 @@ const resolveLabelPosition = ({
   thickness,
 }: Pick<
   ProgressBarProps,
-  'animationType' | 'children' | 'fontSize' | 'labelPosition' | 'progressPercent' | 'showProgress'
+  'animationType' | 'fontSize' | 'label' | 'labelPosition' | 'progressPercent' | 'showProgress'
 > & {
-  size: number;
+  size?: number;
   thickness: number;
 }): ResolvedLabelPosition => {
   if (labelPosition !== 'auto') {
@@ -46,9 +142,13 @@ const resolveLabelPosition = ({
     return 'right';
   }
 
+  // CSS lengths such as percentages and container-query units cannot be
+  // estimated before layout. Start outside, then let measurement correct it.
+  if (size === undefined) return 'right';
+
   const resolvedFontSize =
     typeof fontSize === 'number' ? fontSize : Math.min(16, Math.max(12, thickness * 0.65));
-  const labelText = getLabelText(children, progressPercent ?? 0);
+  const labelText = getLabelText(label, progressPercent ?? 0);
   const estimatedLabelWidth =
     labelText.length * resolvedFontSize * AVERAGE_CHARACTER_WIDTH + LABEL_HORIZONTAL_PADDING;
   const availableProgressPercent =
@@ -58,39 +158,15 @@ const resolveLabelPosition = ({
   return availableBarWidth >= estimatedLabelWidth ? 'inside' : 'right';
 };
 
-/**
- * Displays task completion or loading progress as a linear bar.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: progressBar), Radix Slot
- * ### Design Tokens
- * - size/thickness: expressed as CSS custom properties driven by props.
- * ### Variant Logic
- * - variant: primary/secondary/success/danger communicates urgency and status.
- * ### Variant Logic
- * - animationType: progress=fill animation, indeterminate=continuous loop.
- * ### Variant Logic
- * - shape: simple=flat, striped=diagonal pattern.
- * ### Notes
- * Uses CSS custom properties (--progress-width, --progress-bar-width) for dimensions.
- * ### Accessibility
- * - Must set `role="progressbar"`, `aria-valuenow`, `aria-valuemin`, and `aria-valuemax`.
- * ### AI Usage
- * - Use for determinate (known %) and indeterminate (unknown duration) loading states.
- *
- * @example Determinate upload progress
- * ```tsx
- * import { ProgressBar } from '@poffy-ui/react/feedback';
- *
- * <ProgressBar progressPercent={72} showProgress aria-label="Upload progress" />
- * ```
- */
-export const ProgressBar = forwardRef<HTMLElement, ProgressBarProps>((props, ref) => {
+const ProgressBarImpl = forwardRef<HTMLElement, ProgressBarProps>((publicProps, ref) => {
+  const props = publicProps as ProgressBarProps & { variant?: unknown };
   const {
     asChild,
     children,
+    label,
     appearance = 'solid',
     intent = 'primary',
-    variant = 'primary',
+    variant: _unsupportedVariant,
     size = 300,
     thickness = 10,
     progressPercent = 0,
@@ -106,91 +182,191 @@ export const ProgressBar = forwardRef<HTMLElement, ProgressBarProps>((props, ref
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
     'aria-describedby': ariaDescribedBy,
+    'aria-valuetext': ariaValueText,
+    role: _managedRole,
+    'aria-valuenow': _managedAriaValueNow,
+    'aria-valuemin': _managedAriaValueMin,
+    'aria-valuemax': _managedAriaValueMax,
     ...rest
-  } = props;
+  } = props as ProgressBarProps & {
+    variant?: unknown;
+    role?: unknown;
+    'aria-valuenow'?: unknown;
+    'aria-valuemin'?: unknown;
+    'aria-valuemax'?: unknown;
+  };
 
-  const shouldUseSlot = asChild && isValidElement(children);
-  const Component = shouldUseSlot ? Slot : 'span';
-  const labelChildren = shouldUseSlot ? undefined : children;
-  const clampedProgressPercent = clampProgress(progressPercent);
-  const font = Math.min(16, Math.max(12, thickness * 0.65));
-  const resolvedLabelPosition = resolveLabelPosition({
-    animationType,
-    children: labelChildren,
-    fontSize,
+  const { isAnimating } = useOptionalAnimation();
+  const locale = useOptionalLocale()?.locale;
+  const labels = getProgressBarLabels(locale);
+  const resolvedIntent = normalizeIntent(intent) ?? 'primary';
+  const resolvedAppearance = normalizeStringValue(appearance, progressBarAppearances, 'solid');
+  const resolvedShape = normalizeStringValue(shape, progressBarShapes, 'rounded');
+  const resolvedPattern = normalizeStringValue(pattern, progressBarPatterns, 'simple');
+  const resolvedBorderType =
+    borderType === undefined
+      ? undefined
+      : normalizeStringValue(borderType, progressBarBorderTypes, 'none');
+  const requestedLabelPosition = normalizeStringValue(
     labelPosition,
+    progressBarLabelPositions,
+    'auto',
+  );
+  const normalizedAnimationType = normalizeAnimationType(animationType);
+  const { cssWidth, estimatedWidth } = normalizeProgressWidth(size);
+  const normalizedThickness = Number.isFinite(thickness) && thickness > 0 ? thickness : 10;
+  const normalizedFontSize =
+    typeof fontSize === 'number' && Number.isFinite(fontSize) && fontSize > 0
+      ? fontSize
+      : undefined;
+  const shouldUseSlot = asChild && isSafeProgressBarAsChildHost(children);
+  const Component = shouldUseSlot ? Slot : 'span';
+  const staticChild = withNoMotionStyle(children, !isAnimating);
+  const materializedLabel = materializeReactNodeTree(label);
+  const safeLabel = getSafeProgressLabelChildren(materializedLabel);
+  const clampedProgressPercent = clampProgress(progressPercent);
+  const visualProgressPercent =
+    normalizedAnimationType === 'load' ? LOAD_PROGRESS_PERCENT : clampedProgressPercent;
+  const font = Math.min(16, Math.max(12, normalizedThickness * 0.65));
+  const resolvedAnimationType = isAnimating ? normalizedAnimationType : false;
+  const normalizedAriaLabel = ariaLabel?.trim() || undefined;
+  const normalizedAriaLabelledBy = ariaLabelledBy?.trim() || undefined;
+  const normalizedAriaValueText = ariaValueText?.trim() || undefined;
+  const defaultLabel =
+    normalizedAnimationType === 'load' ? labels.loading : `${clampedProgressPercent}%`;
+  const estimatedLabelPosition = resolveLabelPosition({
+    animationType: normalizedAnimationType,
+    fontSize: typeof fontSize === 'string' ? fontSize : normalizedFontSize,
+    label: safeLabel,
+    labelPosition: requestedLabelPosition,
     progressPercent: clampedProgressPercent,
     showProgress,
-    size,
-    thickness,
+    size: estimatedWidth,
+    thickness: normalizedThickness,
+  });
+  const measurementKey = JSON.stringify([
+    cssWidth,
+    defaultLabel,
+    fontSize,
+    normalizedAnimationType,
+    normalizedThickness,
+    requestedLabelPosition,
+    showProgress,
+    visualProgressPercent,
+  ]);
+  const progressRootRef = useRef<HTMLSpanElement>(null);
+  const measurementRef = useRef<HTMLSpanElement>(null);
+  const resolvedLabelPosition = useProgressLabelPlacement({
+    barRef: progressRootRef,
+    enabled: requestedLabelPosition === 'auto' && showProgress,
+    estimatedPosition: estimatedLabelPosition,
+    fillPercent: visualProgressPercent,
+    hysteresis: AUTO_POSITION_HYSTERESIS,
+    inlinePadding: LABEL_HORIZONTAL_PADDING,
+    label,
+    measurementKey,
+    measurementRef,
   });
 
   const classes = progressBar({
-    variant: variant ?? intent,
-    appearance,
-    shape,
-    pattern,
-    animationType: animationType === false ? undefined : animationType,
-    borderType,
+    intent: resolvedIntent,
+    appearance: resolvedAppearance,
+    shape: resolvedShape,
+    pattern: resolvedPattern,
+    animationType: resolvedAnimationType === false ? 'none' : resolvedAnimationType,
+    borderType: resolvedBorderType,
     labelPosition: resolvedLabelPosition,
   });
 
   const content = (
     <>
-      <div
+      <span
+        ref={progressRootRef}
         className={classes.root}
-        data-variant={variant ?? intent}
-        data-progressbar-variant={variant ?? intent}
-        data-progressbar-animation={animationType}
+        data-intent={resolvedIntent}
+        data-progressbar-intent={resolvedIntent}
+        data-progressbar-animation={isAnimating ? normalizedAnimationType : 'none'}
         role="progressbar"
-        aria-valuenow={animationType === 'load' ? undefined : clampedProgressPercent}
+        aria-valuenow={normalizedAnimationType === 'load' ? undefined : clampedProgressPercent}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={
-          ariaLabel ??
-          (ariaLabelledBy
-            ? undefined
-            : animationType === 'load'
-              ? 'Loading progress'
-              : `Progress ${clampedProgressPercent}%`)
+        aria-valuetext={
+          normalizedAriaValueText ??
+          (normalizedAnimationType === 'load' ? undefined : `${clampedProgressPercent}%`)
         }
-        aria-labelledby={ariaLabelledBy}
+        aria-label={
+          normalizedAriaLabel ??
+          (normalizedAriaLabelledBy
+            ? undefined
+            : normalizedAnimationType === 'load'
+              ? labels.loadingProgress
+              : labels.progress)
+        }
+        aria-labelledby={normalizedAriaLabelledBy}
         aria-describedby={ariaDescribedBy}
       >
-        <div className={classes.track} data-variant={variant} />
-        <div className={classes.bar} data-variant={variant} data-testid="progress-bar-bar">
-          {showProgress && resolvedLabelPosition === 'inside' && (
-            <div className={classes.label}>{labelChildren ?? `${clampedProgressPercent}%`}</div>
-          )}
-        </div>
-        {showProgress && resolvedLabelPosition === 'center' && (
-          <div className={classes.label}>{labelChildren ?? `${clampedProgressPercent}%`}</div>
-        )}
-      </div>
-      {showProgress && resolvedLabelPosition !== 'center' && resolvedLabelPosition !== 'inside' && (
-        <div className={classes.label}>{labelChildren ?? `${clampedProgressPercent}%`}</div>
+        <span className={classes.track} data-intent={resolvedIntent} />
+        <span className={classes.bar} data-intent={resolvedIntent} data-testid="progress-bar-bar" />
+      </span>
+      {showProgress && (
+        <span
+          className={classes.label}
+          data-progressbar-label-position={resolvedLabelPosition}
+          inert
+        >
+          {safeLabel ?? defaultLabel}
+        </span>
       )}
+      {showProgress && requestedLabelPosition === 'auto' ? (
+        <span
+          ref={measurementRef}
+          className={classes.measurement}
+          data-progressbar-label-measurement=""
+          aria-hidden="true"
+          inert
+        >
+          {safeLabel ?? defaultLabel}
+        </span>
+      ) : null}
     </>
   );
+  const rootStyle = {
+    ...sanitizeStaticStyle(style),
+    '--progress-width': cssWidth,
+    '--progress-height': `${normalizedThickness}px`,
+    '--progress-bar-width': `${visualProgressPercent}%`,
+    '--progress-font-size':
+      typeof fontSize === 'string' ? fontSize : `${normalizedFontSize ?? font}px`,
+    ...(!isAnimating && createNoMotionStyle()),
+  } as CSSProperties;
+  const managedStyle = {
+    '--progress-width': cssWidth,
+    '--progress-height': `${normalizedThickness}px`,
+    '--progress-bar-width': `${visualProgressPercent}%`,
+    '--progress-font-size':
+      typeof fontSize === 'string' ? fontSize : `${normalizedFontSize ?? font}px`,
+    ...(!isAnimating && createNoMotionStyle()),
+  } as CSSProperties;
+  const slottedContent =
+    shouldUseSlot && isValidElement<{ style?: CSSProperties }>(staticChild)
+      ? cloneElement(
+          staticChild,
+          { style: { ...rootStyle, ...staticChild.props.style, ...managedStyle } },
+          content,
+        )
+      : content;
 
   return (
-    <Component
-      ref={ref}
-      {...rest}
-      className={cx(classes.container, className)}
-      style={
-        {
-          '--progress-width': `${size}px`,
-          '--progress-height': `${thickness}px`,
-          '--progress-bar-width': `${clampedProgressPercent}%`,
-          '--progress-font-size': typeof fontSize === 'string' ? fontSize : `${fontSize ?? font}px`,
-          ...style,
-        } as CSSProperties
-      }
-    >
-      {shouldUseSlot ? cloneElement(children, undefined, content) : content}
+    <Component ref={ref} {...rest} className={cx(classes.container, className)} style={rootStyle}>
+      {slottedContent}
     </Component>
   );
 });
 
-ProgressBar.displayName = 'ProgressBar';
+ProgressBarImpl.displayName = 'ProgressBar';
+
+/**
+ * Visualizes linear determinate progress or indeterminate loading. Provide an accessible name;
+ * indeterminate mode intentionally omits `aria-valuenow`.
+ */
+export const ProgressBar = ProgressBarImpl as ProgressBarComponent;

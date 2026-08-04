@@ -55,4 +55,45 @@ export const globalCss = {
     outlineColor: 'brand.main',
     outlineOffset: '{focusRing.offset}',
   },
+
+  /**
+   * AnimationProvider writes this attribute for `motionStyle="none"`, explicit
+   * animation disablement, and the OS reduced-motion preference. It covers CSS
+   * recipe keyframes in addition to Motion-powered primitives.
+   */
+  '[data-animation="disabled"]': {
+    animation: 'none !important',
+    transition: 'none !important',
+    scrollBehavior: 'auto !important',
+  },
+  '@scope ([data-animation="disabled"]) to ([data-animation])': {
+    '*': {
+      animation: 'none !important',
+      transition: 'none !important',
+      scrollBehavior: 'auto !important',
+    },
+    '*::before, *::after': {
+      animation: 'none !important',
+      transition: 'none !important',
+      scrollBehavior: 'auto !important',
+    },
+  },
+  '[data-motion-scope-fallback="disabled"], [data-motion-scope-fallback="disabled"] *, [data-motion-scope-fallback="disabled"] *::before, [data-motion-scope-fallback="disabled"] *::after':
+    {
+      animation: 'none !important',
+      transition: 'none !important',
+      scrollBehavior: 'auto !important',
+    },
+
+  /**
+   * Preserve the OS accessibility preference even before React hydrates or when
+   * consumers use Poffy components without an AnimationProvider.
+   */
+  '@media (prefers-reduced-motion: reduce)': {
+    '*, *::before, *::after': {
+      animation: 'none !important',
+      transition: 'none !important',
+      scrollBehavior: 'auto !important',
+    },
+  },
 } satisfies GlobalStyleObject;

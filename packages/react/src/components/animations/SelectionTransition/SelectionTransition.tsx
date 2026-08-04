@@ -2,42 +2,21 @@
 
 import { Slot } from '@radix-ui/react-slot';
 import { AnimatePresence } from 'motion/react';
-import { useOptionalAnimation } from '@/providers/AnimationProvider';
-import { forwardRef, ReactNode, useMemo } from 'react';
-import { getMotionComponent } from '../utils';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
+import { forwardRef, Fragment, isValidElement, type ReactNode, useMemo } from 'react';
+import { isolatePresenceChild } from '../presenceIsolation';
+import { getMotionComponent, resolvePresetKey } from '../utils';
+import { useHydratedAnimationPolicy } from '../useHydratedAnimationPolicy';
 import { selectionVariants } from './SelectionTransition.presets';
 import { SelectionAnimationType, SelectionTransitionProps } from './SelectionTransition.types';
+import { SelectionTransitionPresence } from './SelectionTransitionPresence';
 
-/**
- * A controlled wrapper for selected-state indicators.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Framer Motion (`AnimatePresence`), Radix Slot
- * ### Design Tokens
- * - transition: Uses Silver Ratio spring and duration presets from `selectionVariants`.
- * ### Variant Logic
- * - `check`: default selection mark entrance.
- * - `pop`: higher-emphasis dot or chip selection.
- * - `fade`: minimal visual state changes.
- * @example
- * ```tsx
- * import { SelectionTransition } from '@poffy-ui/react';
- *
- * <SelectionTransition isSelected={checked}>
- *   <CheckIcon aria-hidden="true" />
- * </SelectionTransition>
- * ```
- * ### Notes
- * `SelectionTransition` only animates the indicator. The owning control must still
- * provide semantic state through native checked attributes or ARIA such as `aria-selected`.
- * ### Accessibility
- * - Respects `prefers-reduced-motion`.
- * - Closed persistent indicators receive `aria-hidden`.
- * ### AI Usage
- * - **DO**: Use for Checkbox marks, Radio dots, Switch thumbs/marks, selected menu item markers,
- *   and active filter indicators.
- * - **DON'T**: Use as the selected-state source of truth; the owning input or option controls semantics.
- */
-export const SelectionTransition = forwardRef<HTMLSpanElement, SelectionTransitionProps>(
+const SelectionTransitionImpl = forwardRef<HTMLSpanElement, SelectionTransitionProps>(
   (
     {
       asChild,
@@ -53,9 +32,37 @@ export const SelectionTransition = forwardRef<HTMLSpanElement, SelectionTransiti
     },
     ref,
   ) => {
-    const { isAnimating } = useOptionalAnimation();
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'span'), [asChild]);
-    const variants = selectionVariants[animationType as SelectionAnimationType];
+    const { isHydrated, resolvedMotionStyle, shouldAnimate } = useHydratedAnimationPolicy();
+    const canUseAsChild = Boolean(
+      asChild && isValidElement(children) && children.type !== Fragment,
+    );
+    const Component = useMemo(
+      () => getMotionComponent(canUseAsChild ? Slot : 'span'),
+      [canUseAsChild],
+    );
+    const animationKey = resolvePresetKey<typeof selectionVariants, SelectionAnimationType>(
+      selectionVariants,
+      animationType,
+      'check',
+    );
+    const variants = selectionVariants[animationKey];
+    const safeRest = sanitizeControlledMotionProps(rest);
+    const transition = applyMotionStyle(variants.transition, resolvedMotionStyle);
+    const styledVariants = applyMotionStyle(variants, resolvedMotionStyle);
+    const staticStyle = sanitizeStaticStyle(style);
+    const hiddenStyle =
+      !isSelected && !shouldAnimate
+        ? {
+            ...staticStyle,
+            ...sanitizeStaticStyle(styledVariants.exit),
+            visibility: 'hidden' as const,
+          }
+        : staticStyle;
+    const renderedChildren = isolatePresenceChild(
+      children as ReactNode,
+      canUseAsChild && !isSelected,
+      !shouldAnimate ? hiddenStyle : undefined,
+    );
 
     if (keepMounted) {
       return (
@@ -63,43 +70,57 @@ export const SelectionTransition = forwardRef<HTMLSpanElement, SelectionTransiti
         <Component
           ref={ref}
           className={className}
-          style={style}
+          style={hiddenStyle}
           data-selected={isSelected ? '' : undefined}
-          aria-hidden={!isSelected}
+          {...safeRest}
+          aria-hidden={!isSelected ? true : safeRest['aria-hidden']}
+          inert={!isSelected ? true : safeRest.inert}
           initial={false}
-          animate={!isAnimating || isSelected ? 'animate' : 'exit'}
-          variants={isAnimating ? variants : undefined}
-          transition={variants.transition}
-          {...rest}
+          animate={shouldAnimate ? (isSelected ? 'animate' : 'exit') : undefined}
+          variants={shouldAnimate ? styledVariants : undefined}
+          transition={shouldAnimate ? transition : undefined}
         >
-          {children as ReactNode}
+          {renderedChildren}
         </Component>
       );
     }
 
     return (
-      <AnimatePresence mode="wait" initial={initial}>
+      <AnimatePresence mode="wait" initial={isHydrated && initial}>
         {isSelected && (
-          // eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support.
-          <Component
+          <SelectionTransitionPresence
+            Component={Component}
             key={transitionKey ?? 'selected'}
             ref={ref}
             className={className}
-            style={style}
-            data-selected=""
-            initial={isAnimating ? 'initial' : false}
-            animate={isAnimating ? 'animate' : undefined}
-            exit={isAnimating ? 'exit' : undefined}
-            variants={isAnimating ? variants : undefined}
-            transition={variants.transition}
-            {...rest}
+            safeRest={safeRest}
+            staticStyle={staticStyle}
+            isolateAsChild={canUseAsChild}
+            shouldAnimate={shouldAnimate}
+            variants={styledVariants}
+            transition={transition}
           >
             {children as ReactNode}
-          </Component>
+          </SelectionTransitionPresence>
         )}
       </AnimatePresence>
     );
   },
 );
 
-SelectionTransition.displayName = 'SelectionTransition';
+SelectionTransitionImpl.displayName = 'SelectionTransition';
+
+/**
+ * Animates a caller-controlled selected indicator.
+ *
+ * The owning option retains selection state and ARIA semantics. When
+ * `keepMounted` is false, an unselected indicator exits and unmounts; when
+ * true, it remains mounted but is inert and `aria-hidden`. `transitionKey`
+ * identifies replacement indicators, and reduced motion renders the selected
+ * state without animation. `asChild` delegates to one non-Fragment child.
+ */
+
+export const SelectionTransition = defineMotionSlotComponent<
+  HTMLSpanElement,
+  SelectionTransitionProps
+>(SelectionTransitionImpl);

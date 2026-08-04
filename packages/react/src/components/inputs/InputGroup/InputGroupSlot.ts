@@ -3,7 +3,7 @@ import type { ComponentType } from 'react';
 /**
  * Slot identifiers used by InputGroup compound children.
  */
-type InputGroupSlot = 'leftAddon' | 'rightAddon' | 'leftElement' | 'rightElement';
+type InputGroupSlot = 'startAddon' | 'endAddon' | 'startElement' | 'endElement';
 
 /**
  * Symbol marker used to identify InputGroup slot components.

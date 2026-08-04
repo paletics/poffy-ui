@@ -12,6 +12,11 @@ interface AccordionItemContextValue {
   contentId: string;
   /** Whether this accordion item is disabled. */
   disabled?: boolean;
+  triggerId?: string;
+  panelId?: string;
+  invalidStructure: boolean;
+  registerTrigger: (id: string) => () => void;
+  registerContent: (id: string) => () => void;
 }
 
 /**

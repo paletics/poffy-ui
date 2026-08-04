@@ -1,126 +1,225 @@
 'use client';
 
-import { forwardRef, useMemo, useState } from 'react';
-import { cx } from '@/styled-system/css';
+import { forwardRef, useCallback, useId, useMemo, useRef, useState } from 'react';
+import { useMergeRefs } from '@poffy-ui/behavior/hooks';
+import { VisuallyHidden } from '@/components/a11y/VisuallyHidden';
+import { css, cx } from '@/styled-system/css';
 import { fileUploader } from '@/styled-system/recipes';
-import type { FileUploaderProps } from './FileUploader.types';
-import { FileUploaderContext, type FileUploaderItem } from './FileUploaderContext';
-
-const createFileItems = (
-  files: File[],
-  startingId: number,
-  previousItems: FileUploaderItem[] = [],
-): { fileItems: FileUploaderItem[]; nextFileId: number } => {
-  const idsByFile = new Map<File, string[]>();
-  let nextFileId = startingId;
-
-  for (const item of previousItems) {
-    idsByFile.set(item.file, [...(idsByFile.get(item.file) ?? []), item.id]);
-  }
-
-  return {
-    fileItems: files.map((file) => ({
-      id: idsByFile.get(file)?.shift() ?? `file-${nextFileId++}`,
-      file,
-    })),
-    nextFileId,
-  };
-};
+import {
+  hasAriaInvalid,
+  resolveFormControlAria,
+} from '@/components/inputs/FormControl/formControlAria';
+import { useFormControl } from '@/components/inputs/FormControl/useFormControl';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
+import type { FileUploaderRootProps } from './FileUploader.types';
+import { FileUploaderContext } from './FileUploaderContext';
+import { getFileUploaderMessages } from './FileUploader.locales';
+import { getCommonMessages } from '@/components/shared/common.locales';
+import { useFileUploaderFocus } from './useFileUploaderFocus';
+import { useFileUploaderFormBridge } from './useFileUploaderFormBridge';
+import { useFormControlBridge } from '@/components/inputs/shared/useFormControlBridge';
+import { useFileUploadState } from '@poffy-ui/behavior/file-upload/react';
 
 /**
- * State root for FileUploader compound components.
+ * Internal-state root for `FileUploader` compound parts.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`fileUploader` slot recipe), React context
- * - **Props**: `FileUploaderProps`
- *
- * ### Design Tokens
- * - **spacing**: drop zone padding and list gaps are defined by the file uploader recipe
- * - **color**: border, drag-active, and intent colors use semantic tokens
- *
- * ### Variant Logic
- * - **appearance="outline"**: Standard upload region with a visible boundary.
- * - **appearance="ghost"**: Lower-emphasis upload area on already framed surfaces.
- * - **intent**: Adjusts drag-active and accent colors for primary or semantic contexts.
- *
- * ### Accessibility
- * - **Role**: generic container; `FileUploaderZone` provides the interactive button semantics.
- * - **Pattern**: File picker with drag-and-drop enhancement.
- * - **Keyboard**: Delegated to `FileUploaderZone`.
- * - **Required**: Provide clear helper text or an accessible label on the zone.
- *
- * ### AI Usage
- * - **DO**: Use as `FileUploader.Root` when composing a custom zone or list.
- * - **DON'T**: Do not render `FileUploader.Zone` outside this root.
- *
- * @example Composable usage
- * ```tsx
- * <FileUploader.Root accept="image/*" multiple>
- *   <FileUploader.Zone />
- *   <FileUploader.List />
- * </FileUploader.Root>
- * ```
- *
- * @example Size validation
- * ```tsx
- * <FileUploader.Root maxSize={2_000_000} onChange={setFiles}>
- *   <FileUploader.Zone helperText="Upload images under 2 MB" />
- * </FileUploader.Root>
- * ```
+ * Accepted selections update the owned file list and notify `onChange`; rejected candidates leave
+ * that list unchanged and are announced through a polite live region. Disabled/read-only state
+ * blocks picking, dropping, and removal. With `name`, selected files are appended to the
+ * associated form on submission, while reset restores `defaultFiles`.
  */
-export const FileUploaderRoot = forwardRef<HTMLDivElement, FileUploaderProps>((props, ref) => {
+export const FileUploaderRoot = forwardRef<HTMLDivElement, FileUploaderRootProps>((props, ref) => {
   const {
     accept,
     maxSize,
     multiple = false,
     onChange,
+    onReject,
     defaultFiles = [],
     appearance = 'outline',
     intent = 'primary',
     className,
     children,
+    name,
+    form,
+    disabled,
+    readOnly,
+    required,
+    id: idProp,
+    'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-describedby': ariaDescribedBy,
+    'aria-errormessage': ariaErrorMessage,
+    'aria-invalid': ariaInvalid,
+    asChild: _legacyAsChild,
+    helperText: _legacyHelperText,
+    locale: localeProp,
+    messages: messageOverrides,
     ...rest
-  } = props;
+  } = props as FileUploaderRootProps & { asChild?: unknown; helperText?: unknown };
+  void _legacyAsChild;
+  void _legacyHelperText;
+
+  const formControl = useFormControl();
+  const providerLocale = useOptionalLocale()?.locale;
+  const messages = useMemo(
+    () => getFileUploaderMessages(localeProp ?? providerLocale ?? 'en-US', messageOverrides),
+    [localeProp, messageOverrides, providerLocale],
+  );
+  const explicitDisabled = disabled ?? formControl.isDisabled ?? false;
+  const formBridge = useFormControlBridge({ disabled: explicitDisabled, form });
+  const isDisabled = formBridge.effectivelyDisabled;
+  const isReadOnly = readOnly ?? formControl.isReadOnly ?? false;
+  const isRequired = required ?? formControl.isRequired ?? false;
+  const requiredDescriptionId = useId();
+  const requiredMessage = getCommonMessages(localeProp ?? providerLocale).required;
+  const isInvalid = formControl.isInvalid;
+  const hasExplicitInvalid = hasAriaInvalid(ariaInvalid);
+  const shouldAssociateErrorMessage = isInvalid || hasExplicitInvalid;
+  const { describedBy, errorMessage } = resolveFormControlAria({
+    ariaDescribedBy,
+    ariaErrorMessage,
+    errorMessageIds: formControl.errorMessageIds,
+    helperTextIds: formControl.helperTextIds,
+    isInvalid: shouldAssociateErrorMessage,
+  });
+  const inputId = idProp ?? formControl.id;
 
   const classes = fileUploader({ appearance, intent });
-  const [fileState, setFileState] = useState(() => createFileItems(defaultFiles, 0));
   const [isDragging, setIsDragging] = useState(false);
-  const { fileItems } = fileState;
-  const files = useMemo(() => fileItems.map((item) => item.file), [fileItems]);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+  const mergedRef = useMergeRefs(rootRef, ref);
+  const {
+    fileItems,
+    files,
+    lastRejections,
+    removeFile: removeFileFromState,
+    resetFiles,
+    selectFiles: selectFileCandidates,
+    submissionFilesRef,
+  } = useFileUploadState<File>({
+    accept,
+    defaultFiles,
+    disabled: isDisabled,
+    isInteractionDisabled: formBridge.isEffectivelyDisabledNow,
+    maxSize,
+    multiple,
+    onChange,
+    onReject,
+    readOnly: isReadOnly,
+  });
+  const selectFiles = useCallback(
+    (fileList: FileList | null) => selectFileCandidates(fileList ? Array.from(fileList) : null),
+    [selectFileCandidates],
+  );
+  const { focusAfterRemoval, focusFirstZone, inputRef, registerZone } =
+    useFileUploaderFocus(rootRef);
+  const formEventRef = useFileUploaderFormBridge({
+    filesRef: submissionFilesRef,
+    isEffectivelyDisabledNow: formBridge.isEffectivelyDisabledNow,
+    name,
+    onReset: resetFiles,
+  });
+  const formAnchorRef = useMergeRefs(formBridge.anchorRef, formEventRef);
+  const resolvedLabelledBy = ariaLabelledBy ?? formControl.labelId;
+  const resolvedInputAriaLabel = resolvedLabelledBy
+    ? undefined
+    : (ariaLabel ?? messages.selectFiles);
+  const joinedInputDescribedBy = [describedBy, isRequired ? requiredDescriptionId : undefined]
+    .filter(Boolean)
+    .join(' ');
+  const inputDescribedBy = joinedInputDescribedBy.length > 0 ? joinedInputDescribedBy : undefined;
 
-  const setFiles = (nextFiles: File[]) => {
-    setFileState((currentState) =>
-      createFileItems(nextFiles, currentState.nextFileId, currentState.fileItems),
-    );
+  const openFileDialog = () => {
+    if (isDisabled || isReadOnly) return;
+    inputRef.current?.click();
   };
 
   const removeFile = (index: number) => {
-    const updatedFiles = fileItems.filter((_, i) => i !== index).map((item) => item.file);
-    setFileState((currentState) =>
-      createFileItems(updatedFiles, currentState.nextFileId, currentState.fileItems),
-    );
-    onChange?.(updatedFiles);
+    if (!removeFileFromState(index)) return;
+    focusAfterRemoval(index);
   };
+
+  const rejectionMessage = useMemo(
+    () => lastRejections.map(messages.formatRejection).join(' '),
+    [lastRejections, messages],
+  );
 
   const contextValue = {
     fileItems,
     files,
-    setFiles,
-    isDragging,
+    selectFiles,
+    openFileDialog,
+    registerZone,
+    isDragging: [isDisabled, isReadOnly].some(Boolean) ? false : isDragging,
     setIsDragging,
-    accept,
-    maxSize,
-    multiple,
-    onChange,
+    messages,
     classes,
     removeFile,
+    inputId,
+    form,
+    labelId: formControl.labelId,
+    ariaLabel,
+    ariaLabelledBy,
+    describedBy: inputDescribedBy,
+    errorMessage,
+    isDisabled,
+    isReadOnly,
+    isRequired,
+    isInvalid: shouldAssociateErrorMessage,
   };
 
   return (
     <FileUploaderContext.Provider value={contextValue}>
-      <div ref={ref} className={cx(classes.root, className)} {...rest}>
+      <div
+        ref={mergedRef}
+        className={cx(classes.root, className)}
+        data-disabled={isDisabled ? '' : undefined}
+        data-readonly={isReadOnly ? '' : undefined}
+        {...rest}
+      >
+        <fieldset {...formBridge.anchorProps} ref={formAnchorRef} />
+        <input
+          ref={inputRef}
+          type="file"
+          id={inputId}
+          className={classes.input}
+          aria-label={resolvedInputAriaLabel}
+          aria-labelledby={resolvedLabelledBy}
+          aria-describedby={inputDescribedBy}
+          aria-errormessage={errorMessage}
+          aria-invalid={shouldAssociateErrorMessage ? true : undefined}
+          accept={accept}
+          multiple={multiple}
+          disabled={[isDisabled, isReadOnly].some(Boolean)}
+          onChange={(event) => {
+            selectFiles(event.target.files);
+            event.currentTarget.value = '';
+          }}
+          data-testid="file-input"
+        />
+        {isRequired ? (
+          <VisuallyHidden id={requiredDescriptionId}>{requiredMessage}</VisuallyHidden>
+        ) : null}
+        {isRequired && (
+          <input
+            aria-hidden="true"
+            className={css({ srOnly: true })}
+            data-file-uploader-validation-proxy=""
+            disabled={[isDisabled, isReadOnly].some(Boolean)}
+            form={form}
+            onChange={() => undefined}
+            onInvalid={() => queueMicrotask(focusFirstZone)}
+            required
+            tabIndex={-1}
+            type="text"
+            value={files.length > 0 ? 'selected' : ''}
+          />
+        )}
         {children}
+        <VisuallyHidden role="status" aria-live="polite" aria-atomic="true">
+          {rejectionMessage}
+        </VisuallyHidden>
       </div>
     </FileUploaderContext.Provider>
   );

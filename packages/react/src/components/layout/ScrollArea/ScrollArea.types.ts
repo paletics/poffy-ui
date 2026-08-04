@@ -1,13 +1,10 @@
 import { scrollArea } from '@/styled-system/recipes';
 import { RecipeVariantProps } from '@/styled-system/types';
-import { PrimitiveProps } from '@poffy-ui/types';
-import { ElementType, ReactNode } from 'react';
+import { NativeProps } from '@poffy-ui/types';
+import type { ReactNode, UIEventHandler } from 'react';
+import type { OverflowFocusMode } from '@/components/shared/useOverflowFocusability';
 
-/**
- * Variants for the ScrollArea component derived from Panda CSS recipe.
- * ### AI Usage
- * - Use this when extending ScrollArea styles.
- */
+/** Recipe-backed scrollbar size options. */
 export type ScrollAreaVariants = RecipeVariantProps<typeof scrollArea>;
 
 /**
@@ -19,29 +16,9 @@ export type ScrollAreaVariants = RecipeVariantProps<typeof scrollArea>;
  */
 export type ScrollOrientation = 'vertical' | 'horizontal' | 'both';
 
-/**
- * Public props for the ScrollArea component.
- *
- * @example
- * ```tsx
- * import { ScrollArea } from '@poffy-ui/react/layout';
- *
- * <ScrollArea height="300px">
- *   <LongContent />
- * </ScrollArea>
- * ```
- *
- * ### Notes
- * `ScrollArea` owns its internal viewport and scrollbar structure. Do not use
- * `asChild`; pass root attributes such as `aria-label`, `height`, or `width`
- * directly to the component.
- *
- * ### AI Usage
- * - Do: add an accessible label when the scroll region is not obvious from context.
- * - Don't: wrap focusable content in another scroll container inside ScrollArea.
- */
-export type ScrollAreaProps<T extends ElementType = 'div'> = PrimitiveProps<
-  T,
+
+type ScrollAreaNativeProps = NativeProps<
+  'div',
   ScrollAreaVariants & {
     /** Content to be scrolled. */
     children: ReactNode;
@@ -50,5 +27,29 @@ export type ScrollAreaProps<T extends ElementType = 'div'> = PrimitiveProps<
      * @defaultValue 'vertical'
      */
     orientation?: ScrollOrientation;
+    /**
+     * Controls whether the owned viewport enters the tab order. `auto` adds `tabIndex=0` only
+     * when the selected axis overflows; `always` always adds it; `never` omits it.
+     *
+     * @defaultValue `'auto'`
+     */
+    focusMode?: OverflowFocusMode;
+    /** Explicit tab index for the owned viewport. Overrides `focusMode`, including negative values. */
+    viewportTabIndex?: number;
   }
 >;
+
+/** Public props for ScrollArea. */
+export type ScrollAreaProps = Omit<
+  ScrollAreaNativeProps,
+  'onScroll' | 'onScrollCapture' | 'role' | 'tabIndex'
+> & {
+  /** Scroll event emitted by the owned viewport, not the outer root. */
+  onScroll?: UIEventHandler<HTMLDivElement>;
+  /** Capture-phase scroll event emitted by the owned viewport, not the outer root. */
+  onScrollCapture?: UIEventHandler<HTMLDivElement>;
+  /** The owned viewport manages a region role when named or keyboard-scrollable. */
+  role?: never;
+  /** Use `viewportTabIndex` to control the owned viewport's tab stop. */
+  tabIndex?: never;
+};

@@ -18,59 +18,36 @@ const fileItemTransitionClass = css({
 });
 
 /**
- * Selected-file list for FileUploader with previews and remove actions.
+ * Selected-file list for a `FileUploader` root.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`fileUploader` slot recipe), `CloseButton`, file-upload behavior helpers
- * - **Props**: native `div` attributes
- *
- * ### Design Tokens
- * - **spacing**: list gap, preview size, and item padding come from the recipe
- * - **color**: file metadata and item surface use semantic text and surface tokens
- *
- * ### Variant Logic
- * - **image files**: Render object URL previews.
- * - **non-image files**: Render a placeholder preview and formatted file size.
- *
- * ### Accessibility
- * - **Role**: generic list container with per-file remove buttons.
- * - **Pattern**: File selection review list.
- * - **Keyboard**: Remove buttons are keyboard-focusable through `CloseButton`.
- * - **Required**: Keep remove buttons labeled for screen readers.
- *
- * ### AI Usage
- * - **DO**: Use with `FileUploader.Zone` to show selected files.
- * - **DON'T**: Do not use as a standalone file storage source; state lives in `FileUploaderRoot`.
- *
- * @example Standard usage
- * ```tsx
- * <FileUploader.Root multiple>
- *   <FileUploader.Zone />
- *   <FileUploader.List />
- * </FileUploader.Root>
- * ```
- *
- * @example Custom wrapper
- * ```tsx
- * <FileUploader.List aria-label="Selected files" />
- * ```
+ * It is absent when no files are selected. Image files receive an object-URL preview; other file
+ * types receive a decorative placeholder. Removal actions are disabled whenever the root is
+ * disabled or read-only.
  */
 export const FileUploaderList = forwardRef<HTMLDivElement, FileUploaderListProps>((props, ref) => {
   const { className, ...rest } = props;
-  const { fileItems, classes, removeFile } = useFileUploaderContext();
+  const { fileItems, classes, removeFile, messages, isDisabled, isReadOnly } =
+    useFileUploaderContext();
 
   if (fileItems.length === 0) return null;
 
   return (
-    <div ref={ref} className={cx(classes.fileList, className)} {...rest}>
+    <div
+      ref={ref}
+      role="list"
+      aria-label={messages.selectedFiles}
+      className={cx(classes.fileList, className)}
+      {...rest}
+    >
       <ReorderTransition className={fileItemTransitionClass} animationType="fade">
         {fileItems.map(({ id, file }, index) => (
-          <ReorderTransition.Item key={id} className={classes.fileItem}>
+          <ReorderTransition.Item key={id} role="listitem" className={classes.fileItem}>
             {file.type.startsWith('image/') ? (
               <FilePreview file={file} className={classes.preview} />
             ) : (
-              <div className={classes.previewPlaceholder}>📄</div>
+              <div className={classes.previewPlaceholder} aria-hidden="true">
+                📄
+              </div>
             )}
 
             <div className={classes.fileInfo}>
@@ -80,8 +57,10 @@ export const FileUploaderList = forwardRef<HTMLDivElement, FileUploaderListProps
 
             <CloseButton
               className={classes.removeButton}
+              disabled={isDisabled || isReadOnly}
               onClick={() => removeFile(index)}
-              aria-label="Remove file"
+              aria-label={messages.removeFile(file.name)}
+              data-file-uploader-remove=""
               size="sm"
             />
           </ReorderTransition.Item>

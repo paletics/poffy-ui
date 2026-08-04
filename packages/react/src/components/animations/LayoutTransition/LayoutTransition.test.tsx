@@ -20,6 +20,17 @@ describe('LayoutTransition', () => {
     expect(element.tagName).toBe('SECTION');
   });
 
+  it('falls back to a div for invalid asChild children', () => {
+    const { container } = render(
+      <LayoutTransition asChild>
+        <>Fragment content</>
+      </LayoutTransition>,
+    );
+
+    expect(container.firstElementChild).toBeInstanceOf(HTMLDivElement);
+    expect(container).toHaveTextContent('Fragment content');
+  });
+
   it('applies custom className', () => {
     render(<LayoutTransition className="custom-layout">Content</LayoutTransition>);
     const element = screen.getByText('Content');
@@ -33,6 +44,13 @@ describe('LayoutTransition', () => {
       </LayoutTransition>,
     );
     expect(screen.getByText('Elastic Content')).toBeInTheDocument();
+  });
+
+  it('falls back to the default preset for unknown runtime values', () => {
+    render(
+      <LayoutTransition animationType={'unknown' as never}>Fallback Content</LayoutTransition>,
+    );
+    expect(screen.getByText('Fallback Content')).toBeInTheDocument();
   });
 
   it('passes layout props correctly', () => {

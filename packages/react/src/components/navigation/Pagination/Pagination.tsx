@@ -1,45 +1,36 @@
 'use client';
 
-import { cx } from '@/styled-system/css';
-import { pagination } from '@/styled-system/recipes';
-import { LayoutGroup } from 'motion/react';
-import { forwardRef, useId, useMemo } from 'react';
+import { forwardRef } from 'react';
 import type { PaginationProps } from './Pagination.types';
-import { PaginationContext } from './PaginationContext';
 import { PaginationEllipsis } from './PaginationEllipsis';
 import { PaginationItem } from './PaginationItem';
 import { PaginationLink } from './PaginationLink';
+import { PaginationRoot } from './PaginationRoot';
 import { usePaginationRange } from './usePaginationRange';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
+import { getDefaultPageAriaLabel, getPaginationLabels } from './Pagination.locales';
+
+const positiveInteger = (value: number, fallback: number): number =>
+  Number.isSafeInteger(value) && value > 0 ? value : fallback;
+
+const nonNegativeInteger = (value: number, fallback: number): number =>
+  Number.isSafeInteger(value) && value >= 0 ? value : fallback;
+
+const resolveSupportedLocale = (locale: string): string => {
+  try {
+    const canonicalLocale = Intl.getCanonicalLocales(locale)[0];
+    return canonicalLocale && Intl.NumberFormat.supportedLocalesOf([canonicalLocale]).length > 0
+      ? canonicalLocale
+      : 'en-US';
+  } catch {
+    return 'en-US';
+  }
+};
 
 /**
- * A page navigation control for stepping through paginated datasets.
- * ### AI Context & Architecture
- * - Tier: Molecules, Stack: Panda CSS (Recipe: pagination), PaginationContext, usePaginationRange
- * ### Design Tokens
- * - spacing/sizing: silver-ratio tokens applied to item size and gap.
- * ### Variant Logic
- * - size: sm/md/lg scales the page item dimensions symmetrically.
- * ### Notes
- * Uses `usePaginationRange` hook for smart ellipsis calculation based on `siblingCount` and `boundaryCount`.
- * ### Accessibility
- * - Must render as `<nav aria-label="pagination">`. Active page must have `aria-current="page"`.
- * ### AI Usage
- * - Use for any list view displaying more than one page of results.
- * - Prefer server-side pagination over client-side slice for large datasets.
- *
- * @example
- * ```tsx
- * import { Pagination } from '@poffy-ui/react/navigation';
- *
- * <Pagination count={10} page={page} onChange={setPage} />
- * ```
- *
- * @example Dense table pagination
- * ```tsx
- * import { Pagination } from '@poffy-ui/react/navigation';
- *
- * <Pagination count={totalPages} page={page} onChange={setPage} size="sm" />
- * ```
+ * Renders a labelled, controlled page-navigation control. `page` is one-based and navigation is
+ * clamped to the valid range; invalid counts and configuration values use safe fallback values.
+ * Use it for known page counts rather than cursor-only or infinite feeds.
  */
 export const Pagination = forwardRef<HTMLElement, PaginationProps>((props, ref) => {
   const {
@@ -52,72 +43,95 @@ export const Pagination = forwardRef<HTMLElement, PaginationProps>((props, ref) 
     appearance,
     size,
     indicatorAnimation = 'stable',
+    locale: localeProp,
+    labels: labelOverrides,
+    formatPage,
+    getPageAriaLabel,
+    getHref,
     ...rest
   } = props;
 
-  const safeCount = Math.max(1, count);
-  const safePage = Math.min(Math.max(1, page), safeCount);
-  const indicatorId = useId();
+  const localeContext = useOptionalLocale();
+  const locale = resolveSupportedLocale(localeProp ?? localeContext?.locale ?? 'en-US');
+  const labels = getPaginationLabels(locale, labelOverrides);
+  const numberFormatter = new Intl.NumberFormat(locale);
+  const resolvePageText = (pageNumber: number) =>
+    formatPage?.(pageNumber) ?? numberFormatter.format(pageNumber);
+  const resolvePageAriaLabel = (pageNumber: number, isCurrent: boolean) =>
+    getPageAriaLabel?.(pageNumber, isCurrent) ??
+    getDefaultPageAriaLabel(locale, isCurrent, resolvePageText(pageNumber));
 
-  const classes = useMemo(() => pagination({ appearance, size }), [appearance, size]);
+  const safeCount = positiveInteger(count, 1);
+  const safePage = Math.min(positiveInteger(page, 1), safeCount);
+  const safeSiblingCount = nonNegativeInteger(siblingCount, 1);
+  const safeBoundaryCount = nonNegativeInteger(boundaryCount, 1);
   const paginationItems = usePaginationRange({
     count: safeCount,
     page: safePage,
-    siblingCount,
-    boundaryCount,
+    siblingCount: safeSiblingCount,
+    boundaryCount: safeBoundaryCount,
   });
 
-  const contextValue = useMemo(
-    () => ({ classes, indicatorId, indicatorAnimation }),
-    [classes, indicatorId, indicatorAnimation],
-  );
-
   return (
-    <PaginationContext.Provider value={contextValue}>
-      <LayoutGroup id={indicatorId}>
-        <nav ref={ref} aria-label="pagination" className={cx(classes.root, className)} {...rest}>
-          <ul className={classes.list}>
-            <PaginationItem>
-              <PaginationLink
-                onClick={() => onChange?.(safePage - 1)}
-                disabled={safePage <= 1}
-                aria-label="Go to previous page"
-              >
-                Prev
-              </PaginationLink>
-            </PaginationItem>
+    <PaginationRoot
+      ref={ref}
+      className={className}
+      appearance={appearance}
+      size={size}
+      indicatorAnimation={indicatorAnimation}
+      locale={locale}
+      labels={labels}
+      data-pagination-compact
+      {...rest}
+    >
+      <PaginationItem>
+        <PaginationLink
+          data-pagination-direction="previous"
+          data-pagination-kind="navigation"
+          href={getHref?.(Math.max(1, safePage - 1))}
+          onClick={() => onChange?.(safePage - 1)}
+          disabled={safePage <= 1}
+          aria-label={labels.previousPage}
+        >
+          {labels.previous}
+        </PaginationLink>
+      </PaginationItem>
 
-            {paginationItems.map((item) => {
-              if (item === 'dots-left' || item === 'dots-right') {
-                return <PaginationEllipsis key={item} />;
-              }
+      {paginationItems.map((item) => {
+        if (item === 'dots-left' || item === 'dots-right') {
+          return <PaginationEllipsis key={item} />;
+        }
 
-              return (
-                <PaginationItem key={item}>
-                  <PaginationLink
-                    isActive={item === safePage}
-                    onClick={() => onChange?.(item)}
-                    aria-label={item === safePage ? `Page ${item}` : `Go to page ${item}`}
-                  >
-                    {item}
-                  </PaginationLink>
-                </PaginationItem>
-              );
-            })}
+        return (
+          <PaginationItem key={item}>
+            <PaginationLink
+              data-pagination-kind="page"
+              href={getHref?.(item)}
+              isActive={item === safePage}
+              onClick={() => {
+                if (item !== safePage) onChange?.(item);
+              }}
+              aria-label={resolvePageAriaLabel(item, item === safePage)}
+            >
+              {resolvePageText(item)}
+            </PaginationLink>
+          </PaginationItem>
+        );
+      })}
 
-            <PaginationItem>
-              <PaginationLink
-                onClick={() => onChange?.(safePage + 1)}
-                disabled={safePage >= safeCount}
-                aria-label="Go to next page"
-              >
-                Next
-              </PaginationLink>
-            </PaginationItem>
-          </ul>
-        </nav>
-      </LayoutGroup>
-    </PaginationContext.Provider>
+      <PaginationItem>
+        <PaginationLink
+          data-pagination-direction="next"
+          data-pagination-kind="navigation"
+          href={getHref?.(Math.min(safeCount, safePage + 1))}
+          onClick={() => onChange?.(safePage + 1)}
+          disabled={safePage >= safeCount}
+          aria-label={labels.nextPage}
+        >
+          {labels.next}
+        </PaginationLink>
+      </PaginationItem>
+    </PaginationRoot>
   );
 });
 

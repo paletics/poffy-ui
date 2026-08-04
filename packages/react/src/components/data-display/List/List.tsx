@@ -6,27 +6,11 @@ import { ListItemIcon } from './ListItemIcon';
 import { ListItemText } from './ListItemText';
 
 /**
- * Shorthand compound component for the List, bundling Root, Item, Icon, and Text.
- * ### AI Context & Architecture
- * - Tier: Organisms, Stack: Panda CSS (Recipe: list)
- * ### Design Tokens
- * - gap/padding: silver-ratio tokens
- * ### Variant Logic
- * - plain: Unstyled list. ordered: Numbered. unordered: Bulleted.
- * ### Accessibility
- * - Automatically renders as `ul` or `ol` based on the variant.
- * @example
- * ```tsx
- * import { List } from '@poffy-ui/react/data-display';
- * import { StarIcon } from '@poffy-ui/react/media';
+ * Builds a semantic list with item, icon, and text compound parts.
  *
- * <List variant="unordered">
- *   <List.Item>
- *     <List.Icon aria-hidden><StarIcon /></List.Icon>
- *     <List.Text primary="Favourites" secondary="Your starred items" />
- *   </List.Item>
- * </List>
- * ```
+ * The root is a `ul` except for `variant="ordered"`, which is an `ol`.
+ * Use `List.Item` (or another component that renders an `li`) for every
+ * entry; known-invalid content is wrapped in an `li` and warns in development.
  */
 export const List = Object.assign(ListRoot, {
   Root: ListRoot,

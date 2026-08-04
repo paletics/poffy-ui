@@ -14,6 +14,11 @@ describe('Divider Component', () => {
     expect(getByRole('separator')).toBeInTheDocument();
   });
 
+  it('keeps component-owned separator semantics', () => {
+    const { getByRole } = render(<Divider orientation="vertical" />);
+    expect(getByRole('separator')).toHaveAttribute('aria-orientation', 'vertical');
+  });
+
   it('applies divider class', () => {
     const { container } = render(<Divider />);
     expect(container.firstChild).toHaveClass(/divider/);

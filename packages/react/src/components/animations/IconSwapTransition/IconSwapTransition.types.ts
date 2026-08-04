@@ -7,15 +7,7 @@ import { IconSwapTransitionType } from './IconSwapTransition.presets';
 export type IconSwapAnimationType = IconSwapTransitionType;
 
 /**
- * Base props for `IconSwapTransition`.
- *
- * ### Notes
- * This is a keyed transition. The parent owns the current icon/status
- * state and must update `transitionKey` when the visible child changes.
- *
- * ### AI Usage
- * - **DO**: Use for compact status/icon swaps where enter and exit should be synchronized.
- * - **DON'T**: Use for full panel changes; use `ContentTransition`.
+ * Props for a keyed icon transition. Update `transitionKey` when the visible child changes.
  */
 export interface IconSwapTransitionBaseProps {
   /**

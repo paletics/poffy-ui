@@ -14,6 +14,7 @@ export const pathDrawVariants = {
   /** Spring-based stroke reveal for checkmarks and short status glyphs. */
   draw: {
     initial: { pathLength: 0, opacity: 0 },
+    enter: { pathLength: [0, 1] as number[], opacity: [0, 1] as number[] },
     animate: { pathLength: 1, opacity: 1 },
     exit: { pathLength: 0, opacity: 0 },
     transition: (custom?: CustomData) => ({
@@ -25,6 +26,7 @@ export const pathDrawVariants = {
   /** Slower stroke reveal for progress-like or illustrative paths. */
   dash: {
     initial: { pathLength: 0, opacity: 0 },
+    enter: { pathLength: [0, 1] as number[], opacity: [0, 1] as number[] },
     animate: { pathLength: 1, opacity: 1 },
     exit: { pathLength: 0, opacity: 0 },
     transition: (custom?: CustomData) => ({
@@ -36,6 +38,7 @@ export const pathDrawVariants = {
   /** Static path state with no drawing duration. */
   instant: {
     initial: { opacity: 1, pathLength: 1 },
+    enter: { opacity: 1, pathLength: 1 },
     animate: { opacity: 1, pathLength: 1 },
     exit: { opacity: 0, pathLength: 1 },
     transition: { duration: 0 },

@@ -1,15 +1,14 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { css } from '@/styled-system/css';
+import { Center } from '@/components/layout/Center';
+import { Flex } from '@/components/layout/Flex';
+import { SimpleGrid } from '@/components/layout/SimpleGrid';
+import { Stack } from '@/components/layout/Stack';
+import { Text } from '@/components/typography/Text';
 import { Grid } from './Grid';
 import { Box } from '../Box/Box';
 
-/**
- * A CSS Grid layout primitive tuned for Silver and Golden ratio asymmetric column layouts, with support for equal-column and custom responsive grids.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Recipe: gridStyle, splitCssProps), Radix Slot
- */
+
 const meta: Meta<typeof Grid> = {
   title: 'Layout/Grid',
   component: Grid,
@@ -19,7 +18,18 @@ const meta: Meta<typeof Grid> = {
     columns: { control: 'number' },
     ratio: {
       control: 'select',
-      options: ['silver-left', 'silver-right', 'golden-left', 'golden-right', 'equal-2', 'equal-3'],
+      options: [
+        'silver-left',
+        'silver-right',
+        'silver-start',
+        'silver-end',
+        'golden-left',
+        'golden-right',
+        'golden-start',
+        'golden-end',
+        'equal-2',
+        'equal-3',
+      ],
     },
   },
 };
@@ -30,14 +40,14 @@ type Story = StoryObj<typeof Grid>;
 const contentsListClass = css({
   display: 'contents',
   listStyle: 'none',
-  p: '0',
-  m: '0',
+  p: 'none',
+  m: 'none',
 });
 
 type ItemColor = 'blue' | 'green' | 'orange' | 'purple' | 'red' | 'teal' | 'cyan' | 'gray';
 
 const itemClass = css({
-  h: '20',
+  h: '[5rem]',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -132,6 +142,52 @@ export const GoldenRatioRight: Story = {
   ),
 };
 
+const directionContractGridClass = css({ width: '[20rem]', maxWidth: '100%' });
+
+const renderDirectionContractGrid = (
+  label: string,
+  ratio: 'silver-left' | 'silver-right' | 'silver-start' | 'silver-end' | 'golden-right',
+) => (
+  <Grid aria-label={label} className={directionContractGridClass} gap="xs" ratio={ratio}>
+    <Box className={`${itemClass} ${itemColorClass.blue}`}>First</Box>
+    <Box className={`${itemClass} ${itemColorClass.green}`}>Second</Box>
+  </Grid>
+);
+
+export const DirectionContracts: Story = {
+  render: () => (
+    <Stack gap="lg">
+      <Stack asChild gap="sm">
+        <section dir="ltr" aria-label="LTR ratio examples">
+          {renderDirectionContractGrid('Silver physical left LTR', 'silver-left')}
+          {renderDirectionContractGrid('Silver physical right LTR', 'silver-right')}
+          {renderDirectionContractGrid('Silver logical start LTR', 'silver-start')}
+          {renderDirectionContractGrid('Silver logical end LTR', 'silver-end')}
+        </section>
+      </Stack>
+      <Stack asChild gap="sm">
+        <section dir="rtl" aria-label="Inherited RTL ratio examples">
+          {renderDirectionContractGrid('Silver physical left inherited RTL', 'silver-left')}
+          {renderDirectionContractGrid('Silver physical right inherited RTL', 'silver-right')}
+          {renderDirectionContractGrid('Silver logical start inherited RTL', 'silver-start')}
+          {renderDirectionContractGrid('Silver logical end inherited RTL', 'silver-end')}
+          {renderDirectionContractGrid('Golden physical right inherited RTL', 'golden-right')}
+        </section>
+      </Stack>
+      <Grid asChild gap="xs" ratio="silver-left">
+        <section
+          aria-label="Silver physical left asChild RTL"
+          className={directionContractGridClass}
+          dir="rtl"
+        >
+          <Box className={`${itemClass} ${itemColorClass.blue}`}>First</Box>
+          <Box className={`${itemClass} ${itemColorClass.green}`}>Second</Box>
+        </section>
+      </Grid>
+    </Stack>
+  ),
+};
+
 export const EqualColumns2: Story = {
   args: {
     ratio: 'equal-2',
@@ -177,6 +233,16 @@ export const Responsive: Story = {
   ),
 };
 
+export const ConstrainedAutoFit: Story = {
+  render: () => (
+    <Box w="[160px]" borderWidth="thin" borderStyle="dashed" borderColor="layout.divider">
+      <Grid minChildWidth="200px" aria-label="Constrained auto-fit grid">
+        {renderItem('Fits parent', 'blue')}
+      </Grid>
+    </Box>
+  ),
+};
+
 export const SemanticList: Story = {
   args: {
     asChild: true,
@@ -206,5 +272,26 @@ export const Nested: Story = {
         {renderItem('Nested 4', 'teal')}
       </Grid>
     </Grid>
+  ),
+};
+
+const nestedLongToken = `https://example.com/${'nested-responsive-segment-'.repeat(10)}`;
+
+export const NestedConstrainedLongToken: Story = {
+  render: () => (
+    <Stack gap="md" width="[240px]" aria-label="Constrained nested layouts">
+      <Flex>
+        <Grid ratio="silver-left" gap="xs" aria-label="Constrained ratio grid">
+          <Text>{nestedLongToken}</Text>
+          <Text>Secondary column</Text>
+        </Grid>
+      </Flex>
+      <Center width="[160px]">
+        <SimpleGrid columns={2} gap="xs" width="100%" aria-label="Constrained simple grid">
+          <Text>{nestedLongToken}</Text>
+          <Text>Second</Text>
+        </SimpleGrid>
+      </Center>
+    </Stack>
   ),
 };

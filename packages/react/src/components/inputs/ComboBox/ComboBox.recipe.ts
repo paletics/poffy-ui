@@ -34,16 +34,22 @@ export const comboBoxRecipe = defineSlotRecipe({
       flexDirection: 'column',
       gap: '{spacing.2xs}',
       ...inputShellRootStyles,
+      minInlineSize: '{sizes.root.3}',
     },
     label: {
       fontSize: 'sm',
       fontWeight: 'medium',
       color: 'text.primary',
     },
-    control: inputShellRootStyles,
+    control: {
+      ...inputShellRootStyles,
+      minWidth: 0,
+      containerType: 'inline-size',
+      containerName: 'combo-box-control',
+    },
     input: {
       ...inputBaseStyles,
-      pr: inputEndDecoratorPadding.md,
+      paddingInlineEnd: inputEndDecoratorPadding.md,
       _placeholder: {
         color: 'text.secondary',
       },
@@ -52,6 +58,7 @@ export const comboBoxRecipe = defineSlotRecipe({
       ...inputEndDecoratorStyles,
       width: '{sizes.root.2}',
       cursor: 'pointer',
+      maxWidth: '100%',
     },
     content: dropdownContentStyles,
     item: {
@@ -98,7 +105,28 @@ export const comboBoxRecipe = defineSlotRecipe({
         input: {
           ...inputSizeVariants.sm,
           px: inputSizeVariants.sm.px,
-          pr: inputEndDecoratorPadding.sm,
+          paddingInlineEnd: inputEndDecoratorPadding.sm,
+          '@container combo-box-control (max-width: 4rem)': {
+            paddingInlineStart: '{spacing.2xs}',
+            paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.2xs})',
+            color: 'transparent',
+            caretColor: 'transparent',
+            _placeholder: { color: 'transparent' },
+          },
+          '@container combo-box-control (max-width: 1.5rem)': {
+            paddingInlineEnd: '{spacing.2xs}',
+          },
+        },
+        trigger: {
+          width: '{sizes.silver.2}',
+          height: '{sizes.silver.2}',
+          '@container combo-box-control (max-width: 4rem)': {
+            width: '{sizes.control.minimumTarget} !important',
+            inlineSize: '{sizes.control.minimumTarget} !important',
+          },
+          '@container combo-box-control (max-width: 1.5rem)': {
+            display: 'none',
+          },
         },
         item: { py: '{spacing.sm}' },
       },
@@ -106,7 +134,28 @@ export const comboBoxRecipe = defineSlotRecipe({
         input: {
           ...inputSizeVariants.md,
           px: inputSizeVariants.md.px,
-          pr: inputEndDecoratorPadding.md,
+          paddingInlineEnd: inputEndDecoratorPadding.md,
+          '@container combo-box-control (max-width: 5.656rem)': {
+            paddingInlineStart: '{spacing.2xs}',
+            paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.2xs})',
+            color: 'transparent',
+            caretColor: 'transparent',
+            _placeholder: { color: 'transparent' },
+          },
+          '@container combo-box-control (max-width: 1.5rem)': {
+            paddingInlineEnd: '{spacing.2xs}',
+          },
+        },
+        trigger: {
+          width: '{sizes.root.2}',
+          height: '{sizes.root.2}',
+          '@container combo-box-control (max-width: 5.656rem)': {
+            width: '{sizes.control.minimumTarget} !important',
+            inlineSize: '{sizes.control.minimumTarget} !important',
+          },
+          '@container combo-box-control (max-width: 1.5rem)': {
+            display: 'none',
+          },
         },
         item: { py: '{spacing.base}' },
       },
@@ -114,7 +163,28 @@ export const comboBoxRecipe = defineSlotRecipe({
         input: {
           ...inputSizeVariants.lg,
           px: inputSizeVariants.lg.px,
-          pr: inputEndDecoratorPadding.lg,
+          paddingInlineEnd: inputEndDecoratorPadding.lg,
+          '@container combo-box-control (max-width: 8rem)': {
+            paddingInlineStart: '{spacing.2xs}',
+            paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.2xs})',
+            color: 'transparent',
+            caretColor: 'transparent',
+            _placeholder: { color: 'transparent' },
+          },
+          '@container combo-box-control (max-width: 1.5rem)': {
+            paddingInlineEnd: '{spacing.2xs}',
+          },
+        },
+        trigger: {
+          width: '{sizes.silver.3}',
+          height: '{sizes.silver.3}',
+          '@container combo-box-control (max-width: 8rem)': {
+            width: '{sizes.control.minimumTarget} !important',
+            inlineSize: '{sizes.control.minimumTarget} !important',
+          },
+          '@container combo-box-control (max-width: 1.5rem)': {
+            display: 'none',
+          },
         },
         item: { py: '{spacing.lg}' },
       },

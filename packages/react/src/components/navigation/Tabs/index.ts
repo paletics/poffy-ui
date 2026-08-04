@@ -6,7 +6,13 @@ export { TabTrigger } from './TabTrigger';
 export type {
   TabContentProps,
   TabListProps,
+  TabTriggerAsChildProps,
+  TabTriggerComponent,
+  TabTriggerDefaultProps,
   TabsProps,
+  ControlledTabsProps,
+  UncontrolledTabsProps,
+  TabsOrientation,
   TabsVariantSubset,
   TabsVariants,
   TabTriggerProps,

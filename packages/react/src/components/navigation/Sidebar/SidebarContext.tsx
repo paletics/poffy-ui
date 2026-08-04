@@ -3,15 +3,7 @@
 import { sidebar } from '@/styled-system/recipes';
 import { createContext, useContext } from 'react';
 
-/**
- * Value shape for SidebarContext.
- *
- * ### AI Context & Architecture
- * `collapsed` is included alongside recipe classes so that sub-components (e.g.
- * SidebarGroup) can conditionally apply accessibility attributes that depend on
- * the visual state — for example, omitting aria-labelledby when the label is
- * hidden via display:none in the collapsed variant.
- */
+
 interface SidebarContextValue {
   classes: ReturnType<typeof sidebar>;
   collapsed: boolean;

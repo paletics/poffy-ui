@@ -2,26 +2,27 @@ import { RadioVariantProps } from '@/styled-system/recipes';
 import { type ControlIntent } from '@poffy-ui/types';
 import { ComponentProps, ReactNode } from 'react';
 
-/**
- * Variants for the Radio component based on Panda CSS recipe.
- */
+/** Visual recipe options for `Radio`. */
 export type RadioVariants = RadioVariantProps;
 
-/**
- * Shared visual intent names supported by Radio controls.
- */
+/** Shared visual intent names supported by radio controls. */
 export type RadioIntent = ControlIntent;
 
-/**
- * Properties for an individual Radio component.
- * Must be used within a RadioGroup.
- *
- * ### Notes
- * Radio receives `name`, selected state, orientation, and disabled defaults from
- * RadioGroup. Always provide a string `value`; use children for the visible
- * label or pass an accessible name through input props.
- */
-export interface RadioProps extends Omit<ComponentProps<'input'>, 'size' | 'disabled' | 'type'> {
+/** Props for one `RadioGroup` option. */
+export interface RadioProps extends Omit<
+  ComponentProps<'input'>,
+  | 'aria-checked'
+  | 'aria-disabled'
+  | 'checked'
+  | 'defaultChecked'
+  | 'disabled'
+  | 'form'
+  | 'name'
+  | 'onChange'
+  | 'role'
+  | 'size'
+  | 'type'
+> {
   /**
    * The label or content to display next to the radio button.
    */
@@ -50,6 +51,13 @@ export interface RadioProps extends Omit<ComponentProps<'input'>, 'size' | 'disa
    */
   disabled?: boolean;
   /**
+   * Prevents selecting this option while keeping it focusable.
+   *
+   * Click, Space, and arrow-key selection are suppressed; unlike `disabled`,
+   * read-only options remain in the keyboard focus order.
+   */
+  readOnly?: boolean;
+  /**
    * Enables motion-based dot selection. CSS dot transition is used by default for dense forms.
    * Inherits from RadioGroup if not specified.
    * @defaultValue `false`
@@ -57,29 +65,11 @@ export interface RadioProps extends Omit<ComponentProps<'input'>, 'size' | 'disa
   animated?: boolean;
 }
 
-/**
- * Properties for the RadioGroup container.
- * Manages the shared state and accessibility for a set of radio buttons.
- *
- * ### Notes
- * `value` is controlled and must be paired with `onChange`; use `defaultValue`
- * for uncontrolled initial selection. Provide an accessible group label with
- * `aria-label` or `aria-labelledby` unless an enclosing form field labels it.
- *
- * Do: render only Radio children with unique values.
- * Don't: control individual Radio `checked` props inside a RadioGroup.
- *
- * @example
- * ```tsx
- * import { Radio, RadioGroup } from '@poffy-ui/react/inputs';
- *
- * <RadioGroup aria-label="Billing cycle" value={cycle} onChange={setCycle}>
- *   <Radio value="monthly">Monthly</Radio>
- *   <Radio value="yearly">Yearly</Radio>
- * </RadioGroup>
- * ```
- */
-export interface RadioGroupProps extends Omit<ComponentProps<'div'>, 'onChange'> {
+/** Shared props for a labelled group of mutually exclusive radio options. */
+export interface RadioGroupBaseProps extends Omit<
+  ComponentProps<'div'>,
+  'aria-orientation' | 'aria-readonly' | 'onChange' | 'role'
+> {
   /**
    * A collection of Radio components.
    */
@@ -87,22 +77,26 @@ export interface RadioGroupProps extends Omit<ComponentProps<'div'>, 'onChange'>
 
   /**
    * The name attribute for the group, applied to all child radio inputs.
+   *
+   * Provide a name when the group must preserve native grouping, constraint
+   * validation, or form submission during SSR or without JavaScript. When
+   * omitted, RadioGroup adds a client-only internal name for interaction but
+   * intentionally emits no named form controls in server markup.
    */
   name?: string;
 
   /**
-   * The current selected value (controlled).
+   * ID of an associated form outside the group's DOM subtree. Applied to child radio inputs.
    */
+  form?: string;
+
+  /** Current selected value; controlled usage requires the paired `onChange` callback. */
   value?: string;
 
-  /**
-   * The initial selected value (uncontrolled).
-   */
+  /** Initial selected value for uncontrolled usage; it does not update later state. */
   defaultValue?: string;
 
-  /**
-   * Callback fired when the selection changes.
-   */
+  /** Called after an enabled, non-read-only option changes the selection. */
   onChange?: (value: string) => void;
 
   /**
@@ -128,8 +122,41 @@ export interface RadioGroupProps extends Omit<ComponentProps<'div'>, 'onChange'>
    */
   disabled?: boolean;
   /**
+   * Whether the entire group is read-only.
+   *
+   * Radios remain focusable but cannot change selection through click, Space,
+   * or arrow keys.
+   * @defaultValue `false`
+   */
+  readOnly?: boolean;
+  /**
+   * Whether one radio option must be selected during native form validation.
+   */
+  required?: boolean;
+  /**
    * Enables motion-based dots for child radios.
    * @defaultValue `false`
    */
   animated?: boolean;
 }
+
+/**
+ * Props for a controlled or uncontrolled radio group.
+ *
+ * Supply both `value` and `onChange` for controlled selection. Otherwise omit
+ * `value`, optionally seed with `defaultValue`, and use `onChange` only as a
+ * notification callback.
+ */
+export type RadioGroupProps = Omit<RadioGroupBaseProps, 'defaultValue' | 'onChange' | 'value'> &
+  (
+    | {
+        value: string;
+        defaultValue?: never;
+        onChange: (value: string) => void;
+      }
+    | {
+        value?: never;
+        defaultValue?: string;
+        onChange?: (value: string) => void;
+      }
+  );

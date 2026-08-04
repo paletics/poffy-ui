@@ -1,67 +1,60 @@
 'use client';
 
 import { createContext, useCallback, useContext, useState } from 'react';
-import {
-  PuffContextType,
-  PuffBaseProps,
-  PuffContainerItem,
-  PuffProviderProps,
-} from '../Puff.types';
+import { PuffContextType, PuffOptions, PuffContainerItem, PuffProviderProps } from '../Puff.types';
 import { PuffContainer } from '../PuffContainer';
 
 const PuffContext = createContext<PuffContextType | undefined>(undefined);
 
 /**
- * Provider for managing puff notifications globally or within a sub-tree.
- * Maintains the state of active puffs and renders `PuffContainer` to display them.
+ * Owns a transient notification queue and renders its portalled container for a subtree.
  *
- * ### AI Context & Architecture
- * - **Tier**: Provider / Infrastructure
- * - **Scope**: App Root or sub-tree — wrap with `<PuffProvider>` where notifications are needed
- *
- * ### AI Usage
- * - **DO**: Place at app root to enable global notifications.
- * - **DO**: Use standalone for scoped notifications within a sub-tree.
- * - **DON'T**: Do not nest two `PuffProvider` instances — the inner one silently overrides the outer.
- *
- * @example
- * ```tsx
- * import { PuffProvider } from '@poffy-ui/react/feedback';
- *
- * <PuffProvider point="top-right">
- *   <App />
- * </PuffProvider>
- * ```
+ * Nesting is supported: `usePuff` resolves to the nearest provider. `removePuff` first starts the
+ * exit animation; the provider removes the item after that animation completes.
  */
-export const PuffProvider = ({ point = 'top-right', children }: PuffProviderProps) => {
+export const PuffProvider = ({
+  point = 'top-right',
+  portalContainer,
+  ownerDocument,
+  children,
+}: PuffProviderProps) => {
   const [puffs, setPuffs] = useState<PuffContainerItem[]>([]);
 
   const removePuff = useCallback((id: string) => {
     setPuffs((prevPuffs) =>
-      prevPuffs.map((puff) => (puff.id === id ? { ...puff, isVisible: false } : puff)),
+      prevPuffs.map((puff) => (puff.puffId === id ? { ...puff, isVisible: false } : puff)),
     );
   }, []);
 
   const finalizePuffRemoval = useCallback((id: string) => {
-    setPuffs((prevPuffs) => prevPuffs.filter((puff) => puff.id !== id));
+    setPuffs((prevPuffs) => prevPuffs.filter((puff) => puff.puffId !== id));
   }, []);
 
-  const addPuff = useCallback((options: PuffBaseProps) => {
+  const addPuff = useCallback((options: PuffOptions) => {
     const id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
     const {
       id: _ignoredId,
+      puffId: _ignoredPuffId,
       isVisible: _ignoredVisible,
+      removePuff: _ignoredRemovePuff,
       onExitComplete: _ignoredExit,
       ...rest
-    } = options;
+    } = options as PuffOptions & {
+      id?: string;
+      puffId?: string;
+      isVisible?: boolean;
+      removePuff?: (id: string) => void;
+      onExitComplete?: (id: string) => void;
+    };
 
     const newPuff: PuffContainerItem = {
-      id,
-      isVisible: true,
       ...rest,
+      puffId: id,
+      isVisible: true,
     };
 
     setPuffs((prevPuffs) => [newPuff, ...prevPuffs]);
+    return id;
   }, []);
 
   return (
@@ -72,20 +65,14 @@ export const PuffProvider = ({ point = 'top-right', children }: PuffProviderProp
         puffs={puffs}
         removePuff={removePuff}
         finalizePuffRemoval={finalizePuffRemoval}
+        portalContainer={portalContainer}
+        ownerDocument={ownerDocument}
       />
     </PuffContext.Provider>
   );
 };
 
-/**
- * Returns puff controls from the nearest `PuffProvider`.
- *
- * ### AI Usage
- * - **DON'T**: Do not call outside a `PuffProvider` tree — throws at runtime
- *
- * @throws {Error} `usePuff must be used within a PuffProvider`
- * @returns `{ addPuff, removePuff }`
- */
+/** Returns controls for the nearest PuffProvider, or throws when none is present. */
 export const usePuff = () => {
   const context = useContext(PuffContext);
   if (context === undefined) {

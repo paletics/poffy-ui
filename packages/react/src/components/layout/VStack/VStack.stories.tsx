@@ -2,13 +2,7 @@
 import { VStack } from './VStack';
 import { Box } from '../Box';
 
-/**
- * A vertical layout primitive and semantic shortcut for Stack with direction="column", stretching children to full width for top-to-bottom compositions.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Recipe: stackStyle via Stack), Radix Slot (inherited)
- */
+
 const meta: Meta<typeof VStack> = {
   title: 'Layout/VStack',
   component: VStack,
@@ -36,13 +30,13 @@ export const Default: Story = {
     gap: 'md',
     children: (
       <>
-        <Box p="4" bg="rose.100">
+        <Box p="base" bg="rose.100">
           Item 1
         </Box>
-        <Box p="4" bg="rose.200">
+        <Box p="base" bg="rose.200">
           Item 2
         </Box>
-        <Box p="4" bg="rose.300">
+        <Box p="base" bg="rose.300">
           Item 3
         </Box>
       </>

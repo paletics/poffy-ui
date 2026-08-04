@@ -17,19 +17,35 @@ interface DiffViewerRowProps {
   classes: ReturnType<typeof diffViewer>;
   oldLabel: string;
   newLabel: string;
+  changeLabel: (kind: DiffChangeKind) => string;
 }
 
 /**
  * Renders one DiffViewer row in unified or split mode.
  */
-export const DiffViewerRow = ({ line, mode, classes, oldLabel, newLabel }: DiffViewerRowProps) => {
+export const DiffViewerRow = ({
+  line,
+  mode,
+  classes,
+  oldLabel,
+  newLabel,
+  changeLabel,
+}: DiffViewerRowProps) => {
   const kind = line.kind ?? 'unchanged';
   const oldNumber = lineNumber(line.oldLineNumber);
   const newNumber = lineNumber(line.newLineNumber);
+  const oldContent =
+    kind === 'added' ? '' : kind === 'modified' ? (line.oldContent ?? line.content) : line.content;
+  const newContent =
+    kind === 'removed'
+      ? ''
+      : kind === 'modified'
+        ? (line.newContent ?? line.content)
+        : line.content;
 
   if (mode === 'split') {
     return (
-      <div className={classes.row} role="row" data-change={kind}>
+      <div className={classes.row} role="row" data-change={kind} aria-label={changeLabel(kind)}>
         <span className={classes.gutter} role="cell" aria-label={`${oldLabel} ${oldNumber}`}>
           {oldNumber}
         </span>
@@ -37,20 +53,20 @@ export const DiffViewerRow = ({ line, mode, classes, oldLabel, newLabel }: DiffV
           {kind === 'added' ? ' ' : markerByKind[kind]}
         </span>
         <code className={classes.content} role="cell">
-          {kind === 'added' ? '' : line.content}
+          {oldContent}
         </code>
         <span className={classes.gutter} role="cell" aria-label={`${newLabel} ${newNumber}`}>
           {newNumber}
         </span>
         <code className={classes.content} role="cell">
-          {kind === 'removed' ? '' : line.content}
+          {newContent}
         </code>
       </div>
     );
   }
 
   return (
-    <div className={classes.row} role="row" data-change={kind}>
+    <div className={classes.row} role="row" data-change={kind} aria-label={changeLabel(kind)}>
       <span className={classes.gutter} role="cell" aria-label={`${oldLabel} ${oldNumber}`}>
         {oldNumber}
       </span>

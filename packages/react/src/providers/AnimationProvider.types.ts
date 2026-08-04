@@ -1,6 +1,14 @@
 import type { ReactNode } from 'react';
 
 /**
+ * The visual character used for Poffy UI motion.
+ *
+ * `none` disables app animation; system reduced-motion preferences also resolve
+ * to `none` regardless of this preference.
+ */
+export type PoffyMotionStyle = 'subtle' | 'standard' | 'pop' | 'none';
+
+/**
  * Shape of the value exposed by `AnimationContext`.
  * Use to type the return value of `useAnimation()` or when extending the context.
  */
@@ -17,10 +25,18 @@ export interface AnimationContextType {
   animationEnabled: boolean;
   /**
    * The resolved animation state.
-   * `true` only when `animationEnabled` is `true` **and** `reducedMotion` is `false`.
+   * `true` only when `animationEnabled` is `true`, `motionStyle` is not `none`,
+   * and `reducedMotion` is `false`.
    * Use this as the single source of truth in FX components.
    */
   isAnimating: boolean;
+  /** The app or user-selected motion style before accessibility resolution. */
+  motionStyle: PoffyMotionStyle;
+  /**
+   * The effective motion style. This is always `none` when animation is disabled
+   * or the operating system requests reduced motion.
+   */
+  resolvedMotionStyle: PoffyMotionStyle;
   /**
    * Explicitly enable or disable animations. Overrides the default but is always
    * superseded by `reducedMotion` when computing `isAnimating`.
@@ -28,6 +44,8 @@ export interface AnimationContextType {
   setAnimationEnabled: (enabled: boolean) => void;
   /** Toggles `animationEnabled` between `true` and `false`. */
   toggleAnimation: () => void;
+  /** Sets the visual character used by animation primitives. */
+  setMotionStyle: (style: PoffyMotionStyle) => void;
 }
 
 /**
@@ -45,11 +63,29 @@ export interface AnimationProviderProps {
    */
   defaultAnimationEnabled?: boolean;
   /**
+   * The visual character used by animation primitives before a persisted global
+   * user preference is restored after hydration.
+   *
+   * @defaultValue `'standard'`
+   */
+  defaultMotionStyle?: PoffyMotionStyle;
+  /**
    * When `true`, syncs `data-animation` to `document.documentElement` and
-   * persists `animationEnabled` to `localStorage`.
+   * persists animation preferences to `localStorage`.
    * Set to `false` when scoping animation control to a subtree only.
    *
    * @defaultValue `true`
    */
   global?: boolean;
+  /**
+   * Document whose Window supplies reduced-motion preferences and whose root
+   * and storage receive global motion state.
+   */
+  ownerDocument?: Document;
+  /**
+   * Adds a neutral DOM boundary carrying resolved CSS motion attributes when
+   * `global={false}`. Has no effect when `global={true}`.
+   * @defaultValue `false`
+   */
+  scope?: boolean;
 }

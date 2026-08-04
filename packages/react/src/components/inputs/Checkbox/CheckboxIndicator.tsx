@@ -10,27 +10,11 @@ import { StaticCheckIcon } from './StaticCheckIcon';
 import { StaticIndeterminateIcon } from './StaticIndeterminateIcon';
 
 /**
- * Animated checkmark or indeterminate line for the Checkbox.
+ * Visual checked or indeterminate mark for Checkbox.Root.
  *
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: SelectionTransition, PathDrawTransition
- *
- * ### Notes
- * Motion is localized to the checkmark path for optimal performance.
- *
- * ### Accessibility
- * - Mark icons as decorative; checked and indeterminate state belong to `CheckboxInput`.
- * - Keep the indicator inside `CheckboxControl` or the root compound checkbox.
- *
- * ### AI Usage
- * - Internal use only.
- *
- * @example Compound checkbox indicator
- * ```tsx
- * import { CheckboxIndicator } from './CheckboxIndicator';
- *
- * <CheckboxIndicator />
- * ```
+ * It renders nothing when unchecked, uses static SVG by default, and switches to selection motion
+ * only when the root's `animated` option is enabled. The mark is decorative; Checkbox.Input owns
+ * the native checked state.
  */
 export const CheckboxIndicator = forwardRef<HTMLSpanElement>((_, ref) => {
   const { size, intent, error, checked, indeterminate, animated } = useCheckbox();

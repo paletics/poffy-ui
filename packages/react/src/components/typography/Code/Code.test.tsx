@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { axe } from 'vitest-axe';
 import { Code } from './Code';
@@ -15,6 +15,17 @@ describe('Code', () => {
     expect(element).toBeInTheDocument();
   });
 
+  it('keeps inline asChild delegation', () => {
+    const { container } = render(
+      <Code asChild>
+        <code>delegated inline code</code>
+      </Code>,
+    );
+
+    expect(container.querySelectorAll('code')).toHaveLength(1);
+    expect(container.querySelector('code')).toHaveTextContent('delegated inline code');
+  });
+
   it('applies code class for inline variant', () => {
     const { container } = render(<Code variant="inline">code</Code>);
     const element = container.querySelector('code');
@@ -28,6 +39,16 @@ describe('Code', () => {
     const code = container.querySelector('code');
     expect(pre).toBeInTheDocument();
     expect(code).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Code block' })).not.toHaveAttribute('tabindex');
+  });
+
+  it('preserves an explicit block tabIndex', () => {
+    render(
+      <Code variant="block" tabIndex={-1}>
+        code
+      </Code>,
+    );
+    expect(screen.getByRole('group', { name: 'Code block' })).toHaveAttribute('tabindex', '-1');
   });
 
   it('applies block variant classes', () => {
@@ -93,5 +114,88 @@ describe('Syntax highlighting', () => {
     );
     const code = container.querySelector('code');
     expect(code).toHaveClass('language-typescript');
+  });
+
+  it('removes Prism markup when syntax highlighting is disabled', () => {
+    const { container, rerender } = render(
+      <Code variant="block" language="typescript">
+        const x = 1;
+      </Code>,
+    );
+
+    rerender(<Code variant="block">const x = 1;</Code>);
+
+    expect(container.querySelector('code span')).not.toBeInTheDocument();
+    expect(container.querySelector('code')).toHaveTextContent('const x = 1;');
+  });
+
+  it('falls back to native block markup when block asChild receives a pre/code structure', () => {
+    const { container } = render(
+      <Code variant="block" asChild={true as never} language="typescript">
+        {
+          (
+            <pre>
+              <code>const x = 1;</code>
+            </pre>
+          ) as never
+        }
+      </Code>,
+    );
+
+    expect(container.querySelectorAll('pre')).toHaveLength(1);
+    expect(container.querySelector('pre > code')).toHaveTextContent('const x = 1;');
+  });
+
+  it('updates and clears Prism markup for block asChild fallbacks', () => {
+    const child = (value: string) => (
+      <pre>
+        <code>{value}</code>
+      </pre>
+    );
+    const { container, rerender } = render(
+      <Code variant="block" asChild={true as never} language="typescript">
+        {child('const x = 1;') as never}
+      </Code>,
+    );
+
+    rerender(
+      <Code variant="block" asChild={true as never} language="typescript">
+        {child('const y = 2;') as never}
+      </Code>,
+    );
+    expect(container.querySelector('pre > code')).toHaveTextContent('const y = 2;');
+
+    rerender(
+      <Code variant="block" asChild={true as never}>
+        {child('const y = 2;') as never}
+      </Code>,
+    );
+    expect(container.querySelector('code span')).not.toBeInTheDocument();
+  });
+
+  it('uses the default block name for empty accessible labels', () => {
+    render(
+      <Code variant="block" aria-label="" aria-labelledby=" ">
+        code
+      </Code>,
+    );
+
+    expect(screen.getByRole('group', { name: 'Code block' })).toBeInTheDocument();
+  });
+
+  it('keeps the block group role when runtime props conflict', () => {
+    render(
+      <Code {...({ role: 'button' } as never)} variant="block">
+        code
+      </Code>,
+    );
+
+    expect(screen.getByRole('group', { name: 'Code block' })).toBeInTheDocument();
+  });
+
+  it('preserves meaningful roles for inline code', () => {
+    render(<Code role="status">code</Code>);
+
+    expect(screen.getByRole('status')).toHaveTextContent('code');
   });
 });

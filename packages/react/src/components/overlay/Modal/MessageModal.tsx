@@ -3,18 +3,23 @@
 import { ReactNode } from 'react';
 import { Button } from '../../inputs/Button';
 import { Modal } from './Modal';
-import { ModalProps } from './Modal.types';
+import type { ControlledModalProps, UncontrolledModalProps } from './Modal.types';
 import { ModalClose } from './ModalClose';
+import { ModalBody } from './ModalBody';
 import { ModalDescription } from './ModalDescription';
 import { ModalContent } from './ModalContent';
 import { ModalFooter } from './ModalFooter';
 import { ModalHeader } from './ModalHeader';
 import { ModalTitle } from './ModalTitle';
+import { useDialogOpenState } from '../shared/useDialogOpenState';
+import { useWarnUnpairedControlledOpen } from '../shared/useWarnUnpairedControlledOpen';
+import { getCommonMessages } from '@/components/shared/common.locales';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
 
 /**
  * Properties for the MessageModal component.
  */
-export interface MessageModalProps extends Omit<ModalProps, 'children'> {
+interface MessageModalOwnProps {
   /**
    * Optional title for the modal.
    */
@@ -54,66 +59,66 @@ export interface MessageModalProps extends Omit<ModalProps, 'children'> {
   showClose?: boolean;
 }
 
+/** Controlled state props for MessageModal. */
+export type ControlledMessageModalProps = Omit<ControlledModalProps, 'children'> &
+  MessageModalOwnProps;
+
+/** Uncontrolled state props for MessageModal. */
+export type UncontrolledMessageModalProps = Omit<UncontrolledModalProps, 'children'> &
+  MessageModalOwnProps;
+
+/** Public props for MessageModal. */
+export type MessageModalProps = ControlledMessageModalProps | UncontrolledMessageModalProps;
+
 /**
- * A specialized Modal wrapper for displaying alerts, confirmation messages, or simple dialogs.
- * Simplifies the boilerplate of manually assembling Modal sub-components.
+ * Composes a simple message dialog with optional confirm and cancel actions.
  *
- * ### AI Context & Architecture
- * - **Tier**: Organisms
- * - **Stack**: Poffy UI Modal suite, Poffy UI Button
- * - **Props**: MessageModalProps
- *
- * ### Accessibility
- * - Provide `title` for confirmation and alert dialogs.
- * - Keep the message concise; use Modal directly for complex forms.
- *
- * ### AI Usage
- * - Do: use MessageModal for simple confirmation and acknowledgement dialogs.
- * - Don't: use it when custom layout, multiple fields, or complex focus order is required.
- *
- * @example
- * ```tsx
- * import { MessageModal } from '@poffy-ui/react/overlay';
- *
- * <MessageModal
- *   open={isOpen}
- *   title="Delete Item?"
- *   okLabel="Delete"
- *   okHandle={handleDelete}
- *   cancelLabel="Cancel"
- * >
- *   Are you sure you want to delete this item?
- * </MessageModal>
- * ```
+ * It uses localized default labels and an inside-scrolling large Modal. When
+ * `okHandle` or `onCancel` is supplied, its button invokes that callback and
+ * then requests close. It is not a promise-based confirmation API; callers
+ * own asynchronous work, error handling, and the controlled open state.
  */
 export const MessageModal = ({
   open,
+  defaultOpen = false,
   onOpenChange,
   title,
   children,
-  okLabel = 'OK',
-  cancelLabel = 'Cancel',
+  okLabel,
+  cancelLabel,
   okHandle,
   onCancel,
   showClose = true,
-  size = 'md',
+  size = 'lg',
   scrollBehavior = 'inside',
   ...rest
 }: MessageModalProps) => {
+  const messages = getCommonMessages(useOptionalLocale()?.locale);
+  const resolvedOkLabel = okLabel ?? messages.confirm;
+  const resolvedCancelLabel = cancelLabel ?? messages.cancel;
+  const resolvedOnOpenChange = typeof onOpenChange === 'function' ? onOpenChange : undefined;
+  const controlsOpen = open !== undefined && resolvedOnOpenChange !== undefined;
+  useWarnUnpairedControlledOpen('MessageModal', open, controlsOpen);
+  const { open: resolvedOpen, onOpenChange: setOpen } = useDialogOpenState({
+    open: controlsOpen ? open : undefined,
+    defaultOpen: !controlsOpen && open !== undefined ? open : defaultOpen,
+    onOpenChange: resolvedOnOpenChange,
+  });
+
   const handleOk = () => {
     okHandle?.();
-    onOpenChange?.(false);
+    setOpen(false);
   };
 
   const handleCancel = () => {
     onCancel?.();
-    onOpenChange?.(false);
+    setOpen(false);
   };
 
   return (
     <Modal
-      open={open}
-      onOpenChange={onOpenChange}
+      open={resolvedOpen}
+      onOpenChange={setOpen}
       size={size}
       scrollBehavior={scrollBehavior}
       {...rest}
@@ -124,15 +129,17 @@ export const MessageModal = ({
           {showClose && <ModalClose />}
         </ModalHeader>
 
-        <ModalDescription asChild>
-          <div>{children}</div>
-        </ModalDescription>
+        <ModalBody>
+          <ModalDescription asChild>
+            <div>{children}</div>
+          </ModalDescription>
+        </ModalBody>
 
         <ModalFooter data-align="center">
-          {okHandle && <Button onClick={handleOk}>{okLabel}</Button>}
+          {okHandle && <Button onClick={handleOk}>{resolvedOkLabel}</Button>}
           {onCancel && (
             <Button intent="secondary" onClick={handleCancel}>
-              {cancelLabel}
+              {resolvedCancelLabel}
             </Button>
           )}
         </ModalFooter>

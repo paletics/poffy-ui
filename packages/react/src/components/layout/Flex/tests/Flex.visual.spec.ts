@@ -1,4 +1,7 @@
-import { testVisualStories } from '@/components/e2e/visualSpecUtils';
+import {
+  testStoriesDoNotOverflowOnMobile,
+  testVisualStories,
+} from '@/components/e2e/visualSpecUtils';
 
 testVisualStories({
   accessibilityStory: 'default',
@@ -11,4 +14,10 @@ testVisualStories({
     { name: 'JustifySpaceBetween', story: 'justify-space-between' },
     { name: 'Wrap', story: 'wrap' },
   ],
+});
+
+testStoriesDoNotOverflowOnMobile({
+  componentId: 'layout-flex',
+  title: 'Flex',
+  stories: [{ name: 'JustifySpaceBetween', story: 'justify-space-between' }],
 });

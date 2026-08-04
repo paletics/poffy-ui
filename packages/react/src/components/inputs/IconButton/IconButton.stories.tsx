@@ -1,17 +1,10 @@
-﻿import { Divider, Flex } from '@/components/layout';
+import { Divider, Flex } from '@/components/layout';
 import { EditIcon, HeartIcon, ShareIcon, TrashIcon } from '@/components/media/Icon/icons';
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from 'storybook/test';
 import { IconButton } from './IconButton';
 
-/**
- * A compact icon-only button for toolbars, headers, and list actions.
- * Requires a mandatory `aria-label` for screen reader accessibility - no exceptions.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`iconButton` recipe), Radix Slot, `ActionMotion`
- */
+
 const meta = {
   title: 'Inputs/IconButton',
   component: IconButton,
@@ -115,6 +108,14 @@ export const DifferentIcons: Story = {
   ),
 };
 
+export const AsChild: Story = {
+  render: () => (
+    <IconButton asChild icon={<EditIcon />} aria-label="Open editor">
+      <a href="#icon-button-editor">Open editor</a>
+    </IconButton>
+  ),
+};
+
 export const Loading: Story = {
   args: {
     icon: <EditIcon />,
@@ -162,7 +163,8 @@ export const InToolbar: Story = {
       p="xs"
       bg="layout.surface"
       borderRadius="md"
-      border="1px solid"
+      borderWidth="thin"
+      borderStyle="solid"
       borderColor="layout.divider"
     >
       <IconButton icon={<EditIcon />} aria-label="Edit" />

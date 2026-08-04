@@ -1,18 +1,19 @@
 /**
- * Builds semantic token paths and CSS variable names for a neo intent.
+ * Internal recipe helpers for the `neo` appearance.
  *
- * ### Notes
- * Intended for recipe authors who need both Panda token paths and the
- * matching runtime CSS variable names for derived color expressions.
+ * These values are Panda recipe fragments, token paths, or CSS expressions rather than resolved
+ * browser colors. They are intentionally not exported from the package public API.
+ */
+
+/**
+ * Creates the semantic token paths and CSS custom-property references for one neo intent.
  *
- * ### AI Usage
- * - **DO**: Use this helper in recipe/theme code when deriving neo variant colors.
- * - **DON'T**: Call from React components or public runtime render paths.
+ * The returned values are consumed by Panda recipes to keep an intent's foreground, background,
+ * border, and interaction colors aligned. They are token paths and CSS variable references, not
+ * resolved browser colors.
  *
- * @example
- * ```ts
- * const tokens = createNeoTokens('primary');
- * ```
+ * @param intent - Variant intent segment below `variants.` (for example, `primary` or `danger`).
+ * @returns Token paths plus main and border CSS custom-property references for that intent.
  */
 export const createNeoTokens = (intent: string) => {
   const tokenBase = `variants.${intent}`;
@@ -29,16 +30,15 @@ export const createNeoTokens = (intent: string) => {
 };
 
 /**
- * Returns a readable overlay text color expression for a neo intent surface.
+ * Creates the overlay text color expression for a neo surface derived from an intent main color.
  *
- * ### Notes
- * Returns Panda-compatible token/color expressions. The special
- * `light` and `dark` intents are handled explicitly because mixing them like
- * brand colors can reduce contrast.
+ * `light` uses the theme primary text token, `dark` mixes the main color toward white, and all
+ * other intents mix it toward black. The result is a Panda bracketed CSS expression or token path,
+ * not a resolved color.
  *
- * ### AI Usage
- * - **DO**: Use with the `mainToken` returned by `createNeoTokens`.
- * - **DON'T**: Replace with raw hex values in recipes.
+ * @param mainToken - CSS color expression for the intent's main color.
+ * @param intent - Variant intent used to select the light/dark contrast exception.
+ * @returns A Panda-compatible token path or bracketed CSS color expression for overlay text.
  */
 export const createNeoOverlayTextColor = (mainToken: string, intent: string) => {
   if (intent === 'light') {
@@ -53,21 +53,25 @@ export const createNeoOverlayTextColor = (mainToken: string, intent: string) => 
 };
 
 /**
- * Returns a mixed shadow color expression derived from an intent main color.
+ * Creates the hard-shadow color expression for a neo surface derived from its main color.
  *
- * ### Notes
- * The returned string is a CSS `color-mix()` expression for recipe
- * values, not a resolved color.
+ * The returned value is a CSS `color-mix()` expression for Panda recipe values, not a resolved
+ * browser color. It mixes the main color 70% toward black to give the offset shadow its contrast.
+ *
+ * @param mainToken - CSS color expression for the intent's main color.
+ * @returns A CSS color-mix expression for a neo hard shadow.
  */
 export const createNeoShadowColor = (mainToken: string) =>
   `color-mix(in srgb, ${mainToken} 70%, #000000 30%)`;
 
 /**
- * Returns light and dark border color expressions derived from an intent main color.
+ * Creates base and dark-mode border color expressions for a neo surface.
  *
- * ### Notes
- * Use as a Panda conditional style object where both base and dark
- * mode border colors are needed.
+ * The returned Panda conditional style object derives both colors from the same main token: the
+ * base value mixes toward black and the dark value mixes toward white. Neither value is resolved.
+ *
+ * @param mainToken - CSS color expression for the intent's main color.
+ * @returns Panda base and `_dark` border color expressions.
  */
 export const createNeoBorderColor = (mainToken: string) =>
   ({

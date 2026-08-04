@@ -1,17 +1,10 @@
-﻿import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from 'storybook/test';
 import { Switch } from './Switch';
 import { Stack } from '../../layout/Stack';
 import { useState } from 'react';
 
-/**
- * A toggle switch for binary on/off settings.
- * Built on a native `<input type="checkbox">` with `role="switch"` for accessibility.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`switchControl` recipe), CSS peer selectors
- */
+
 const meta: Meta<typeof Switch> = {
   title: 'Inputs/Switch',
   component: Switch,

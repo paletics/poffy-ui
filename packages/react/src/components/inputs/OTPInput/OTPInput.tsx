@@ -1,159 +1,187 @@
 'use client';
 
-import {
-  applyOtpBackspace,
-  applyOtpInputChange,
-  applyOtpPaste,
-  toOtpSegments,
-} from '@poffy-ui/behavior/otp-input';
+import { useMergeRefs } from '@poffy-ui/behavior/hooks';
 import { cx } from '@/styled-system/css';
+import {
+  hasAriaInvalid,
+  resolveFormControlAria,
+} from '@/components/inputs/FormControl/formControlAria';
+import { useFormControl } from '@/components/inputs/FormControl/useFormControl';
 import { otpInput } from '@/styled-system/recipes';
-import { Slot } from '@radix-ui/react-slot';
-import { ChangeEvent, ClipboardEvent, forwardRef, KeyboardEvent, useRef, useState } from 'react';
+import { ChangeEvent, ClipboardEvent, forwardRef, useId, useEffect, useRef } from 'react';
 import { OTPInputProps } from './OTPInput.types';
+import {
+  useFormControlBridge,
+  useFormReset,
+} from '@/components/inputs/shared/useFormControlBridge';
+import { scrollIntoInlineView } from '@/components/inputs/shared/scrollIntoInlineView';
+import { resolveAccessibleLabel } from '@/components/shared/resolveAccessibleLabel';
+import { useOptionalDirection } from '@/providers/DirectionProvider';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
+import { getOTPInputMessages } from './OTPInput.locales';
+import { useWarnInvalidControllableState } from '@/components/inputs/shared/useWarnInvalidControllableState';
+import { useOtpInputState } from '@poffy-ui/behavior/otp-input/react';
 
 /**
- * A multi-segment OTP / verification-code input.
- * Automatically advances focus between segments on entry, supports Backspace navigation,
- * and handles paste of complete codes. Segments are synchronized with the `value` prop
- * via derived state (render-time sync without `useEffect`).
+ * Fixed-length OTP or verification-code field composed from one-character inputs.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`otpInput` SlotRecipe: `root` + `input`), Radix Slot
- * - **Props**: `OTPInputProps`
- *
- * ### Design Tokens
- * - **sizing**: segment width / height → Silver Ratio tokens per `size` variant
- * - **color**: focus ring → `brand.main`; separator → `neutral.border`
- *
- * ### Variant Logic
- * - **size**: sm / md / lg — scales segment box proportionally.
- * - **length**: Number of segments (default 6). Dynamic — renders `length` `<input>` elements.
- *
- * ### Accessibility
- * - **Role**: Each segment is a standard `<input>` with `inputMode="numeric"` and `autoComplete="one-time-code"`.
- * - **Keyboard**: Arrow Left/Right: navigate segments | Backspace: clear & move back | Type: auto-advance
- * - **Paste**: Full or partial codes pasted at any segment are distributed across all segments.
- *
- * @example Basic
- * ```tsx
- * <OTPInput length={6} onComplete={(code) => verify(code)} />
- * ```
- *
- * @example Controlled, 4-digit PIN
- * ```tsx
- * <OTPInput length={4} value={pin} onChange={setPin} size="lg" />
- * ```
+ * Typing, paste, composition, Backspace, and directional keys update the fixed segment array and
+ * move focus as appropriate for text direction. `onComplete` fires only on a transition to a
+ * fully populated value. Disabled/read-only fields reject edits, and a form reset restores the
+ * uncontrolled initial value without change callbacks. An optional `name` emits the joined value
+ * through a hidden form field.
  */
 export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>((props, ref) => {
+  const legacyProps = props as OTPInputProps & { asChild?: unknown };
   const {
     length = 6,
-    value = '',
+    value,
+    defaultValue,
     onChange,
     onComplete,
-    disabled = false,
+    disabled,
+    readOnly,
+    required,
+    error,
     size = 'md',
     appearance = 'outline',
     className,
-    asChild,
+    asChild: _legacyAsChild,
+    name,
+    form,
+    locale: localeProp,
+    messages,
+    dir: dirProp,
+    id: idProp,
     'aria-label': ariaLabel,
     'aria-labelledby': ariaLabelledBy,
+    'aria-describedby': ariaDescribedBy,
+    'aria-errormessage': ariaErrorMessage,
+    'aria-invalid': ariaInvalid,
     ...rest
-  } = props;
+  } = legacyProps;
+  void _legacyAsChild;
+  const resolvedOnChange = typeof onChange === 'function' ? onChange : undefined;
+  const resolvedOnComplete = typeof onComplete === 'function' ? onComplete : undefined;
+  useWarnInvalidControllableState({
+    componentName: 'OTPInput',
+    value,
+    defaultValue,
+    handler: onChange,
+  });
 
+  const formControl = useFormControl();
+  const directionContext = useOptionalDirection();
+  const localeContext = useOptionalLocale();
+  const direction = dirProp === 'ltr' || dirProp === 'rtl' ? dirProp : directionContext?.dir;
+  const isRtl = direction === 'rtl';
+  const resolvedMessages = getOTPInputMessages(localeProp ?? localeContext?.locale, messages);
+  const generatedId = useId();
+  const isDisabled = disabled ?? formControl.isDisabled ?? false;
+  const formBridge = useFormControlBridge({ disabled: isDisabled, form });
+  const isReadOnly = readOnly ?? formControl.isReadOnly ?? false;
+  const isRequired = required ?? formControl.isRequired ?? false;
+  const isInvalid = error ?? formControl.isInvalid ?? false;
+  const hasExplicitInvalid = hasAriaInvalid(ariaInvalid);
+  const shouldAssociateErrorMessage = [isInvalid, hasExplicitInvalid].some(Boolean);
+  const resolvedId = idProp ?? formControl.id ?? generatedId;
+  const { describedBy, errorMessage } = resolveFormControlAria({
+    ariaDescribedBy,
+    ariaErrorMessage,
+    errorMessageIds: formControl.errorMessageIds,
+    helperTextIds: formControl.helperTextIds,
+    isInvalid: shouldAssociateErrorMessage,
+  });
+  const accessibleLabel = resolveAccessibleLabel({
+    ariaLabel,
+    ariaLabelledBy,
+    autoLabelledBy: formControl.labelId,
+  });
   const classes = otpInput({ size, appearance });
+  const rootRef = useRef<HTMLDivElement>(null);
+  const mergedRef = useMergeRefs(rootRef, ref);
   const inputsRef = useRef<(HTMLInputElement | null)[]>([]);
+  const previousLengthRef = useRef<number | undefined>(undefined);
+  const focusedIndexRef = useRef<number | undefined>(undefined);
+  const {
+    applyInput,
+    applyPaste,
+    beginComposition,
+    endComposition,
+    handleKeyDown,
+    joinedValue,
+    reset,
+    resolvedLength,
+    segments,
+  } = useOtpInputState({
+    defaultValue,
+    disabled: isDisabled,
+    isRtl,
+    length,
+    onChange: resolvedOnChange,
+    onComplete: resolvedOnComplete,
+    readOnly: isReadOnly,
+    value,
+  });
 
-  const [otp, setOtp] = useState<string[]>(() => toOtpSegments(value, length));
-  const [prevValue, setPrevValue] = useState(value);
-  const [prevLength, setPrevLength] = useState(length);
+  useEffect(() => {
+    const previousLength = previousLengthRef.current;
+    previousLengthRef.current = resolvedLength;
+    if (previousLength === undefined || resolvedLength >= previousLength) return;
 
-  if (value !== prevValue || length !== prevLength) {
-    setOtp(toOtpSegments(value, length));
-    setPrevValue(value);
-    setPrevLength(length);
-  }
+    if (focusedIndexRef.current === undefined || focusedIndexRef.current < resolvedLength) return;
 
-  const Comp = asChild ? Slot : 'div';
-  const groupProps =
-    ariaLabel || ariaLabelledBy
-      ? {
-          role: 'group' as const,
-          'aria-label': ariaLabel,
-          'aria-labelledby': ariaLabelledBy,
-        }
-      : undefined;
+    queueMicrotask(() => {
+      const fallbackInput = inputsRef.current[resolvedLength - 1];
+      fallbackInput?.focus();
+      fallbackInput?.select();
+      focusedIndexRef.current = resolvedLength - 1;
+    });
+  }, [resolvedLength]);
+
+  const formResetRef = useFormReset<HTMLFieldSetElement>(reset);
+  const formAnchorRef = useMergeRefs(formBridge.anchorRef, formResetRef);
 
   const focusInput = (index: number) => {
     inputsRef.current[index]?.focus();
     inputsRef.current[index]?.select();
   };
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>, index: number) => {
-    if (disabled) return;
-
-    switch (e.key) {
-      case 'ArrowLeft':
-        e.preventDefault();
-        if (index > 0) focusInput(index - 1);
-        break;
-      case 'ArrowRight':
-        e.preventDefault();
-        if (index < length - 1) focusInput(index + 1);
-        break;
-      case 'Backspace':
-        e.preventDefault();
-        {
-          const result = applyOtpBackspace(otp, index);
-          setOtp(result.otp);
-          onChange?.(result.value);
-          if (result.nextFocusIndex !== null) {
-            focusInput(result.nextFocusIndex);
-          }
-        }
-        break;
-    }
+  const applySegmentInput = (rawValue: string, index: number) => {
+    const nextFocusIndex = applyInput(rawValue, index);
+    if (nextFocusIndex !== null) focusInput(nextFocusIndex);
   };
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>, index: number) => {
-    if (disabled) return;
-    const val = e.target.value;
-    const result = applyOtpInputChange(otp, index, val);
-
-    if (!val.slice(-1) && val.length > 0) return;
-
-    setOtp(result.otp);
-    onChange?.(result.value);
-    if (result.isComplete) {
-      onComplete?.(result.value);
-    }
-
-    if (result.nextFocusIndex !== null) {
-      focusInput(result.nextFocusIndex);
-    }
+    applySegmentInput(e.target.value, index);
   };
 
-  const handlePaste = (e: ClipboardEvent<HTMLInputElement>) => {
-    if (disabled) return;
+  const handlePaste = (e: ClipboardEvent<HTMLInputElement>, index: number) => {
+    if (isDisabled || isReadOnly) return;
     e.preventDefault();
     const text = e.clipboardData.getData('text/plain').trim();
     if (!text) return;
 
-    const result = applyOtpPaste(otp, length, text);
-    setOtp(result.otp);
-    onChange?.(result.value);
-    if (result.isComplete) {
-      onComplete?.(result.value);
-    }
-    if (result.nextFocusIndex !== null) {
-      focusInput(result.nextFocusIndex);
-    }
+    const nextFocusIndex = applyPaste(text, index);
+    if (nextFocusIndex !== null) focusInput(nextFocusIndex);
   };
 
   return (
-    <Comp ref={ref} className={cx(classes.root, className)} {...groupProps} {...rest}>
-      {otp.map((digit, index) => (
+    <div
+      ref={mergedRef}
+      id={resolvedId}
+      className={cx(classes.root, className)}
+      {...rest}
+      dir={direction}
+      role="group"
+      data-otp-overflow-viewport=""
+      aria-label={accessibleLabel.ariaLabel}
+      aria-labelledby={accessibleLabel.ariaLabelledBy}
+      aria-describedby={describedBy}
+      aria-disabled={isDisabled ? true : undefined}
+    >
+      <fieldset {...formBridge.anchorProps} ref={formAnchorRef} />
+      {segments.map((digit, index) => (
         <input
           key={`otp-${index}`}
           ref={(el) => {
@@ -162,16 +190,58 @@ export const OTPInput = forwardRef<HTMLDivElement, OTPInputProps>((props, ref) =
           className={classes.input}
           value={digit}
           onChange={(e) => handleChange(e, index)}
-          onKeyDown={(e) => handleKeyDown(e, index)}
-          onPaste={handlePaste}
+          onCompositionStart={() => {
+            beginComposition();
+          }}
+          onCompositionEnd={(event) => {
+            const nextFocusIndex = endComposition(event.currentTarget.value, index);
+            if (nextFocusIndex !== null) focusInput(nextFocusIndex);
+          }}
+          onKeyDown={(event) => {
+            const result = handleKeyDown({
+              index,
+              isComposing: event.nativeEvent.isComposing,
+              key: event.key,
+              keyCode: event.nativeEvent.keyCode,
+            });
+            if (!result.handled) return;
+            event.preventDefault();
+            if (result.nextFocusIndex !== null) focusInput(result.nextFocusIndex);
+          }}
+          onPaste={(event) => handlePaste(event, index)}
+          onFocus={(event) => {
+            focusedIndexRef.current = index;
+            if (rootRef.current) {
+              scrollIntoInlineView(rootRef.current, event.currentTarget, 4);
+            }
+          }}
+          onBlur={(event) => {
+            const nextTarget = event.relatedTarget;
+            if (!nextTarget || !rootRef.current?.contains(nextTarget)) {
+              focusedIndexRef.current = undefined;
+            }
+          }}
           maxLength={1}
           inputMode="numeric"
-          disabled={disabled}
+          disabled={isDisabled}
+          readOnly={isReadOnly}
+          required={isRequired}
+          form={form}
           autoComplete="one-time-code"
-          aria-label={`Digit ${index + 1} of ${length}`}
+          aria-label={resolvedMessages.digit(index + 1, resolvedLength)}
+          aria-describedby={describedBy}
+          aria-errormessage={errorMessage}
+          aria-invalid={isInvalid ? true : ariaInvalid}
+          onInvalid={() => {
+            if (index !== segments.findIndex((segment) => !segment)) return;
+            queueMicrotask(() => focusInput(index));
+          }}
         />
       ))}
-    </Comp>
+      {name ? (
+        <input type="hidden" name={name} form={form} value={joinedValue} disabled={isDisabled} />
+      ) : null}
+    </div>
   );
 });
 

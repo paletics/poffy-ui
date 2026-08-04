@@ -1,47 +1,26 @@
-import { InputVariantProps } from '@/styled-system/recipes';
-import { type InputAppearance, PrimitiveProps } from '@poffy-ui/types';
-import { ReactNode } from 'react';
+import type { InputVariantProps } from '@/styled-system/recipes';
+import { type PrimitiveProps } from '@poffy-ui/types';
+import type { ReactNode } from 'react';
+import type { InputAppearanceProp } from '@/components/inputs/inputVariant';
 
-/**
- * Generated Panda recipe variant props for the Input component.
- */
-export type InputVariants = InputVariantProps;
+/** Visual props for `Input`. */
+export type InputVariants = InputVariantSubset;
 
-/**
- * Public Input variant props with shared input appearance names.
- */
+/** Input recipe options exposed with shared appearance names. */
 export interface InputVariantSubset extends Omit<InputVariantProps, 'variant'> {
-  /** Surface treatment. */
-  appearance?: InputAppearance;
-  /** Legacy recipe variant alias. */
-  variant?: InputVariantProps['variant'];
+  /**
+   * Surface treatment.
+   * @defaultValue `'outline'`
+   */
+  appearance?: InputAppearanceProp;
 }
 
 /**
- * Props for the core text-like Input atom.
+ * Props for the core text-like field. Provide a label through a FormControl or native ARIA.
  *
- * ### Notes
- * Input follows the native input controlled/uncontrolled contract: use `value`
- * with `onChange`, or `defaultValue` for an initial value. Always provide a
- * visible label, `aria-label`, or `aria-labelledby`. `startElement` and
- * `endElement` are decorative or interactive adornments; ensure interactive
- * adornments have their own accessible names.
- *
- * Do: use native input attributes such as `type`, `name`, `autoComplete`, and
- * `required` directly.
- * Don't: use placeholder text as the only label.
- *
- * @example
- * ```tsx
- * import { Input } from '@poffy-ui/react/inputs';
- *
- * <Input aria-label="Email" type="email" value={email} onChange={handleEmail} />
- * ```
- *
- * Related: InputGroupProps for attached addons and positioned elements.
- *
- * ### Formula
- * - Silver Ratio (1:1.414) is applied to height and padding via Panda recipes.
+ * `asChild` accepts an `<input>` or a custom component that forwards input props and an
+ * `HTMLInputElement` ref. Start/end elements wrap the input in an InputGroup-style layout; they
+ * are decorative and inert until the matching `*Interactive` prop is enabled.
  */
 export interface InputProps extends PrimitiveProps<'input', InputVariantSubset> {
   /**
@@ -51,15 +30,21 @@ export interface InputProps extends PrimitiveProps<'input', InputVariantSubset> 
    */
   error?: boolean;
   /**
-   * Element rendered inside the input on the left side (e.g. search icon, currency symbol).
-   * Padding is automatically adjusted to prevent text overlap via the inputGroup recipe.
+   * Compact element rendered at the input's inline start (e.g. an icon or short symbol).
+   * Content is constrained to the size-aware adornment slot. Use `InputGroup.StartAddon`
+   * for a variable-width text prefix.
    * @example <Input startElement={<SearchIcon />} />
    */
   startElement?: ReactNode;
+  /** Enables pointer interaction for the inline-start element; it then needs its own accessible name. */
+  startElementInteractive?: boolean;
   /**
-   * Element rendered inside the input on the right side (e.g. calendar icon, clear button).
-   * Padding is automatically adjusted to prevent text overlap via the inputGroup recipe.
+   * Compact element rendered at the input's inline end (e.g. an icon or icon-only action).
+   * Content is constrained to the size-aware adornment slot. Use `InputGroup.EndAddon`
+   * for a variable-width text suffix.
    * @example <Input endElement={<CalendarIcon />} />
    */
   endElement?: ReactNode;
+  /** Enables pointer interaction for the inline-end element; it then needs its own accessible name. */
+  endElementInteractive?: boolean;
 }

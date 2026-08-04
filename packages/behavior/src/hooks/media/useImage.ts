@@ -6,20 +6,35 @@ import type { ImageStatus, UseImageProps, UseImageReturn } from './useImage.type
 /**
  * Shared image preload hook that reports load state before consumers render UI.
  *
- * ### Notes
  * The hook creates an off-DOM `Image` object for the current `src`. A missing
  * source reports `pending`; a changed source reports `loading` until the new
  * image settles. React image components should render `alt`, fallback UI, and
  * layout sizing outside this hook.
  */
-export const useImage = ({ src, onLoad, onError, crossOrigin }: UseImageProps): UseImageReturn => {
-  const [imageState, setImageState] = useState<{ src?: string; status: ImageStatus }>({
+export const useImage = ({
+  src,
+  onLoad,
+  onError,
+  crossOrigin,
+  ownerDocument,
+}: UseImageProps): UseImageReturn => {
+  const [imageState, setImageState] = useState<{
+    src?: string;
+    crossOrigin?: UseImageProps['crossOrigin'];
+    status: ImageStatus;
+  }>({
     src,
+    crossOrigin,
     status: src ? 'loading' : 'pending',
   });
   const onLoadRef = useRef(onLoad);
   const onErrorRef = useRef(onError);
-  const status = imageState.src === src ? imageState.status : src ? 'loading' : 'pending';
+  const status =
+    imageState.src === src && imageState.crossOrigin === crossOrigin
+      ? imageState.status
+      : src
+        ? 'loading'
+        : 'pending';
 
   useEffect(() => {
     onLoadRef.current = onLoad;
@@ -30,16 +45,17 @@ export const useImage = ({ src, onLoad, onError, crossOrigin }: UseImageProps): 
     if (!src) return undefined;
 
     let active = true;
-    const img = new Image();
-    if (crossOrigin) img.crossOrigin = crossOrigin;
+    const ImageConstructor = ownerDocument?.defaultView?.Image ?? Image;
+    const img = new ImageConstructor();
+    if (crossOrigin !== undefined) img.crossOrigin = crossOrigin;
     img.onload = () => {
       if (!active) return;
-      setImageState({ src, status: 'loaded' });
+      setImageState({ src, crossOrigin, status: 'loaded' });
       onLoadRef.current?.();
     };
     img.onerror = () => {
       if (!active) return;
-      setImageState({ src, status: 'failed' });
+      setImageState({ src, crossOrigin, status: 'failed' });
       onErrorRef.current?.();
     };
     img.src = src;
@@ -49,7 +65,7 @@ export const useImage = ({ src, onLoad, onError, crossOrigin }: UseImageProps): 
       img.onload = null;
       img.onerror = null;
     };
-  }, [crossOrigin, src]);
+  }, [crossOrigin, ownerDocument, src]);
 
   return { status };
 };

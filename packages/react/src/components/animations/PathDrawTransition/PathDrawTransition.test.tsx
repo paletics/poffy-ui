@@ -1,6 +1,7 @@
 import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
+import { AnimationProvider } from '@/providers/AnimationProvider';
 import { PathDrawTransition } from './PathDrawTransition';
 
 describe('PathDrawTransition', () => {
@@ -32,6 +33,18 @@ describe('PathDrawTransition', () => {
       </PathDrawTransition>,
     );
     expect(container.querySelector('svg')).toHaveAttribute('data-visible', 'false');
+  });
+
+  it('renders the hidden terminal state immediately when animation is disabled', () => {
+    const { container } = render(
+      <AnimationProvider defaultAnimationEnabled={false}>
+        <PathDrawTransition viewBox="0 0 24 24" isVisible={false}>
+          <PathDrawTransition.Path d="M4 12l5 5 11-11" />
+        </PathDrawTransition>
+      </AnimationProvider>,
+    );
+
+    expect(container.querySelector('path')).toHaveAttribute('opacity', '0');
   });
 
   it('has no accessibility violations', async () => {

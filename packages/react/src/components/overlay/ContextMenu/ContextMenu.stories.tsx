@@ -6,18 +6,11 @@ import { Text } from '@/components/typography/Text';
 import { css } from '@/styled-system/css';
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
-import type { ContextMenuCombinedProps } from '@/components/overlay/ContextMenu/ContextMenu.types';
+import type { ContextMenuProps } from '@/components/overlay/ContextMenu/ContextMenu.types';
 import { useContextMenuTrigger } from '@poffy-ui/behavior/context-menu';
 import { ContextMenu, ContextMenuItem } from '@/components/overlay/ContextMenu';
 
-/**
- * Storybook documentation and visual review surface for ContextMenu.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, overlay primitives
- */
+
 const meta: Meta<typeof ContextMenu> = {
   title: 'Overlay/ContextMenu',
   component: ContextMenu,
@@ -57,10 +50,12 @@ export default meta;
 type Story = StoryObj<typeof ContextMenu>;
 
 const triggerClass = css({
-  width: '[300px]',
+  width: '[min(300px, calc(100vw - 2rem))]',
+  maxWidth: '100%',
   height: '[200px]',
+  boxSizing: 'border-box',
   bg: 'layout.background',
-  borderWidth: '2px',
+  borderWidth: 'default',
   borderStyle: 'dashed',
   borderColor: 'layout.divider',
   borderRadius: 'md',
@@ -70,8 +65,8 @@ const triggerClass = css({
   color: 'text.secondary',
   userSelect: 'none',
 });
-const rowClass = css({ display: 'flex', gap: 'lg' });
-const wrapClass = css({ display: 'flex', gap: 'lg', flexWrap: 'wrap' });
+const rowClass = css({ display: 'flex', gap: 'lg', flexWrap: 'wrap', maxWidth: '100%' });
+const wrapClass = css({ display: 'flex', gap: 'lg', flexWrap: 'wrap', maxWidth: '100%' });
 const labelClass = css({ fontSize: 'xs', mb: 'xs', color: 'text.secondary' });
 
 const items: ContextMenuItem[] = [
@@ -99,12 +94,27 @@ const items: ContextMenuItem[] = [
   },
 ];
 
-const ContextMenuDemo = (props: Partial<ContextMenuCombinedProps>) => {
-  const { open, position, target, onContextMenu, onClose } = useContextMenuTrigger();
+const longShortcutItems: ContextMenuItem[] = [
+  {
+    id: 'inspect',
+    label: 'Inspect selected workspace resource',
+    shortcut: 'Control+Alt+Shift+Meta+I',
+    onClick: () => undefined,
+  },
+];
+
+const ContextMenuDemo = (props: Partial<ContextMenuProps>) => {
+  const { open, position, target, onContextMenu, onKeyDown, onClose } = useContextMenuTrigger();
 
   return (
-    <Box onContextMenu={onContextMenu} className={triggerClass}>
-      <Text>Right Click ({props.brand ?? 'default'})</Text>
+    <Box
+      onContextMenu={onContextMenu}
+      onKeyDown={onKeyDown}
+      tabIndex={0}
+      aria-label="Context menu trigger"
+      className={triggerClass}
+    >
+      <Text>Right Click or press Shift+F10 ({props.brand ?? 'default'})</Text>
       <ContextMenu
         open={open}
         position={position}
@@ -137,6 +147,23 @@ export const Interaction: Story = {
       await expect(body.getByRole('menuitem', { name: /Edit/ })).toBeVisible();
     });
   },
+};
+
+export const NarrowLongShortcut: Story = {
+  render: () => <ContextMenuDemo items={longShortcutItems} />,
+  parameters: {
+    layout: 'fullscreen',
+  },
+};
+
+export const TabOrder: Story = {
+  render: () => (
+    <Stack gap="md">
+      <button type="button">Before context trigger</button>
+      <ContextMenuDemo />
+      <button type="button">After context trigger</button>
+    </Stack>
+  ),
 };
 
 export const Brands: Story = {
@@ -175,8 +202,8 @@ export const Animations: Story = {
   ),
 };
 
-const ContextMenuWithIconDemo = ({ brand }: { brand?: ContextMenuCombinedProps['brand'] }) => {
-  const { open, position, target, onContextMenu, onClose } = useContextMenuTrigger();
+const ContextMenuWithIconDemo = ({ brand }: { brand?: ContextMenuProps['brand'] }) => {
+  const { open, position, target, onContextMenu, onKeyDown, onClose } = useContextMenuTrigger();
 
   const iconItems: ContextMenuItem[] = [
     {
@@ -200,8 +227,8 @@ const ContextMenuWithIconDemo = ({ brand }: { brand?: ContextMenuCombinedProps['
   ];
 
   return (
-    <Box onContextMenu={onContextMenu} className={triggerClass}>
-      <Text>Right Click (Icons)</Text>
+    <Box onContextMenu={onContextMenu} onKeyDown={onKeyDown} tabIndex={0} className={triggerClass}>
+      <Text>Right Click or press Shift+F10 (Icons)</Text>
       <ContextMenu
         open={open}
         position={position}

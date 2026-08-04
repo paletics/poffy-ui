@@ -2,15 +2,18 @@ import { stepper } from '@/styled-system/recipes';
 import type { NavigationAppearance, NativeProps, SemanticIntent } from '@poffy-ui/types';
 import { ReactNode } from 'react';
 
-/**
- * Variants for the Stepper component based on Panda CSS recipe.
- */
-export type StepperVariants = NonNullable<Parameters<typeof stepper>[0]>;
+type StepperRecipeVariants = NonNullable<Parameters<typeof stepper>[0]>;
+
+/** Layout direction for the complete stepper structure. */
+export type StepperOrientation = 'horizontal' | 'vertical';
 
 /**
  * Public Stepper variant props with shared navigation appearance and semantic intent names.
  */
-export interface StepperVariantSubset extends Omit<StepperVariants, 'appearance' | 'intent'> {
+export interface StepperVariantSubset extends Omit<
+  StepperRecipeVariants,
+  'appearance' | 'intent' | 'orientation'
+> {
   /**
    * Surface treatment.
    *
@@ -23,25 +26,18 @@ export interface StepperVariantSubset extends Omit<StepperVariants, 'appearance'
    * @defaultValue recipe default
    */
   intent?: Extract<SemanticIntent, 'primary' | 'secondary' | 'success' | 'warning' | 'danger'>;
+  /**
+   * Layout direction. Responsive values are unsupported because orientation
+   * also controls descendant structure, context, and accessibility semantics.
+   */
+  orientation?: StepperOrientation;
 }
 
-/**
- * Props for the root Stepper component.
- *
- * @example
- * ```tsx
- * import { Step, Stepper } from '@poffy-ui/react/navigation';
- * ```
- *
- * ### Notes
- * Required structure: `Stepper` should contain only `Step` children. `activeStep`
- * and `onStepChange` are 0-indexed. Use `aria-label` to name the workflow.
- *
- * ### AI Usage
- * - Do: use for finite linear workflows such as checkout, onboarding, or setup.
- * - Don't: use Stepper as general navigation between unrelated pages.
- */
-export interface StepperRootProps extends NativeProps<'div', StepperVariantSubset> {
+/** Canonical public variants accepted by Stepper. */
+export type StepperVariants = StepperVariantSubset;
+
+
+interface StepperRootBaseProps extends NativeProps<'div', StepperVariantSubset> {
   /**
    * The stepper steps (typically <Step /> components).
    */
@@ -58,7 +54,17 @@ export interface StepperRootProps extends NativeProps<'div', StepperVariantSubse
    */
   activeStep?: number;
   /**
+   * Whether the workflow has reached its terminal completed state.
+   * When true, every step and connector is rendered as completed and no step
+   * is exposed as the current step.
+   *
+   * @defaultValue false
+   */
+  completed?: boolean;
+  /**
    * Callback fired when the active step changes.
+   * The component is controlled: update `activeStep` in response to this callback
+   * to reflect a user selection.
    */
   onStepChange?: (step: number) => void;
   /**
@@ -69,18 +75,32 @@ export interface StepperRootProps extends NativeProps<'div', StepperVariantSubse
    * Users may move only to completed, current, or next available steps.
    */
   linear?: boolean;
+  /**
+   * Controls automatic connector rendering. `auto` preserves the existing
+   * behavior; `manual` renders only explicit `StepperSeparator` children.
+   * @defaultValue `'auto'`
+   */
+  separatorMode?: 'auto' | 'manual';
+}
+
+/** Public props for StepperRoot. */
+export type StepperRootProps = Omit<StepperRootBaseProps, 'role'>;
+
+/** Props for non-step content preserved inside a Stepper without consuming an index. */
+export interface StepperAuxiliaryProps {
+  children?: ReactNode;
 }
 
 /**
  * Props for the individual Step component.
  *
  * ### Notes
- * `title` should be plain text because it is incorporated into the generated
- * accessible label. Rich content belongs in `children` for vertical steppers.
+ * `title` and `description` are exposed through the step's native text content.
+ * Rich supplemental content belongs in `children` for vertical steppers.
  */
 export interface StepItemProps extends NativeProps<'div'> {
   /**
-   * The primary label for the step. Also used in aria-label, so must be a plain string.
+   * The primary label for the step.
    */
   title?: string;
   /**
@@ -105,4 +125,7 @@ export interface StepItemProps extends NativeProps<'div'> {
  * Decorative connector between steps. The normal `Stepper` rendering
  * inserts separators through `Step`; export is available for custom compositions.
  */
-export type StepSeparatorProps = NativeProps<'div'>;
+export interface StepSeparatorProps extends NativeProps<'div'> {
+  /** Whether this manual connector represents a completed step transition. */
+  completed?: boolean;
+}

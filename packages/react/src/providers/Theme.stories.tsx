@@ -4,25 +4,76 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { keyframes, poffyPalette, semanticTokens, textStyles } from '@poffy-ui/system';
 import React from 'react';
 
-/**
- * Visual catalog of all design tokens defined in the system package.
- * Covers primitive palette, semantic color mappings, typography scales, and animation keyframes.
- *
- * ### AI Context & Architecture
- * - **Tier**: N/A (token documentation, not a component)
- * - **Stack**: @poffy-ui/system (poffyPalette, semanticTokens, textStyles, keyframes), Panda CSS
- */
+
 const meta: Meta = {
   title: 'Theme/Tokens',
   tags: ['autodocs'],
+  includeStories: ['Palette', 'SemanticColors', 'Typography', 'CjkTypography', 'Animations'],
   parameters: {
-    layout: 'centered',
+    layout: 'fullscreen',
   },
 };
 
 export default meta;
 
 type Story = StoryObj;
+
+type SemanticTokenTree = Record<string, unknown>;
+
+const strokeDashKeyframes = new Set([
+  'circle-dash',
+  'pop-spin',
+  'refined-dash',
+  'breathe',
+  'line-dash',
+  'edge-dash',
+]);
+
+interface SemanticColorToken {
+  name: string;
+  path: string;
+}
+
+const isSemanticTokenLeaf = (token: unknown): token is { value: unknown } =>
+  typeof token === 'object' && token !== null && 'value' in token;
+
+const collectSemanticColorTokens = (
+  tokens: SemanticTokenTree,
+  path: string[] = [],
+): SemanticColorToken[] =>
+  Object.entries(tokens).flatMap(([name, token]) => {
+    const tokenPath = [...path, name];
+
+    if (isSemanticTokenLeaf(token)) {
+      return [{ name: tokenPath.join('.'), path: `colors.${tokenPath.join('.')}` }];
+    }
+
+    if (typeof token === 'object' && token !== null) {
+      return collectSemanticColorTokens(token as SemanticTokenTree, tokenPath);
+    }
+
+    return [];
+  });
+
+/** Converts a semantic token path into the CSS custom property emitted by the system. */
+export const getSemanticColorVariable = (tokenPath: string): string =>
+  `var(--poffy-${tokenPath.replaceAll('.', '-')})`;
+
+/** Renders one semantic color token using its emitted CSS custom property. */
+export const SemanticColorSwatch = ({ tokenPath }: { tokenPath: string }) => (
+  <Box
+    data-semantic-token={tokenPath}
+    data-testid={`semantic-token-${tokenPath.replaceAll('.', '-')}`}
+    w="[3rem]"
+    h="[3rem]"
+    rounded="full"
+    style={{ backgroundColor: getSemanticColorVariable(tokenPath) }}
+    borderWidth="thin"
+    borderStyle="solid"
+    borderColor="layout.divider"
+    flexShrink={0}
+  />
+);
 
 export const Palette: Story = {
   parameters: {
@@ -34,21 +85,21 @@ export const Palette: Story = {
     },
   },
   render: () => (
-    <Stack gap="8" p="8">
+    <Stack gap="xl" p={{ base: 'base', md: 'xl' }} width="100%" maxWidth="100%" overflowX="hidden">
       {Object.entries(poffyPalette).map(([name, shades]) => (
-        <Stack key={name} gap="2">
+        <Stack key={name} gap="sm">
           <Box fontWeight="bold" textTransform="capitalize" fontSize="lg">
             {name}
           </Box>
-          <Stack direction="row" gap="2" overflowX="auto" pb="4">
+          <Stack direction="row" gap="sm" overflowX="auto" pb="base" maxWidth="100%">
             {Object.entries(shades as Record<string, { value: string }>).map(
               ([shade, { value }]) => (
-                <Stack key={shade} gap="1" minW="[100px]" flexShrink={0}>
+                <Stack key={shade} gap="2xs" minW="[100px]" flexShrink={0}>
                   <Box
                     w="full"
-                    h="16"
+                    h="[4rem]"
                     rounded="md"
-                    borderWidth="1px"
+                    borderWidth="thin"
                     borderStyle="solid"
                     borderColor="layout.divider"
                     style={{ backgroundColor: value }}
@@ -79,56 +130,48 @@ export const SemanticColors: Story = {
     const colorGroups = semanticTokens.colors ? Object.entries(semanticTokens.colors) : [];
 
     return (
-      <Stack gap="8" p="8">
+      <Stack gap="xl" p="xl" width="100%" maxWidth="100%" minWidth="0" overflowX="hidden">
         {colorGroups.map(([group, tokens]) => (
-          <Stack key={group} gap="4">
+          <Stack key={group} gap="base">
             <Box
               fontWeight="bold"
               textTransform="capitalize"
               fontSize="xl"
-              borderBottomWidth="1px"
+              borderBottomWidth="thin"
               borderStyle="solid"
               borderColor="layout.divider"
-              pb="2"
+              pb="sm"
             >
               {group}
             </Box>
-            <Grid gridTemplateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap="4">
-              {Object.entries(tokens as Record<string, unknown>).map(([tokenName]) => {
-                const tokenPath = `colors.${group}.${tokenName}`;
-                return (
-                  <Stack
-                    key={tokenName}
-                    gap="2"
-                    direction="row"
-                    align="center"
-                    p="3"
-                    rounded="lg"
-                    borderWidth="1px"
-                    borderStyle="solid"
-                    borderColor="layout.divider"
-                  >
-                    <Box
-                      w="12"
-                      h="12"
-                      rounded="full"
-                      bg={tokenPath as Parameters<typeof Box>[0]['bg']}
-                      borderWidth="1px"
+            <Grid gridTemplateColumns="repeat(auto-fill, minmax(200px, 1fr))" gap="base">
+              {collectSemanticColorTokens(tokens as SemanticTokenTree, [group]).map(
+                ({ name, path: tokenPath }) => {
+                  return (
+                    <Stack
+                      key={tokenPath}
+                      gap="sm"
+                      direction="row"
+                      align="center"
+                      p="md"
+                      rounded="lg"
+                      borderWidth="thin"
                       borderStyle="solid"
                       borderColor="layout.divider"
-                      flexShrink={0}
-                    />
-                    <Stack gap="0">
-                      <Box fontWeight="bold" fontSize="sm">
-                        {tokenName}
-                      </Box>
-                      <Box fontSize="xs" color="text.secondary" wordBreak="break-all">
-                        {tokenPath}
-                      </Box>
+                    >
+                      <SemanticColorSwatch tokenPath={tokenPath} />
+                      <Stack gap="none">
+                        <Box fontWeight="bold" fontSize="sm">
+                          {name}
+                        </Box>
+                        <Box fontSize="xs" color="text.secondary" wordBreak="break-all">
+                          {tokenPath}
+                        </Box>
+                      </Stack>
                     </Stack>
-                  </Stack>
-                );
-              })}
+                  );
+                },
+              )}
             </Grid>
           </Stack>
         ))}
@@ -146,15 +189,15 @@ export const Typography: Story = {
     },
   },
   render: () => (
-    <Stack gap="6" p="8" maxW="[800px]">
+    <Stack gap="lg" p="xl" maxW="[800px]">
       {Object.keys(textStyles).map((styleName) => (
         <Stack
           key={styleName}
-          gap="1"
-          borderBottomWidth="1px"
+          gap="2xs"
+          borderBottomWidth="thin"
           borderStyle="solid"
           borderColor="layout.divider"
-          pb="4"
+          pb="base"
         >
           <Box color="text.secondary" fontSize="xs" fontFamily="mono">
             textStyle: {styleName}
@@ -168,6 +211,37 @@ export const Typography: Story = {
   ),
 };
 
+export const CjkTypography: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Japanese sample used to verify that the system stack resolves real CJK glyphs in the browser-test environment.',
+      },
+    },
+  },
+  render: () => (
+    <Stack lang="ja" gap="lg" p="xl" maxW="[800px]">
+      <Stack gap="2xs">
+        <Box color="text.secondary" fontSize="xs" fontFamily="mono">
+          heading / Japanese
+        </Box>
+        <Box data-testid="cjk-heading-sample" textStyle="h3">
+          日本語の見出し：漢字・ひらがな・カタカナ
+        </Box>
+      </Stack>
+      <Stack gap="2xs">
+        <Box color="text.secondary" fontSize="xs" fontFamily="mono">
+          body / Japanese
+        </Box>
+        <Box data-testid="cjk-body-sample" textStyle="body1">
+          予約時刻は午前9時30分です。0123456789、。「」ー
+        </Box>
+      </Stack>
+    </Stack>
+  ),
+};
+
 export const Animations: Story = {
   parameters: {
     docs: {
@@ -177,13 +251,13 @@ export const Animations: Story = {
     },
   },
   render: () => (
-    <Grid gridTemplateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap="8" p="8">
+    <Grid gridTemplateColumns="repeat(auto-fill, minmax(250px, 1fr))" gap="xl" p="xl">
       {Object.keys(keyframes).map((keyframe) => (
         <Stack
           key={keyframe}
-          gap="4"
-          p="4"
-          borderWidth="1px"
+          gap="base"
+          p="base"
+          borderWidth="thin"
           borderStyle="solid"
           borderColor="layout.divider"
           rounded="lg"
@@ -193,25 +267,31 @@ export const Animations: Story = {
             {keyframe}
           </Box>
 
-          <Box
-            w="20"
-            h="20"
-            bg="brand.main"
-            rounded="md"
-            className={css({
-              animation: `${keyframe} 2s infinite ease-in-out`,
-            } as Parameters<typeof css>[0])}
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            color="brand.contrast"
-            fontSize="xs"
-          >
-            Demo
-          </Box>
+          {!strokeDashKeyframes.has(keyframe) &&
+            keyframe !== 'glow' &&
+            keyframe !== 'shimmer' &&
+            keyframe !== 'progressLoad' && (
+              <Box
+                w="[5rem]"
+                h="[5rem]"
+                bg="brand.main"
+                rounded="md"
+                className={css({
+                  animation: `${keyframe} 2s infinite ease-in-out`,
+                } as Parameters<typeof css>[0])}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+                color="brand.contrast"
+                fontSize="xs"
+              >
+                Demo
+              </Box>
+            )}
 
-          {keyframe === 'circle-dash' || keyframe === 'pop-spin' || keyframe === 'refined-dash' ? (
+          {strokeDashKeyframes.has(keyframe) ? (
             <svg
+              data-testid={`theme-stroke-dash-${keyframe}`}
               width="40"
               height="40"
               viewBox="0 0 40 40"
@@ -225,19 +305,44 @@ export const Animations: Story = {
                 stroke="currentColor"
                 strokeWidth="4"
                 strokeLinecap="round"
+                strokeDasharray="100"
                 style={{
-                  color: 'var(--colors-brand-main)',
+                  color: 'var(--poffy-colors-brand-main)',
                   animation: `${keyframe} 2s infinite linear`,
                 }}
               />
             </svg>
           ) : null}
 
+          {keyframe === 'progressLoad' && (
+            <Box
+              data-testid="theme-progress-load-track"
+              w="full"
+              h="[2rem]"
+              bg="layout.background"
+              rounded="md"
+              overflow="hidden"
+            >
+              <Box
+                w="[70.7%]"
+                h="full"
+                bg="brand.main"
+                className={css({
+                  animation: 'progressLoad 2s infinite ease-in-out',
+                })}
+              />
+            </Box>
+          )}
+
           {keyframe === 'glow' && (
             <Box
-              style={{ '--btn-glow-color': 'var(--colors-brand-main)' } as React.CSSProperties}
-              w="16"
-              h="8"
+              style={
+                {
+                  '--btn-glow-color': 'var(--poffy-colors-brand-main)',
+                } as React.CSSProperties
+              }
+              w="[4rem]"
+              h="[2rem]"
               bg="brand.main"
               rounded="md"
               className={css({
@@ -249,14 +354,21 @@ export const Animations: Story = {
           )}
 
           {keyframe === 'shimmer' && (
-            <Box w="full" h="8" bg="slate.200" rounded="md" overflow="hidden" position="relative">
+            <Box
+              w="full"
+              h="[2rem]"
+              bg="slate.200"
+              rounded="md"
+              overflow="hidden"
+              position="relative"
+            >
               <Box
                 position="absolute"
                 top="0"
                 left="0"
                 w="full"
                 h="full"
-                bg="[linear-gradient(to right, transparent, white, transparent)]"
+                bg="[linear-gradient(to_right,transparent,var(--poffy-colors-layout-surface),transparent)]"
                 className={css({
                   animationName: 'shimmer',
                   animationDuration: '[2s]',

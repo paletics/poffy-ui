@@ -1,5 +1,6 @@
-import { Children, isValidElement } from 'react';
+import { cloneElement, isValidElement } from 'react';
 import type { ReactElement, ReactNode } from 'react';
+import { flattenFragmentChildren } from '@/components/shared/flattenFragmentChildren';
 import type { ListboxSelectProps } from './ListboxSelect.types';
 
 /**
@@ -17,6 +18,7 @@ const isOptionElement = (
 ): child is ReactElement<{
   children?: ReactNode;
   disabled?: boolean;
+  label?: string;
   value?: string;
 }> => isValidElement(child) && typeof child.type === 'string' && child.type === 'option';
 
@@ -25,15 +27,71 @@ const isOptgroupElement = (
 ): child is ReactElement<{ children?: ReactNode; disabled?: boolean }> =>
   isValidElement(child) && typeof child.type === 'string' && child.type === 'optgroup';
 
-const getOptionLabel = (children: ReactNode): string =>
-  Children.toArray(children)
-    .map((child) => {
-      if (typeof child === 'string' || typeof child === 'number') return String(child);
-      if (isValidElement<{ children?: ReactNode }>(child))
-        return getOptionLabel(child.props.children);
-      return '';
-    })
-    .join('');
+export interface NormalizedListboxSelectChildren {
+  nativeChildren: ReactNode[];
+  options: ListboxSelectOptionRecord[];
+}
+
+const normalizeOptionLabelChildren = (
+  children: ReactNode,
+): { label: string; nativeChildren: ReactNode[] } => {
+  let label = '';
+  const nativeChildren = flattenFragmentChildren(children).map((child) => {
+    if (typeof child === 'string' || typeof child === 'number') {
+      label += String(child);
+      return child;
+    }
+    if (!isValidElement<{ children?: ReactNode }>(child) || child.props.children === undefined) {
+      return child;
+    }
+
+    const normalized = normalizeOptionLabelChildren(child.props.children);
+    label += normalized.label;
+    return cloneElement(child, { children: normalized.nativeChildren });
+  });
+
+  return { label, nativeChildren };
+};
+
+const normalizeListboxSelectLevel = (
+  children: ReactNode,
+  parentDisabled: boolean,
+  path: string[],
+): NormalizedListboxSelectChildren => {
+  const options: ListboxSelectOptionRecord[] = [];
+  const nativeChildren = flattenFragmentChildren(children).map((child, index) => {
+    const optionPath = [...path, String(index)];
+    if (isOptionElement(child)) {
+      const normalizedLabel = normalizeOptionLabelChildren(child.props.children);
+      options.push({
+        disabled: [parentDisabled, child.props.disabled].some(Boolean),
+        id: optionPath.join('-'),
+        label: child.props.label ?? normalizedLabel.label,
+        value: String(child.props.value ?? child.props.label ?? normalizedLabel.label),
+      });
+      return cloneElement(child, { children: normalizedLabel.nativeChildren });
+    }
+    if (isOptgroupElement(child)) {
+      const normalizedGroup = normalizeListboxSelectLevel(
+        child.props.children,
+        [parentDisabled, child.props.disabled].some(Boolean),
+        optionPath,
+      );
+      options.push(...normalizedGroup.options);
+      return cloneElement(child, { children: normalizedGroup.nativeChildren });
+    }
+    return child;
+  });
+
+  return { nativeChildren, options };
+};
+
+/**
+ * Materializes native select children once while deriving matching custom-listbox metadata.
+ */
+export const normalizeListboxSelectChildren = (
+  children: ListboxSelectProps['children'],
+): NormalizedListboxSelectChildren => normalizeListboxSelectLevel(children, false, []);
 
 /**
  * Flattens native `<option>` and `<optgroup>` children into custom listbox records.
@@ -43,28 +101,7 @@ export const flattenListboxSelectOptions = (
   parentDisabled = false,
   path: string[] = [],
 ): ListboxSelectOptionRecord[] =>
-  Children.toArray(children).flatMap((child, index) => {
-    const optionPath = [...path, String(index)];
-    if (isOptionElement(child)) {
-      const label = getOptionLabel(child.props.children);
-      return [
-        {
-          disabled: [parentDisabled, child.props.disabled].some(Boolean),
-          id: optionPath.join('-'),
-          label,
-          value: String(child.props.value ?? label),
-        },
-      ];
-    }
-    if (isOptgroupElement(child)) {
-      return flattenListboxSelectOptions(
-        child.props.children,
-        [parentDisabled, child.props.disabled].some(Boolean),
-        optionPath,
-      );
-    }
-    return [];
-  });
+  normalizeListboxSelectLevel(children, parentDisabled, path).options;
 
 /**
  * Resolves the initial ListboxSelect value from controlled props, default props, or options.

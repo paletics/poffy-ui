@@ -13,11 +13,22 @@ export const otpInputRecipe = defineSlotRecipe({
       display: 'flex',
       gap: '{spacing.xs}',
       alignItems: 'center',
-      justifyContent: 'center',
+      justifyContent: 'safe center',
+      maxWidth: '100%',
+      overflowX: 'auto',
+      overscrollBehaviorX: 'contain',
+      scrollbarWidth: 'thin',
+      scrollPaddingInline: '{spacing.xs}',
+      px: '{spacing.2xs}',
+      // `overflow-x: auto` also establishes a block-axis clipping boundary.
+      // Reserve the shared focus-ring width so segment rings remain fully visible.
+      py: '{focusRing.width}',
+      scrollPaddingBlock: '{focusRing.width}',
     },
     input: {
       width: '{sizes.root.2}',
       height: '{sizes.root.2}',
+      flexShrink: 0,
       textAlign: 'center',
       fontSize: 'lg',
       fontWeight: 'bold',
@@ -28,6 +39,8 @@ export const otpInputRecipe = defineSlotRecipe({
       color: 'text.primary',
       outline: 'none',
       transition: 'all 0.2s',
+      _motionSubtle: { transition: 'all {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'all {durations.standard} {easings.bounce}' },
       _focus: {
         borderColor: 'brand.main',
         boxShadow: '0 0 0 1px {colors.brand.main}',

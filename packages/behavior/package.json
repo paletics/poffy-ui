@@ -79,6 +79,36 @@
         "default": "./dist/clipboard/index.js"
       }
     },
+    "./combobox": {
+      "import": {
+        "types": "./dist/combobox/index.d.mts",
+        "default": "./dist/combobox/index.mjs"
+      },
+      "require": {
+        "types": "./dist/combobox/index.d.ts",
+        "default": "./dist/combobox/index.js"
+      }
+    },
+    "./command-menu": {
+      "import": {
+        "types": "./dist/command-menu/index.d.mts",
+        "default": "./dist/command-menu/index.mjs"
+      },
+      "require": {
+        "types": "./dist/command-menu/index.d.ts",
+        "default": "./dist/command-menu/index.js"
+      }
+    },
+    "./collapsible": {
+      "import": {
+        "types": "./dist/collapsible/index.d.mts",
+        "default": "./dist/collapsible/index.mjs"
+      },
+      "require": {
+        "types": "./dist/collapsible/index.d.ts",
+        "default": "./dist/collapsible/index.js"
+      }
+    },
     "./context-menu": {
       "import": {
         "types": "./dist/context-menu/index.d.mts",
@@ -87,6 +117,26 @@
       "require": {
         "types": "./dist/context-menu/index.d.ts",
         "default": "./dist/context-menu/index.js"
+      }
+    },
+    "./date": {
+      "import": {
+        "types": "./dist/date/index.d.mts",
+        "default": "./dist/date/index.mjs"
+      },
+      "require": {
+        "types": "./dist/date/index.d.ts",
+        "default": "./dist/date/index.js"
+      }
+    },
+    "./date/react": {
+      "import": {
+        "types": "./dist/date/react/index.d.mts",
+        "default": "./dist/date/react/index.mjs"
+      },
+      "require": {
+        "types": "./dist/date/react/index.d.ts",
+        "default": "./dist/date/react/index.js"
       }
     },
     "./datetime": {
@@ -119,6 +169,26 @@
         "default": "./dist/file-upload/index.js"
       }
     },
+    "./file-upload/react": {
+      "import": {
+        "types": "./dist/file-upload/react/index.d.mts",
+        "default": "./dist/file-upload/react/index.mjs"
+      },
+      "require": {
+        "types": "./dist/file-upload/react/index.d.ts",
+        "default": "./dist/file-upload/react/index.js"
+      }
+    },
+    "./json": {
+      "import": {
+        "types": "./dist/json/index.d.mts",
+        "default": "./dist/json/index.mjs"
+      },
+      "require": {
+        "types": "./dist/json/index.d.ts",
+        "default": "./dist/json/index.js"
+      }
+    },
     "./listbox": {
       "import": {
         "types": "./dist/listbox/index.d.mts",
@@ -127,6 +197,36 @@
       "require": {
         "types": "./dist/listbox/index.d.ts",
         "default": "./dist/listbox/index.js"
+      }
+    },
+    "./listbox/react": {
+      "import": {
+        "types": "./dist/listbox/react/index.d.mts",
+        "default": "./dist/listbox/react/index.mjs"
+      },
+      "require": {
+        "types": "./dist/listbox/react/index.d.ts",
+        "default": "./dist/listbox/react/index.js"
+      }
+    },
+    "./markdown": {
+      "import": {
+        "types": "./dist/markdown/index.d.mts",
+        "default": "./dist/markdown/index.mjs"
+      },
+      "require": {
+        "types": "./dist/markdown/index.d.ts",
+        "default": "./dist/markdown/index.js"
+      }
+    },
+    "./multi-select": {
+      "import": {
+        "types": "./dist/multi-select/index.d.mts",
+        "default": "./dist/multi-select/index.mjs"
+      },
+      "require": {
+        "types": "./dist/multi-select/index.d.ts",
+        "default": "./dist/multi-select/index.js"
       }
     },
     "./number-input": {
@@ -149,6 +249,16 @@
         "default": "./dist/otp-input/index.js"
       }
     },
+    "./otp-input/react": {
+      "import": {
+        "types": "./dist/otp-input/react/index.d.mts",
+        "default": "./dist/otp-input/react/index.mjs"
+      },
+      "require": {
+        "types": "./dist/otp-input/react/index.d.ts",
+        "default": "./dist/otp-input/react/index.js"
+      }
+    },
     "./pagination": {
       "import": {
         "types": "./dist/pagination/index.d.mts",
@@ -169,6 +279,26 @@
         "default": "./dist/radio-group/index.js"
       }
     },
+    "./range-slider": {
+      "import": {
+        "types": "./dist/range-slider/index.d.mts",
+        "default": "./dist/range-slider/index.mjs"
+      },
+      "require": {
+        "types": "./dist/range-slider/index.d.ts",
+        "default": "./dist/range-slider/index.js"
+      }
+    },
+    "./range-slider/react": {
+      "import": {
+        "types": "./dist/range-slider/react/index.d.mts",
+        "default": "./dist/range-slider/react/index.mjs"
+      },
+      "require": {
+        "types": "./dist/range-slider/react/index.d.ts",
+        "default": "./dist/range-slider/react/index.js"
+      }
+    },
     "./scroll-area": {
       "import": {
         "types": "./dist/scroll-area/index.d.mts",
@@ -177,6 +307,16 @@
       "require": {
         "types": "./dist/scroll-area/index.d.ts",
         "default": "./dist/scroll-area/index.js"
+      }
+    },
+    "./screen-composer": {
+      "import": {
+        "types": "./dist/screen-composer/index.d.mts",
+        "default": "./dist/screen-composer/index.mjs"
+      },
+      "require": {
+        "types": "./dist/screen-composer/index.d.ts",
+        "default": "./dist/screen-composer/index.js"
       }
     },
     "./split-button": {
@@ -209,6 +349,16 @@
         "default": "./dist/toggle-button/index.js"
       }
     },
+    "./tree-view": {
+      "import": {
+        "types": "./dist/tree-view/index.d.mts",
+        "default": "./dist/tree-view/index.mjs"
+      },
+      "require": {
+        "types": "./dist/tree-view/index.d.ts",
+        "default": "./dist/tree-view/index.js"
+      }
+    },
     "./wheel-picker": {
       "import": {
         "types": "./dist/wheel-picker/index.d.mts",
@@ -219,14 +369,14 @@
         "default": "./dist/wheel-picker/index.js"
       }
     },
-    "./logic": {
+    "./wheel-picker/react": {
       "import": {
-        "types": "./dist/logic/index.d.mts",
-        "default": "./dist/logic/index.mjs"
+        "types": "./dist/wheel-picker/react/index.d.mts",
+        "default": "./dist/wheel-picker/react/index.mjs"
       },
       "require": {
-        "types": "./dist/logic/index.d.ts",
-        "default": "./dist/logic/index.js"
+        "types": "./dist/wheel-picker/react/index.d.ts",
+        "default": "./dist/wheel-picker/react/index.js"
       }
     }
   },
@@ -243,10 +393,14 @@
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "dependencies": {
-    "@floating-ui/react": "catalog:"
+    "@floating-ui/react": "catalog:",
+    "@types/mdast": "catalog:",
+    "remark-parse": "catalog:",
+    "unified": "catalog:"
   },
   "scripts": {
-    "build": "tsup && node scripts/add-use-client-directives.mjs",
+    "build": "tsup && node scripts/add-use-client-directives.mjs && node scripts/check-use-client-directives.mjs",
+    "check:client-boundaries": "node scripts/check-use-client-directives.mjs",
     "dev": "tsup --watch",
     "lint": "eslint .",
     "test": "pnpm -C ../.. exec vitest --project=behavior --run",

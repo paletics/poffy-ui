@@ -1,17 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Box } from '@/components/layout/Box';
 import { Flex } from '@/components/layout/Flex';
 import { Icon } from '@/components/media/Icon';
 import { CheckIcon, CopyIcon, InfoIcon, TrashIcon } from '@/components/media/Icon/icons';
 
-/**
- * The foundational SVG icon primitive that wraps inline SVG paths with Silver Ratio size variants and automatic ARIA decoration suppression.
- * Use for all inline SVG icons throughout the design system, with `asChild` available for polymorphic third-party SVG components.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS recipe (`icon` via `iconRecipe.splitVariantProps`), Radix Slot
- */
+
 const meta: Meta<typeof Icon> = {
   title: 'Media/Icon',
   component: Icon,
@@ -116,16 +108,24 @@ export const Disabled: Story = {
 export const AsChild: Story = {
   render: (args) => (
     <Icon {...args} asChild>
-      <Box asChild w="[24px]" h="[24px]">
-        <img src="/favicon.ico" alt="Favicon" />
-      </Box>
+      <svg viewBox="0 0 24 24" role="img" aria-label="Custom icon">
+        <rect width="24" height="24" rx="6" fill="currentColor" />
+        <path
+          d="M7 12.5 10.2 16 17 8"
+          fill="none"
+          stroke="white"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
     </Icon>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'Renders the child element directly while applying icon styles. Useful for wrapping images or other custom elements. Note: `as` prop is not supported.',
+          'Renders a custom SVG host directly while applying icon styles. Native non-SVG hosts and `as` are not supported.',
       },
     },
   },

@@ -19,27 +19,23 @@ interface MultiSelectTagsProps {
   disabled: boolean;
   onRemove: (value: string) => void;
   renderTag?: (props: MultiSelectRenderTagProps) => ReactNode;
+  getRemoveLabel: (label: string) => string;
 }
 
-/**
- * Renders the selected-value tags inside the MultiSelect input area.
- *
- * ### AI Context & Architecture
- * - Extracted from MultiSelect to keep that file under 200 lines.
- * Each tag has a remove button that calls `onRemove` with the tag's value.
- */
+
 export const MultiSelectTags = ({
   values,
   options,
   disabled,
   onRemove,
   renderTag,
+  getRemoveLabel,
 }: MultiSelectTagsProps) => (
   <ReorderTransition className={tagTransitionClass} animationType="fade" data-multiselect-tags>
     {values.map((val) => {
       const opt = options.find((o) => o.value === val);
       const display = opt ? opt.label : val;
-      const removeLabel = `Remove ${display}`;
+      const removeLabel = getRemoveLabel(display);
       const tagProps: MultiSelectRenderTagProps = {
         value: val,
         label: display,
@@ -54,17 +50,17 @@ export const MultiSelectTags = ({
       if (renderTag) {
         return (
           <ReorderTransition.Item key={val} asChild data-multiselect-tag>
-            <span>{renderTag(tagProps)}</span>
+            <span data-multiselect-custom-tag>{renderTag(tagProps)}</span>
           </ReorderTransition.Item>
         );
       }
 
       return (
         <ReorderTransition.Item key={val} asChild data-multiselect-tag>
-          <Tag size="sm" appearance="soft" intent="primary">
+          <Tag data-multiselect-default-tag size="sm" appearance="soft" intent="primary">
             <Tag.Label data-multiselect-tag-label>{display}</Tag.Label>
             <Tag.CloseButton
-              type="button"
+              data-multiselect-tag-remove
               onClick={(e) => {
                 e.stopPropagation();
                 tagProps.onRemove();

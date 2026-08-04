@@ -7,31 +7,19 @@ import { DirectionProvider } from './DirectionProvider';
 import { AnimationProvider } from './AnimationProvider';
 import { MotionProvider } from './MotionProvider';
 import { ThemeBoundary } from './ThemeBoundary';
+import {
+  normalizeThemeTokenOverrides,
+  ThemeTokenOverrideProvider,
+  useGlobalThemeTokenOverrides,
+  useThemeTokenOverrides,
+} from './theme-token-overrides';
+import { OverlayTreeProvider } from '@/components/overlay/shared/FloatingTreeBoundary';
 import type { ThemeProviderProps } from './ThemeProvider.types';
 
 /**
- * Root theme provider for the Poffy UI design system.
- * Wraps the application in the providers required for color mode, brand,
- * locale, direction, motion features, and animation preferences.
- *
- * ### Notes
- * Use once at the app root for normal applications. Set `global={false}`
- * only for embedded widgets that must not write attributes to
- * `document.documentElement`; local scoping then happens through `ThemeBoundary`.
- *
- * ### AI Usage
- * - **DO**: Prefer `ThemeProvider` over manually composing individual providers for app roots.
- * - **DO**: Pass `features` only when intentionally overriding the default async `domMax` bundle.
- * - **DON'T**: Nest multiple root `ThemeProvider` instances unless isolating an embedded subtree.
- *
- * @example App root
- * ```tsx
- * import { ThemeProvider } from '@poffy-ui/react';
- *
- * <ThemeProvider defaultColorMode="system" defaultLocale="ja-JP">
- *   <App />
- * </ThemeProvider>
- * ```
+ * Configures the complete Poffy UI provider stack for an application root. With `global={true}`, it
+ * owns theme-related document attributes and global token overrides; with `global={false}`, it
+ * creates an embedded local boundary instead.
  */
 export const ThemeProvider = ({
   children,
@@ -40,23 +28,62 @@ export const ThemeProvider = ({
   defaultLocale = 'en-US',
   defaultDir = 'ltr',
   defaultAnimationEnabled = true,
+  defaultMotionStyle = 'standard',
   features,
   customBrand,
   global = true,
+  ownerDocument,
+  tokenOverrides,
 }: ThemeProviderProps) => {
+  const ownTokenOverrides = normalizeThemeTokenOverrides(tokenOverrides);
+  const inheritedTokenOverrides = useThemeTokenOverrides();
+  const resolvedTokenOverrides = { ...inheritedTokenOverrides, ...ownTokenOverrides };
+  useGlobalThemeTokenOverrides(ownTokenOverrides, global, ownerDocument);
+  const brandProviderProps =
+    defaultBrand === 'custom'
+      ? { initialBrand: 'custom' as const, customBrand: customBrand! }
+      : { initialBrand: defaultBrand };
+
   return (
-    <ColorModeProvider defaultColorMode={defaultColorMode} global={global}>
-      <PoffyBrandProvider initialBrand={defaultBrand} global={global} customBrand={customBrand}>
-        <LocaleProvider defaultLocale={defaultLocale} global={global}>
-          <DirectionProvider defaultDir={defaultDir} global={global}>
-            <AnimationProvider defaultAnimationEnabled={defaultAnimationEnabled} global={global}>
-              <MotionProvider features={features}>
-                {!global ? <ThemeBoundary>{children}</ThemeBoundary> : children}
-              </MotionProvider>
-            </AnimationProvider>
-          </DirectionProvider>
-        </LocaleProvider>
-      </PoffyBrandProvider>
-    </ColorModeProvider>
+    <ThemeTokenOverrideProvider overrides={resolvedTokenOverrides}>
+      <ColorModeProvider
+        defaultColorMode={defaultColorMode}
+        global={global}
+        ownerDocument={ownerDocument}
+      >
+        <PoffyBrandProvider {...brandProviderProps} global={global} ownerDocument={ownerDocument}>
+          <LocaleProvider
+            defaultLocale={defaultLocale}
+            global={global}
+            ownerDocument={ownerDocument}
+          >
+            <DirectionProvider
+              defaultDir={defaultDir}
+              global={global}
+              ownerDocument={ownerDocument}
+            >
+              <AnimationProvider
+                defaultAnimationEnabled={defaultAnimationEnabled}
+                defaultMotionStyle={defaultMotionStyle}
+                global={global}
+                ownerDocument={ownerDocument}
+              >
+                <MotionProvider features={features}>
+                  <OverlayTreeProvider>
+                    {!global ? (
+                      <ThemeBoundary tokenOverrides={resolvedTokenOverrides}>
+                        {children}
+                      </ThemeBoundary>
+                    ) : (
+                      children
+                    )}
+                  </OverlayTreeProvider>
+                </MotionProvider>
+              </AnimationProvider>
+            </DirectionProvider>
+          </LocaleProvider>
+        </PoffyBrandProvider>
+      </ColorModeProvider>
+    </ThemeTokenOverrideProvider>
   );
 };

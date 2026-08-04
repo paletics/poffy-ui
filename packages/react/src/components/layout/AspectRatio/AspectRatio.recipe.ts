@@ -13,5 +13,9 @@ export const aspectRatioRecipe = defineRecipe({
     width: '100%',
     overflow: 'hidden',
     aspectRatio: 'var(--aspect-ratio)',
+    // Preserve media cropping normally, but do not clip a focused child element's external ring.
+    _focusWithin: {
+      overflow: 'visible',
+    },
   },
 });

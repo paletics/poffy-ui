@@ -1,8 +1,11 @@
 export { Skeleton } from './Skeleton';
 export type {
   SkeletonProps,
+  SkeletonAsChildProps,
   SkeletonBaseProps,
-  SkeletonVariant,
+  SkeletonComponent,
+  SkeletonDefaultProps,
+  SkeletonIntent,
   SkeletonShape,
   SkeletonAnimation,
 } from './Skeleton.types';

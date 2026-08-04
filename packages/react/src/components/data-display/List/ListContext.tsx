@@ -1,12 +1,17 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { ListRecipeVariants } from './List.types';
+import type { list } from '@/styled-system/recipes';
+import { ListVariant } from './List.types';
 
 /**
  * Shared list variant value used by nested list item parts.
  */
-export const ListContext = createContext<{ variant: ListRecipeVariants['variant'] } | null>(null);
+export const ListContext = createContext<{
+  variant: ListVariant;
+  isSemanticList: boolean;
+  classes: ReturnType<typeof list>;
+} | null>(null);
 
 /**
  * Returns the nearest List context and validates compound component usage.

@@ -1,13 +1,29 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 import { ActionMotion } from '@/components/animations';
 import { Button } from './index';
 
+const RuntimeButton = Button as unknown as ComponentType<
+  Record<string, unknown> & { children?: ReactNode }
+>;
+
+const animationState = vi.hoisted(() => ({ isAnimating: true }));
+const buttonRecipe = vi.hoisted(() => vi.fn(() => 'button-recipe'));
+
 vi.mock('@/components/animations', () => ({
   ActionMotion: vi.fn(({ children }: { children: ReactNode }) => children),
+}));
+
+vi.mock('@/providers/AnimationProvider', () => ({
+  useOptionalAnimation: () => animationState,
+}));
+
+vi.mock('@/styled-system/recipes', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/styled-system/recipes')>()),
+  button: buttonRecipe,
 }));
 
 /**
@@ -20,6 +36,8 @@ vi.mock('@/components/animations', () => ({
 describe('Button', () => {
   beforeEach(() => {
     vi.mocked(ActionMotion).mockClear();
+    buttonRecipe.mockClear();
+    animationState.isAnimating = true;
   });
 
   it('passes accessibility compliance', async () => {
@@ -32,6 +50,13 @@ describe('Button', () => {
     expect(screen.getByRole('button', { name: 'Click me' })).toBeInTheDocument();
   });
 
+  it('removes the glow recipe when the animation policy resolves motion to static', () => {
+    animationState.isAnimating = false;
+    render(<Button glow>Static CTA</Button>);
+
+    expect(buttonRecipe).toHaveBeenLastCalledWith(expect.objectContaining({ glow: false }));
+  });
+
   it('delegates rendering to child element when asChild is true', () => {
     render(
       <Button asChild>
@@ -41,6 +66,101 @@ describe('Button', () => {
     const link = screen.getByRole('link', { name: 'Link Button' });
     expect(link).toBeInTheDocument();
     expect(link).toHaveAttribute('href', '/test');
+  });
+
+  it('does not delegate wrapper-owned native button attributes at runtime', () => {
+    render(
+      <RuntimeButton
+        asChild
+        form="settings"
+        formAction="/save"
+        formEncType="multipart/form-data"
+        formMethod="post"
+        formNoValidate
+        formTarget="_blank"
+        name="action"
+        type="submit"
+        value="save"
+      >
+        <a href="/test">Link Button</a>
+      </RuntimeButton>,
+    );
+
+    const link = screen.getByRole('link', { name: 'Link Button' });
+    for (const attribute of [
+      'form',
+      'formaction',
+      'formenctype',
+      'formmethod',
+      'formnovalidate',
+      'formtarget',
+      'name',
+      'type',
+      'value',
+    ]) {
+      expect(link).not.toHaveAttribute(attribute);
+    }
+  });
+
+  it('adds standard button semantics and keyboard activation to passive asChild hosts', () => {
+    const onClick = vi.fn();
+    render(
+      <Button asChild onClick={onClick}>
+        <div>Save</div>
+      </Button>,
+    );
+
+    const button = screen.getByRole('button', { name: 'Save' });
+    expect(button).toHaveAttribute('tabindex', '0');
+    fireEvent.keyDown(button, { key: 'Enter' });
+    fireEvent.keyDown(button, { key: ' ', code: 'Space' });
+    fireEvent.keyUp(button, { key: ' ', code: 'Space' });
+    expect(onClick).toHaveBeenCalledTimes(2);
+  });
+
+  it('falls back to a native button for incompatible asChild hosts', () => {
+    render(
+      <Button asChild aria-label="Save">
+        <select aria-label="Save target">
+          <option>Save</option>
+        </select>
+      </Button>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+    expect(screen.queryByRole('combobox', { name: 'Save target' })).not.toBeInTheDocument();
+  });
+
+  it('owns disabled state while preserving a slotted button type', () => {
+    render(
+      <Button asChild disabled>
+        <button type="submit">Save</button>
+      </Button>,
+    );
+
+    const button = screen.getByRole('button', { name: 'Save' });
+    expect(button).toBeDisabled();
+    expect(button).toHaveAttribute('type', 'submit');
+  });
+
+  it('preserves the type owned by a slotted native button', () => {
+    render(
+      <Button asChild>
+        <button type="submit">Save</button>
+      </Button>,
+    );
+
+    expect(screen.getByRole('button', { name: 'Save' })).toHaveAttribute('type', 'submit');
+  });
+
+  it('preserves non-state ARIA attributes for an asChild host', () => {
+    render(
+      <Button asChild aria-busy="false">
+        <a href="/save">Save</a>
+      </Button>,
+    );
+
+    expect(screen.getByRole('link', { name: 'Save' })).toHaveAttribute('aria-busy', 'false');
   });
 
   it('preserves child capture handlers when asChild is enabled', () => {
@@ -59,10 +179,25 @@ describe('Button', () => {
 
   describe('when disabled', () => {
     it('is marked disabled and has aria-disabled', () => {
-      render(<Button disabled>Disabled Button</Button>);
+      render(
+        <Button disabled aria-disabled={false} data-disabled="incorrect">
+          Disabled Button
+        </Button>,
+      );
       const button = screen.getByRole('button', { name: 'Disabled Button' });
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('aria-disabled', 'true');
+      expect(button).toHaveAttribute('data-disabled', '');
+    });
+
+    it('removes the glow recipe on a disabled control', () => {
+      render(
+        <Button disabled glow>
+          Disabled CTA
+        </Button>,
+      );
+
+      expect(buttonRecipe).toHaveBeenLastCalledWith(expect.objectContaining({ glow: false }));
     });
 
     it('does not fire onClick when clicked', async () => {
@@ -91,6 +226,43 @@ describe('Button', () => {
 
       expect(link.dispatchEvent(event)).toBe(false);
       expect(handleClick).not.toHaveBeenCalled();
+    });
+
+    it('owns state data attributes for an asChild host', () => {
+      render(
+        <Button asChild disabled>
+          <a href="/blocked" data-disabled="incorrect" data-loading="incorrect">
+            Disabled Link
+          </a>
+        </Button>,
+      );
+
+      const link = screen.getByRole('link', { name: 'Disabled Link' });
+      expect(link).toHaveAttribute('data-disabled', '');
+      expect(link).not.toHaveAttribute('data-loading');
+    });
+
+    it('blocks asChild anchor auxiliary activation before child handlers run', () => {
+      const childAuxClick = vi.fn();
+      const buttonAuxClick = vi.fn();
+      render(
+        <Button asChild disabled onAuxClick={buttonAuxClick}>
+          <a href="/blocked" onAuxClick={childAuxClick}>
+            Disabled Auxiliary Link
+          </a>
+        </Button>,
+      );
+
+      const event = new MouseEvent('auxclick', {
+        bubbles: true,
+        button: 1,
+        cancelable: true,
+      });
+      const link = screen.getByRole('link', { name: 'Disabled Auxiliary Link' });
+
+      expect(link.dispatchEvent(event)).toBe(false);
+      expect(childAuxClick).not.toHaveBeenCalled();
+      expect(buttonAuxClick).not.toHaveBeenCalled();
     });
 
     it('blocks asChild anchor capture activation before child handlers run', () => {
@@ -152,6 +324,27 @@ describe('Button', () => {
       expect(handleKeyDownCapture).not.toHaveBeenCalled();
     });
 
+    it('preserves child and button handlers for non-activation keys', () => {
+      const calls: string[] = [];
+      render(
+        <Button asChild disabled onKeyDown={() => calls.push('button')}>
+          <a href="/blocked" onKeyDown={() => calls.push('child')}>
+            Disabled Keyboard Link
+          </a>
+        </Button>,
+      );
+
+      const tabEvent = new KeyboardEvent('keydown', {
+        key: 'Tab',
+        bubbles: true,
+        cancelable: true,
+      });
+      const link = screen.getByRole('link', { name: 'Disabled Keyboard Link' });
+
+      expect(link.dispatchEvent(tabEvent)).toBe(true);
+      expect(calls).toEqual(['child', 'button']);
+    });
+
     it('disables ActionMotion feedback', () => {
       render(<Button disabled>Disabled Motion</Button>);
       const props = vi.mocked(ActionMotion).mock.calls.at(-1)?.[0] as {
@@ -165,12 +358,30 @@ describe('Button', () => {
 
   describe('when loading', () => {
     it('sets aria-busy, aria-disabled, data-loading, and renders a spinner', () => {
-      render(<Button loading>Processing...</Button>);
+      render(
+        <Button loading aria-busy={false} aria-disabled={false} data-loading="incorrect">
+          Processing...
+        </Button>,
+      );
       const button = screen.getByRole('button', { name: 'Processing...' });
       expect(button).toHaveAttribute('aria-busy', 'true');
       expect(button).toHaveAttribute('aria-disabled', 'true');
       expect(button).toHaveAttribute('data-loading', '');
       expect(button.querySelector('[data-part="icon"]')).toBeInTheDocument();
+    });
+
+    it('owns loading data attributes for an asChild host', () => {
+      render(
+        <Button asChild loading>
+          <a href="/processing" data-disabled="incorrect" data-loading="incorrect">
+            Processing
+          </a>
+        </Button>,
+      );
+
+      const link = screen.getByRole('link', { name: 'Processing' });
+      expect(link).toHaveAttribute('data-loading', '');
+      expect(link).not.toHaveAttribute('data-disabled');
     });
 
     it('does not fire onClick when clicked', async () => {
@@ -272,28 +483,28 @@ describe('Button', () => {
   });
 
   describe('icon slots', () => {
-    it('renders leftIcon before the label', () => {
-      render(<Button leftIcon={<span data-testid="left-icon" />}>Save</Button>);
-      expect(screen.getByTestId('left-icon')).toBeInTheDocument();
+    it('renders startIcon before the label', () => {
+      render(<Button startIcon={<span data-testid="start-icon" />}>Save</Button>);
+      expect(screen.getByTestId('start-icon')).toBeInTheDocument();
     });
 
-    it('renders rightIcon after the label', () => {
-      render(<Button rightIcon={<span data-testid="right-icon" />}>Save</Button>);
-      expect(screen.getByTestId('right-icon')).toBeInTheDocument();
+    it('renders endIcon after the label', () => {
+      render(<Button endIcon={<span data-testid="end-icon" />}>Save</Button>);
+      expect(screen.getByTestId('end-icon')).toBeInTheDocument();
     });
 
-    it('hides leftIcon and rightIcon while loading', () => {
+    it('hides startIcon and endIcon while loading', () => {
       render(
         <Button
           loading
-          leftIcon={<span data-testid="left-icon" />}
-          rightIcon={<span data-testid="right-icon" />}
+          startIcon={<span data-testid="start-icon" />}
+          endIcon={<span data-testid="end-icon" />}
         >
           Save
         </Button>,
       );
-      expect(screen.queryByTestId('left-icon')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('right-icon')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('start-icon')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('end-icon')).not.toBeInTheDocument();
     });
   });
 

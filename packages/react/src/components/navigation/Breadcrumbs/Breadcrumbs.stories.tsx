@@ -1,14 +1,8 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { Breadcrumbs, BreadcrumbItem, BreadcrumbLink } from '.';
+import { Box } from '@/components/layout';
 
-/**
- * Storybook documentation and visual review surface for Breadcrumbs.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta: Meta<typeof Breadcrumbs> = {
   title: 'Navigation/Breadcrumbs',
   component: Breadcrumbs,
@@ -75,5 +69,43 @@ export const BackgroundVariant: Story = {
         <BreadcrumbLink isCurrentPage>Breadcrumbs</BreadcrumbLink>
       </BreadcrumbItem>
     </Breadcrumbs>
+  ),
+};
+
+export const ConstrainedLongTrail: Story = {
+  render: () => (
+    <Box width="[17.5rem]">
+      <Breadcrumbs>
+        {['Home', 'Organization', 'International Projects', 'Design System', 'Components'].map(
+          (label) => (
+            <BreadcrumbItem key={label}>
+              <BreadcrumbLink href="#">{label}</BreadcrumbLink>
+            </BreadcrumbItem>
+          ),
+        )}
+        <BreadcrumbItem>
+          <BreadcrumbLink isCurrentPage>UnusuallyLongCurrentPageIdentifier</BreadcrumbLink>
+        </BreadcrumbItem>
+      </Breadcrumbs>
+    </Box>
+  ),
+};
+
+export const ConstrainedLongTrailRtl: Story = {
+  render: () => (
+    <div dir="rtl">
+      <Box width="[17.5rem]">
+        <Breadcrumbs>
+          {['בית', 'ארגון', 'פרויקטים בינלאומיים', 'מערכת עיצוב', 'רכיבים'].map((label) => (
+            <BreadcrumbItem key={label}>
+              <BreadcrumbLink href="#">{label}</BreadcrumbLink>
+            </BreadcrumbItem>
+          ))}
+          <BreadcrumbItem>
+            <BreadcrumbLink isCurrentPage>מזההדףהנוכחיהארוךבמיוחד</BreadcrumbLink>
+          </BreadcrumbItem>
+        </Breadcrumbs>
+      </Box>
+    </div>
   ),
 };

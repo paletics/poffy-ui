@@ -24,6 +24,9 @@ export const timeClockRecipe = defineSlotRecipe({
       flexDirection: 'column',
       gap: '{spacing.md}',
       color: '{colors.text.primary}',
+      width: '100%',
+      maxWidth: 'max-content',
+      minWidth: 0,
       '&[data-disabled]': {
         opacity: 0.6,
         pointerEvents: 'none',
@@ -33,7 +36,13 @@ export const timeClockRecipe = defineSlotRecipe({
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      flexWrap: 'wrap',
+      width: '100%',
+      minWidth: 0,
+      maxWidth: '100%',
       gap: '{spacing.xs}',
+      containerType: 'inline-size',
+      containerName: 'time-clock-header',
     },
     fieldButton: {
       display: 'inline-flex',
@@ -50,6 +59,8 @@ export const timeClockRecipe = defineSlotRecipe({
       fontWeight: 'semibold',
       cursor: 'pointer',
       transition: 'all {durations.fast}',
+      _motionSubtle: { transition: 'all {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'all {durations.standard} {easings.bounce}' },
       _hover: {
         bg: '{colors.brand.tint}',
       },
@@ -73,19 +84,41 @@ export const timeClockRecipe = defineSlotRecipe({
     meridiemGroup: {
       display: 'inline-flex',
       alignItems: 'center',
+      boxSizing: 'border-box',
+      minWidth: 0,
+      maxWidth: '100%',
       borderWidth: '1px',
       borderColor: '{colors.brand.border}',
       borderRadius: '{radii.md}',
       overflow: 'hidden',
       bg: '{colors.brand.surface}',
+      '@container time-clock-header (max-width: 8rem)': {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+        width: '100%',
+      },
+      '@container time-clock-header (max-width: 3rem)': {
+        gridTemplateColumns: 'minmax(0, 1fr)',
+      },
     },
     meridiemButton: {
+      boxSizing: 'border-box',
+      minWidth: 0,
+      maxWidth: '100%',
+      minHeight: '{sizes.control.minimumTarget}',
+      height: '{sizes.silver.2}',
+      maxHeight: '{sizes.silver.2}',
       px: '{spacing.sm}',
-      h: '{sizes.silver.2}',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
+      textAlign: 'center',
       color: '{colors.text.secondary}',
       fontWeight: 'semibold',
       cursor: 'pointer',
       transition: 'all {durations.fast}',
+      _motionSubtle: { transition: 'all {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'all {durations.standard} {easings.bounce}' },
       _hover: {
         bg: '{colors.brand.tint}',
         color: '{colors.text.primary}',
@@ -101,29 +134,39 @@ export const timeClockRecipe = defineSlotRecipe({
       _disabled: {
         cursor: 'not-allowed',
       },
+      '@container time-clock-header (max-width: 8rem)': {
+        width: '100%',
+        px: '{spacing.xs}',
+      },
     },
     dial: {
       '--time-clock-radius':
         'calc(var(--time-clock-size) / 2 - var(--time-clock-option-size) / 2 - {spacing.sm})',
+      '--time-clock-inner-radius': 'calc(var(--time-clock-radius) * 0.62)',
+      '--time-clock-hand-radius': 'var(--time-clock-radius)',
       position: 'relative',
       w: 'var(--time-clock-size)',
       h: 'var(--time-clock-size)',
+      flexShrink: 0,
       borderRadius: '{radii.full}',
       bg: '{colors.brand.surface}',
       borderWidth: '1px',
       borderColor: '{colors.brand.border}',
       boxShadow: '{shadows.sm}',
+      '&[data-selected-ring="inner"]': {
+        '--time-clock-hand-radius': 'var(--time-clock-inner-radius)',
+      },
     },
     hand: {
       position: 'absolute',
       left: '50%',
       top: '50%',
       w: '2px',
-      h: 'var(--time-clock-radius)',
+      h: 'var(--time-clock-hand-radius)',
       bg: '{colors.brand.main}',
       transformOrigin: '50% 0',
       transform:
-        'rotate(var(--time-clock-selected-angle)) translateY(calc(var(--time-clock-radius) * -1))',
+        'rotate(var(--time-clock-selected-angle)) translateY(calc(var(--time-clock-hand-radius) * -1))',
       pointerEvents: 'none',
       opacity: 0.45,
     },
@@ -140,10 +183,19 @@ export const timeClockRecipe = defineSlotRecipe({
       color: '{colors.text.primary}',
       fontWeight: 'semibold',
       cursor: 'pointer',
+      '--time-clock-option-radius': 'var(--time-clock-radius)',
       transform:
-        'translate(-50%, -50%) rotate(var(--time-clock-angle)) translateY(calc(var(--time-clock-radius) * -1)) rotate(calc(-1 * var(--time-clock-angle)))',
+        'translate(-50%, -50%) rotate(var(--time-clock-angle)) translateY(calc(var(--time-clock-option-radius) * -1)) rotate(calc(-1 * var(--time-clock-angle)))',
       transition:
         'background-color {durations.fast}, color {durations.fast}, box-shadow {durations.fast}',
+      _motionSubtle: {
+        transition:
+          'background-color {durations.ultraFast}, color {durations.ultraFast}, box-shadow {durations.ultraFast}',
+      },
+      _motionPop: {
+        transition:
+          'background-color {durations.standard}, color {durations.standard}, box-shadow {durations.standard}',
+      },
       _hover: {
         bg: '{colors.brand.tint}',
       },
@@ -154,6 +206,13 @@ export const timeClockRecipe = defineSlotRecipe({
       '&[data-selected]': {
         bg: '{colors.brand.main}',
         color: '{colors.brand.contrast}',
+      },
+      '&[data-preview]': {
+        bg: '{colors.brand.tint}',
+        boxShadow: 'inset 0 0 0 2px {colors.brand.main}',
+      },
+      '&[data-ring="inner"]': {
+        '--time-clock-option-radius': 'var(--time-clock-inner-radius)',
       },
       _disabled: {
         cursor: 'not-allowed',
@@ -176,7 +235,7 @@ export const timeClockRecipe = defineSlotRecipe({
       sm: {
         root: {
           '--time-clock-size': '13rem',
-          '--time-clock-option-size': '{sizes.root.1}',
+          '--time-clock-option-size': '{sizes.control.minimumTarget}',
           fontSize: 'sm',
         },
       },

@@ -2,42 +2,38 @@
 
 import { cx } from '@/styled-system/css';
 import { Slot } from '@radix-ui/react-slot';
-import { ElementType, forwardRef } from 'react';
+import { cloneElement, ElementType, forwardRef } from 'react';
 import type { DropdownSeparatorProps } from './Dropdown.types';
 import { useDropdownContext } from './DropdownContext';
+import { isDropdownSeparatorAsChildHost } from './Dropdown.asChild';
 
-/**
- * A decorative horizontal rule that visually divides groups of items within a DropdownMenu.
- *
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Radix Slot (asChild), Panda CSS (Recipe: dropdown via context)
- * ### Design Tokens
- * - color: layout.divider, height: 1px
- * ### Accessibility
- * - Renders with `role="separator"`. Screen readers will announce it as a visual divider.
- * @example
- * ```tsx
- * <DropdownMenu>
- *   <DropdownItem>Edit</DropdownItem>
- *   <DropdownSeparator />
- *   <DropdownItem>Delete</DropdownItem>
- * </DropdownMenu>
- * ```
- * ### AI Usage
- * - Use between logical DropdownItem groups to provide visual hierarchy.
- */
+/** Renders a non-focusable separator between logical Dropdown menu-item groups. */
 export const DropdownSeparator = forwardRef<HTMLElement, DropdownSeparatorProps>(
-  ({ asChild, className, ...props }, ref) => {
+  (rawProps, ref) => {
+    const {
+      asChild,
+      className,
+      children,
+      role: _role,
+      tabIndex: _tabIndex,
+      contentEditable: _contentEditable,
+      ...props
+    } = rawProps as DropdownSeparatorProps & {
+      contentEditable?: unknown;
+      role?: unknown;
+      tabIndex?: unknown;
+    };
     const { classes } = useDropdownContext();
-    const Component = (asChild ? Slot : 'div') as ElementType;
+    const asChildHost = asChild && isDropdownSeparatorAsChildHost(children) ? children : null;
+    const Component = (asChildHost ? Slot : 'div') as ElementType;
+    const renderedChildren = asChildHost
+      ? cloneElement(asChildHost, { children: undefined, role: 'separator' })
+      : null;
 
     return (
-      <Component
-        ref={ref}
-        role="separator"
-        className={cx(classes.separator, className)}
-        {...props}
-      />
+      <Component ref={ref} className={cx(classes.separator, className)} {...props} role="separator">
+        {renderedChildren}
+      </Component>
     );
   },
 );

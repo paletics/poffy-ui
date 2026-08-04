@@ -1,51 +1,28 @@
 'use client';
 
-import { Popover } from '@/components/overlay/Popover';
+import { PopoverRolePreset } from '@/components/overlay/Popover/Popover';
 import type { ListboxPopoverProps } from './ListboxPopover.types';
 
 /**
- * Popover wrapper configured for custom listbox/select surfaces.
+ * Provides a manual, arrowless Popover preset for custom listbox/select surfaces.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Popover preset with `triggerMode="manual"` and `floatingRole="listbox"`
- * - **Props**: ListboxPopoverProps
- *
- * ### Accessibility
- * - The owning select/listbox must provide option roles, active descendant state, and keyboard navigation.
- * - Do not put generic dialog content in this preset; the role is fixed to `listbox`.
- *
- * ### AI Usage
- * - Do: use with `ListboxPopoverAnchor` and `ListboxPopoverContent` for custom select surfaces.
- * - Don't: use when click-triggered disclosure or dialog semantics are required.
- *
- * @example
- * ```tsx
- * import {
- *   ListboxPopover,
- *   ListboxPopoverAnchor,
- *   ListboxPopoverContent,
- * } from '@poffy-ui/react/overlay';
- *
- * <ListboxPopover open={open} onOpenChange={setOpen}>
- *   <ListboxPopoverAnchor>{trigger}</ListboxPopoverAnchor>
- *   <ListboxPopoverContent>{options}</ListboxPopoverContent>
- * </ListboxPopover>
- * ```
+ * It fixes `triggerMode` to manual and exposes `role="listbox"`; the owning
+ * select or listbox retains open state, keyboard navigation, and option ARIA.
+ * The default placement is `bottom-start`.
  */
 export const ListboxPopover = (props: ListboxPopoverProps) => {
   const { children, placement = 'bottom-start', ...rest } = props;
 
   return (
-    <Popover
+    <PopoverRolePreset
+      {...rest}
       placement={placement}
       triggerMode="manual"
-      floatingRole="listbox"
+      popupRole="listbox"
       showArrow={false}
-      {...rest}
     >
       {children}
-    </Popover>
+    </PopoverRolePreset>
   );
 };
 

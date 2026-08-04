@@ -34,8 +34,8 @@ describe('Card', () => {
     expect(container.firstChild).toHaveClass('poffy-card__root--appearance_neo');
   });
 
-  it('maps legacy variant aliases to public appearance', () => {
-    const { container } = render(<Card variant="filled">Content</Card>);
+  it('applies the canonical soft appearance', () => {
+    const { container } = render(<Card appearance="soft">Content</Card>);
     expect(container.firstChild).toHaveClass('poffy-card__root--appearance_soft');
   });
 
@@ -46,6 +46,21 @@ describe('Card', () => {
       </Card>,
     );
     expect(screen.getByRole('article')).toBeInTheDocument();
+  });
+
+  it('falls back to a container when the asChild host cannot contain card parts', () => {
+    render(
+      <Card asChild>
+        <button type="button" data-testid="invalid-card-host">
+          <CardFooter>
+            <button type="button">Action</button>
+          </CardFooter>
+        </button>
+      </Card>,
+    );
+
+    expect(screen.queryByTestId('invalid-card-host')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Action' })).toBeInTheDocument();
   });
 
   it('passes accessibility checks', async () => {

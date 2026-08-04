@@ -1,27 +1,31 @@
-import { dividerStyle } from '@/styled-system/recipes';
-import { JsxStyleProps, RecipeVariantProps } from '@/styled-system/types';
-import { PrimitiveProps } from '@poffy-ui/types';
+import { ConditionalValue, JsxStyleProps } from '@/styled-system/types';
+import { NativeProps } from '@poffy-ui/types';
 
 /**
- * Extracted variant types from the Panda CSS recipe.
- * ### AI Usage
- * - Use this when extending Divider styles.
+ * Divider orientation is deliberately static because it also controls the
+ * exposed `aria-orientation`. Use a separate Divider when breakpoint-specific
+ * visual orientation is required.
  */
-export type DividerVariants = RecipeVariantProps<typeof dividerStyle>;
+export type DividerOrientation = 'horizontal' | 'vertical';
+
+/** Named visual variant for Divider. */
+export type DividerVariant = 'solid' | 'dashed' | 'dotted';
 
 /**
- * Base properties for the Divider component.
- * ### AI Usage
- * - Use to type-check Divider configurations without the outer div props.
+ * Public visual variants. Only orientation is narrowed from the generated
+ * recipe type because it is also exposed through ARIA.
  */
+export interface DividerVariants {
+  orientation?: DividerOrientation;
+  variant?: ConditionalValue<DividerVariant>;
+}
+
+/** Visual options for a semantic separator. */
 export type DividerBaseProps = DividerVariants &
   JsxStyleProps & {
     className?: string;
+    orientation?: DividerOrientation;
   };
 
-/**
- * Comprehensive properties for the core Divider component.
- * ### AI Usage
- * - Use this to type-check Divider components.
- */
-export type DividerProps = PrimitiveProps<'hr', DividerBaseProps>;
+/** Props for the fixed `hr` separator host. */
+export type DividerProps = Omit<NativeProps<'hr', DividerBaseProps>, 'role' | 'aria-orientation'>;

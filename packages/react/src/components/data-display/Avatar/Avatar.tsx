@@ -1,63 +1,58 @@
 'use client';
 
-import { cloneElement, forwardRef, isValidElement } from 'react';
-import { AvatarProps } from './Avatar.types';
+import { cloneElement, forwardRef, isValidElement, type ReactNode } from 'react';
+import type { AvatarComponent, AvatarProps } from './Avatar.types';
 import { AvatarRoot } from './AvatarRoot';
 import { AvatarImage } from './AvatarImage';
 import { AvatarFallback } from './AvatarFallback';
+import { isAvatarRootAsChildHost, isPotentiallyInteractiveAvatarRootHost } from './Avatar.utils';
 
-/**
- * Shorthand version that combines AvatarRoot, AvatarImage, and AvatarFallback.
- * ### AI Context & Architecture
- * - Tier: Molecules, Stack: Panda CSS (Recipe: avatar), Radix Slot
- * ### Design Tokens
- * - size: silver-ratio tokens
- * ### Variant Logic
- * - size: Dictates visual hierarchy (sm, md, lg).
- * ### Notes
- * Do not nest interactive elements inside the avatar. Guarantee exactly one child element when using asChild.
- * ### Accessibility
- * - Relies on alt text for images. Fallback ensures meaning is preserved when images fail or load slowly.
- * ### AI Usage
- * - Use for standard user profile pictures.
- * - Supports fallback initials.
- * @example Basic usage with image and initials fallback
- * ```tsx
- * import { Avatar } from '@poffy-ui/react/data-display';
- *
- * <Avatar src="/photo.jpg" alt="Jane Doe" name="Jane Doe" size="md" />
- * ```
- *
- * @example Composition pattern for custom layouts
- * ```tsx
- * import { Avatar } from '@poffy-ui/react/data-display';
- *
- * <Avatar.Root size="lg">
- *   <Avatar.Image src="/photo.jpg" alt="Jane Doe" />
- *   <Avatar.Fallback name="Jane Doe" />
- * </Avatar.Root>
- * ```
- */
-export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>((props, ref) => {
-  const { asChild, src, alt, name, children, size, shape, onStatusChange, ...rest } = props;
-  const imageAlt = alt ?? name;
+const getAvatarFallbackContent = (content: ReactNode): ReactNode => {
+  if (Array.isArray(content)) return content.map(getAvatarFallbackContent);
+  if (!isValidElement<{ children?: ReactNode }>(content)) return content;
+  return getAvatarFallbackContent(content.props.children);
+};
 
-  if (asChild && isValidElement<{ children?: React.ReactNode }>(children)) {
+const AvatarImpl = forwardRef<HTMLElement, AvatarProps>((props, ref) => {
+  const {
+    asChild,
+    src,
+    alt,
+    name,
+    decorative = false,
+    children,
+    size,
+    shape,
+    onStatusChange,
+    ...rest
+  } = props;
+  const imageAlt = decorative ? '' : (alt ?? name);
+  const fallbackName = name ?? (alt === '' ? undefined : alt);
+
+  const candidateAsChildElement = asChild && isAvatarRootAsChildHost(children) ? children : null;
+  const asChildElement =
+    candidateAsChildElement &&
+    !(decorative && isPotentiallyInteractiveAvatarRootHost(candidateAsChildElement))
+      ? candidateAsChildElement
+      : null;
+
+  if (asChildElement) {
     return (
       <AvatarRoot
         ref={ref}
         size={size}
         shape={shape}
+        decorative={decorative}
         asChild
         onStatusChange={onStatusChange}
         {...rest}
       >
-        {cloneElement(children, {
+        {cloneElement(asChildElement, {
           children: (
             <>
-              {children.props.children}
-              <AvatarImage src={src} alt={imageAlt} />
-              <AvatarFallback name={name} />
+              {asChildElement.props.children}
+              {src ? <AvatarImage src={src} alt={imageAlt} decorative={decorative} /> : null}
+              <AvatarFallback name={fallbackName} />
             </>
           ),
         })}
@@ -66,12 +61,35 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>((props, ref) => {
   }
 
   return (
-    <AvatarRoot ref={ref} size={size} shape={shape} onStatusChange={onStatusChange} {...rest}>
-      {src && <AvatarImage src={src} alt={imageAlt} />}
-      <AvatarFallback name={name}>{children}</AvatarFallback>
+    <AvatarRoot
+      ref={ref}
+      size={size}
+      shape={shape}
+      decorative={decorative}
+      onStatusChange={onStatusChange}
+      {...rest}
+    >
+      {src && <AvatarImage src={src} alt={imageAlt} decorative={decorative} />}
+      <AvatarFallback name={fallbackName}>
+        {asChild ? getAvatarFallbackContent(children) : children}
+      </AvatarFallback>
     </AvatarRoot>
   );
-}) as React.ForwardRefExoticComponent<AvatarProps & React.RefAttributes<HTMLSpanElement>> & {
+});
+
+AvatarImpl.displayName = 'Avatar';
+
+/**
+ * Renders an avatar image and its fallback as one unit.
+ *
+ * The shorthand creates `Avatar.Root`, adds an image when `src` is supplied,
+ * and uses `name`, `alt`, or custom children for the fallback. The fallback is
+ * hidden after a successful load and remains available after an image error.
+ * Set `decorative` to remove the whole avatar from the accessibility tree.
+ * `asChild` delegates only to a supported, non-interactive root host.
+ */
+
+export const Avatar = AvatarImpl as unknown as AvatarComponent & {
   Root: typeof AvatarRoot;
   Image: typeof AvatarImage;
   Fallback: typeof AvatarFallback;
@@ -80,5 +98,3 @@ export const Avatar = forwardRef<HTMLSpanElement, AvatarProps>((props, ref) => {
 Avatar.Root = AvatarRoot;
 Avatar.Image = AvatarImage;
 Avatar.Fallback = AvatarFallback;
-
-Avatar.displayName = 'Avatar';

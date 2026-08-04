@@ -1,25 +1,20 @@
-/*
- * Component Recipes Registry
- *
- * ### AI Context & Architecture
- * This file serves as the central registry for all component styles (recipes) in Poffy UI.
- * It consolidates atomic recipes and slot recipes (multi-part) for Panda CSS configuration.
- *
- * Patterns:
- * - recipes: Standard single-element components (e.g., Button, Badge).
- * - slotRecipes: Complex components with multiple internal parts (e.g., Modal, Tabs).
- */
+/* Registry of Panda recipes and slot recipes used by the React package. */
 
 // --- Data Display ---
 import { avatarRecipe } from '../components/data-display/Avatar/Avatar.recipe';
 import { avatarGroupRecipe } from '../components/data-display/AvatarGroup/AvatarGroup.recipe';
 import { badgeRecipe } from '../components/data-display/Badge/Badge.recipe';
+import { codeViewerRecipe } from '../components/data-display/CodeViewer/CodeViewer.recipe';
 import { diffViewerRecipe } from '../components/data-display/DiffViewer/DiffViewer.recipe';
+import { keyValueViewerRecipe } from '../components/data-display/KeyValueViewer/KeyValueViewer.recipe';
+import { markdownViewerRecipe } from '../components/data-display/MarkdownViewer/MarkdownViewer.recipe';
 import { listRecipe } from '../components/data-display/List/List.recipe';
 import { referenceRecipe } from '../components/data-display/Reference/Reference.recipe';
 import { statRecipe } from '../components/data-display/Stat/Stat.recipe';
 import { tableRecipe } from '../components/data-display/Table/Table.recipe';
+import { tableScrollContainerRecipe } from '../components/data-display/Table/TableScrollContainer.recipe';
 import { tagRecipe } from '../components/data-display/Tag/Tag.recipe';
+import { skipLinkRecipe } from '../components/a11y/SkipLink/SkipLink.recipe';
 
 // --- Feedback ---
 import { alertRecipe } from '../components/feedback/Alert/Alert.recipe';
@@ -52,7 +47,9 @@ import { multiSelectRecipe } from '../components/inputs/MultiSelect/MultiSelect.
 import { otpInputRecipe } from '../components/inputs/OTPInput/OTPInput.recipe';
 import { radioRecipe } from '../components/inputs/RadioGroup/Radio.recipe';
 import { radioGroupRecipe } from '../components/inputs/RadioGroup/RadioGroup.recipe';
+import { rangeSliderRecipe } from '../components/inputs/RangeSlider/RangeSlider.recipe';
 import { selectRecipe } from '../components/inputs/Select/Select.recipe';
+import { searchInputRecipe } from '../components/inputs/SearchInput/SearchInput.recipe';
 import { sliderRecipe } from '../components/inputs/Slider/Slider.recipe';
 import { splitButtonRecipe } from '../components/inputs/SplitButton/SplitButton.recipe';
 import { switchRecipe } from '../components/inputs/Switch/Switch.recipe';
@@ -76,6 +73,7 @@ import { scrollAreaRecipe } from '../components/layout/ScrollArea/ScrollArea.rec
 
 // --- Navigation ---
 import { breadcrumbsRecipe } from '../components/navigation/Breadcrumbs/Breadcrumbs.recipe';
+import { commandMenuRecipe } from '../components/navigation/CommandMenu/CommandMenu.recipe';
 import { dropdownRecipe } from '../components/navigation/Dropdown/Dropdown.recipe';
 import { navbarRecipe } from '../components/navigation/Navbar/Navbar.recipe';
 import { paginationRecipe } from '../components/navigation/Pagination/Pagination.recipe';
@@ -84,9 +82,11 @@ import { stepperRecipe } from '../components/navigation/Stepper/Stepper.recipe';
 import { tabsRecipe } from '../components/navigation/Tabs/Tabs.recipe';
 
 // --- Overlay ---
+import { alertDialogRecipe } from '../components/overlay/AlertDialog/AlertDialog.recipe';
 import { contextMenuRecipe } from '../components/overlay/ContextMenu/ContextMenu.recipe';
 import { backdropRecipe } from '../components/overlay/Backdrop/Backdrop.recipe';
 import { drawerRecipe } from '../components/overlay/Drawer/Drawer.recipe';
+import { hoverCardRecipe } from '../components/overlay/HoverCard/HoverCard.recipe';
 import { modalRecipe } from '../components/overlay/Modal/Modal.recipe';
 import { popoverRecipe } from '../components/overlay/Popover/Popover.recipe';
 import { tooltipRecipe } from '../components/overlay/Tooltip/Tooltip.recipe';
@@ -94,13 +94,16 @@ import { tooltipRecipe } from '../components/overlay/Tooltip/Tooltip.recipe';
 // --- Surfaces ---
 import { accordionRecipe } from '../components/surfaces/Accordion/Accordion.recipe';
 import { cardRecipe } from '../components/surfaces/Card/Card.recipe';
+import { collapsibleRecipe } from '../components/surfaces/Collapsible/Collapsible.recipe';
 
 // --- Tree View ---
 import { treeViewRecipe } from '../components/tree-view/TreeView.recipe';
 
 // --- Typography ---
+import { blockquoteRecipe } from '../components/typography/Blockquote/Blockquote.recipe';
 import { codeRecipe } from '../components/typography/Code/Code.recipe';
 import { headingRecipe } from '../components/typography/Heading/Heading.recipe';
+import { kbdRecipe } from '../components/typography/Kbd/Kbd.recipe';
 import { linkRecipe } from '../components/typography/Link/Link.recipe';
 import { textRecipe } from '../components/typography/Text/Text.recipe';
 
@@ -112,20 +115,11 @@ import { pictureRecipe } from '../components/media/Picture/Picture.recipe';
 // --- Animations ---
 import { textRevealTransitionRecipe } from '../components/animations/TextRevealTransition/TextRevealTransition.recipe';
 
-/**
- * Standard recipes (Single-element components)
- *
- * ### Notes
- * Keys in this object are Panda recipe names. Changing them is a
- * public styling API change because generated recipe functions and static CSS
- * references depend on the names.
- *
- * ### AI Usage
- * - **DO**: Register single-root component recipes here.
- * - **DON'T**: Register slot/multipart recipes here; use `slotRecipes`.
- */
+
 export const recipes = {
+  skipLink: skipLinkRecipe,
   input: inputRecipe,
+  searchInput: searchInputRecipe,
   textarea: textareaRecipe,
   button: buttonRecipe,
   badge: badgeRecipe,
@@ -147,6 +141,8 @@ export const recipes = {
   text: textRecipe,
   heading: headingRecipe,
   link: linkRecipe,
+  kbd: kbdRecipe,
+  blockquote: blockquoteRecipe,
   avatar: avatarRecipe,
   avatarGroup: avatarGroupRecipe,
   skeleton: skeletonRecipe,
@@ -154,23 +150,16 @@ export const recipes = {
   picture: pictureRecipe,
   icon: iconRecipe,
   backdrop: backdropRecipe,
+  tableScrollContainer: tableScrollContainerRecipe,
 };
 
-/**
- * Slot recipes (Multi-part components)
- *
- * ### Notes
- * Keys in this object are Panda slot recipe names. Keep them aligned
- * with generated imports from `@/styled-system/recipes` and with `staticCss`.
- *
- * ### AI Usage
- * - **DO**: Register multi-part component recipes here.
- * - **DON'T**: Rename existing keys without updating generated usage and docs.
- */
+
 export const slotRecipes = {
+  alertDialog: alertDialogRecipe,
   tooltip: tooltipRecipe,
   modal: modalRecipe,
   drawer: drawerRecipe,
+  hoverCard: hoverCardRecipe,
   popover: popoverRecipe,
   progressBar: progressBarRecipe,
   circleProgress: circleProgressRecipe,
@@ -180,15 +169,19 @@ export const slotRecipes = {
   calendar: calendarRecipe,
   checkbox: checkboxRecipe,
   radio: radioRecipe,
+  codeViewer: codeViewerRecipe,
   list: listRecipe,
   reference: referenceRecipe,
   diffViewer: diffViewerRecipe,
+  keyValueViewer: keyValueViewerRecipe,
+  markdownViewer: markdownViewerRecipe,
   table: tableRecipe,
   comboBox: comboBoxRecipe,
   formControl: formControlRecipe,
   radioGroup: radioGroupRecipe,
   multiSelect: multiSelectRecipe,
   otpInput: otpInputRecipe,
+  rangeSlider: rangeSliderRecipe,
   fileUploader: fileUploaderRecipe,
   listboxSelect: listboxSelectRecipe,
   select: selectRecipe,
@@ -196,6 +189,7 @@ export const slotRecipes = {
   switchControl: switchRecipe,
   alert: alertRecipe,
   breadcrumbs: breadcrumbsRecipe,
+  commandMenu: commandMenuRecipe,
   navbar: navbarRecipe,
   pagination: paginationRecipe,
   sidebar: sidebarRecipe,
@@ -216,6 +210,7 @@ export const slotRecipes = {
   scrollArea: scrollAreaRecipe,
   accordion: accordionRecipe,
   card: cardRecipe,
+  collapsible: collapsibleRecipe,
   dropdown: dropdownRecipe,
   treeView: treeViewRecipe,
   textRevealTransition: textRevealTransitionRecipe,

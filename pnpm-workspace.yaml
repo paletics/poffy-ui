@@ -42,6 +42,7 @@ catalog:
 
   # Types
   "@types/node": ^25.6.0
+  "@types/mdast": ^4.0.4
   "@types/prismjs": ^1.26.5
   "@types/react": ^19.2.14
   "@types/react-dom": ^19.2.3
@@ -67,6 +68,7 @@ catalog:
   playwright: ^1.59.1
   prettier: ^3.8.3
   prismjs: ^1.30.0
+  remark-parse: ^11.0.0
 
   # React
   react: ^19.2.5
@@ -76,6 +78,7 @@ catalog:
   tsup: ^8.5.1
   typescript: ^5.9.3
   typescript-eslint: ^8.58.2
+  unified: ^11.0.5
   vite: ^8.0.9
   vitest: ^4.1.4
   vitest-axe: ^0.1.0

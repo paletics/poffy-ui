@@ -1,9 +1,10 @@
 'use client';
 
-import { filterAcceptedFiles } from '@poffy-ui/behavior/file-upload';
+import { useButtonKeyboardActivation } from '@poffy-ui/behavior/activation';
 import { DragEvent, forwardRef, useRef } from 'react';
 import { UploadIcon } from '@/components/media/Icon/icons';
 import { cx } from '@/styled-system/css';
+import { useMergeRefs } from '@poffy-ui/behavior/hooks';
 import { useFileUploaderContext } from './FileUploaderContext';
 
 /**
@@ -14,148 +15,172 @@ export interface FileUploaderZoneProps extends React.HTMLAttributes<HTMLDivEleme
 }
 
 /**
- * Interactive drop zone and file-picker trigger for FileUploader.
+ * Interactive drop target and dialog trigger for a `FileUploader` root.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`fileUploader` slot recipe), native file input, file-upload behavior helpers
- * - **Props**: native `div` attributes plus `helperText`
- *
- * ### Design Tokens
- * - **spacing**: zone padding, icon gap, and helper text layout come from the recipe
- * - **color**: drag-active border/background and icon color use semantic tokens
- *
- * ### Variant Logic
- * - **appearance/intent**: Inherited from `FileUploaderRoot`.
- * - **multiple**: Inherited from `FileUploaderRoot`; appends accepted files when enabled.
- *
- * ### Accessibility
- * - **Role**: `button` on the visible drop zone.
- * - **Pattern**: File upload button with drag-and-drop enhancement.
- * - **Keyboard**: Enter / Space opens the native file picker.
- * - **Required**: Ensure helper text communicates accepted file constraints when relevant.
- *
- * ### AI Usage
- * - **DO**: Use inside `FileUploader.Root` as the primary file selection target.
- * - **DON'T**: Do not replace the hidden native file input with custom file parsing.
- *
- * @example Standard usage
- * ```tsx
- * <FileUploader.Root accept="image/*">
- *   <FileUploader.Zone helperText="Drop an image or browse" />
- * </FileUploader.Root>
- * ```
- *
- * @example Multiple files
- * ```tsx
- * <FileUploader.Root multiple>
- *   <FileUploader.Zone helperText="Drop files here" />
- *   <FileUploader.List />
- * </FileUploader.Root>
- * ```
+ * It is a keyboard-operable button: Enter and Space open the native picker, and accepted drops
+ * select files. A consumer drag handler may prevent default to take ownership of that event.
+ * Disabled or read-only zones retain their state semantics but do not open the dialog or accept
+ * a drop.
  */
 export const FileUploaderZone = forwardRef<HTMLDivElement, FileUploaderZoneProps>((props, ref) => {
   const {
-    helperText = 'Drag & drop files here, or click to select',
+    helperText: helperTextProp,
     className,
     onClick,
+    onBlur,
     onKeyDown,
+    onKeyDownCapture,
+    onKeyUp,
+    onKeyUpCapture,
+    onDragEnter: onDragEnterProp,
     onDragOver: onDragOverProp,
     onDragLeave: onDragLeaveProp,
     onDrop: onDropProp,
     'aria-label': ariaLabel,
+    'aria-labelledby': ariaLabelledBy,
+    'aria-describedby': ariaDescribedBy,
     ...rest
   } = props;
   const {
-    files,
-    setFiles,
+    selectFiles,
+    openFileDialog,
+    registerZone,
     isDragging,
     setIsDragging,
-    accept,
-    maxSize,
-    multiple,
-    onChange,
     classes,
+    labelId,
+    ariaLabel: rootAriaLabel,
+    ariaLabelledBy: rootAriaLabelledBy,
+    describedBy,
+    isDisabled,
+    isReadOnly,
+    messages,
   } = useFileUploaderContext();
+  const helperText = helperTextProp ?? messages.helperText;
+  const resolvedRootAriaLabelledBy = rootAriaLabelledBy ?? labelId;
+  const resolvedZoneAriaLabelledBy = ariaLabelledBy ?? resolvedRootAriaLabelledBy;
+  const resolvedZoneAriaLabel = resolvedZoneAriaLabelledBy
+    ? undefined
+    : (ariaLabel ?? rootAriaLabel ?? helperText);
+  const joinedZoneDescribedBy = [describedBy, ariaDescribedBy].filter(Boolean).join(' ');
+  const resolvedZoneDescribedBy =
+    joinedZoneDescribedBy.length > 0 ? joinedZoneDescribedBy : undefined;
 
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const handleFiles = (newFiles: FileList | null) => {
-    if (!newFiles) return;
-    const acceptedFiles = filterAcceptedFiles(newFiles, { accept, maxSize });
-    if (acceptedFiles.length === 0) return;
-
-    let updatedFiles: File[];
-    if (multiple) {
-      updatedFiles = [...files, ...acceptedFiles];
-    } else {
-      updatedFiles = [acceptedFiles[0]];
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const mergedZoneRef = useMergeRefs(zoneRef, registerZone, ref);
+  const dragDepthRef = useRef(0);
+  const keyboardActivation = useButtonKeyboardActivation<HTMLDivElement>({
+    enabled: !isDisabled && !isReadOnly,
+    onBlur,
+    onKeyDown,
+    onKeyUp,
+  });
+  const preventInactiveKeyActivation = (event: {
+    code?: string;
+    key: string;
+    preventDefault: () => void;
+    stopPropagation: () => void;
+  }) => {
+    if (
+      (isDisabled || isReadOnly) &&
+      (event.key === 'Enter' || event.key === ' ' || event.code === 'Space')
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
     }
-    setFiles(updatedFiles);
-    onChange?.(updatedFiles);
+  };
+  const handleKeyDownCapture = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    onKeyDownCapture?.(event);
+    preventInactiveKeyActivation(event);
+  };
+  const handleKeyUpCapture = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    onKeyUpCapture?.(event);
+    preventInactiveKeyActivation(event);
   };
 
   const onDragOver = (e: DragEvent<HTMLDivElement>) => {
     onDragOverProp?.(e);
-    if (e.defaultPrevented) return;
+    if (e.defaultPrevented) {
+      dragDepthRef.current = 0;
+      setIsDragging(false);
+      return;
+    }
+    if (isDisabled || isReadOnly) {
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const onDragEnter = (e: DragEvent<HTMLDivElement>) => {
+    onDragEnterProp?.(e);
+    if (e.defaultPrevented) return;
+    if (isDisabled || isReadOnly) {
+      e.preventDefault();
+      return;
+    }
+    dragDepthRef.current += 1;
     setIsDragging(true);
   };
 
   const onDragLeave = (e: DragEvent<HTMLDivElement>) => {
     onDragLeaveProp?.(e);
+    const NodeConstructor = e.currentTarget.ownerDocument.defaultView?.Node;
+    if (
+      NodeConstructor &&
+      e.relatedTarget instanceof NodeConstructor &&
+      e.currentTarget.contains(e.relatedTarget)
+    )
+      return;
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current > 0) return;
+    setIsDragging(false);
     if (e.defaultPrevented) return;
     e.preventDefault();
-    setIsDragging(false);
   };
 
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     onDropProp?.(e);
-    if (e.defaultPrevented) return;
-    e.preventDefault();
+    dragDepthRef.current = 0;
     setIsDragging(false);
-    handleFiles(e.dataTransfer.files);
+    if (e.defaultPrevented) return;
+    if (isDisabled || isReadOnly) {
+      e.preventDefault();
+      return;
+    }
+    e.preventDefault();
+    selectFiles(e.dataTransfer.files);
   };
-
   return (
     <>
-      <input
-        ref={inputRef}
-        type="file"
-        className={classes.input}
-        aria-label="Select files"
-        accept={accept}
-        multiple={multiple}
-        onChange={(e) => {
-          handleFiles(e.target.files);
-          e.currentTarget.value = '';
-        }}
-        data-testid="file-input"
-      />
       <div
         {...rest}
-        ref={ref}
+        ref={mergedZoneRef}
         className={cx(classes.dropZone, className)}
         data-drag={isDragging ? '' : undefined}
+        data-disabled={isDisabled ? '' : undefined}
+        data-readonly={isReadOnly ? '' : undefined}
         onDragOver={onDragOver}
+        onDragEnter={onDragEnter}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
         onClick={(e) => {
           onClick?.(e);
-          if (e.defaultPrevented) return;
-          inputRef.current?.click();
+          if (e.defaultPrevented || isDisabled || isReadOnly) return;
+          openFileDialog();
         }}
         role="button"
-        tabIndex={0}
-        aria-label={ariaLabel ?? helperText}
-        onKeyDown={(e) => {
-          onKeyDown?.(e);
-          if (e.defaultPrevented) return;
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            inputRef.current?.click();
-          }
-        }}
+        tabIndex={isDisabled ? -1 : 0}
+        aria-label={resolvedZoneAriaLabel}
+        aria-labelledby={resolvedZoneAriaLabelledBy}
+        aria-describedby={resolvedZoneDescribedBy}
+        aria-disabled={[isDisabled, isReadOnly].some(Boolean) ? true : undefined}
+        onBlur={keyboardActivation.onBlur}
+        onKeyDown={keyboardActivation.onKeyDown}
+        onKeyDownCapture={handleKeyDownCapture}
+        onKeyUp={keyboardActivation.onKeyUp}
+        onKeyUpCapture={handleKeyUpCapture}
       >
         <UploadIcon className={classes.uploadIcon} />
         <span>{helperText}</span>

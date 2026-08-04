@@ -3,12 +3,5 @@
 import { createOverlayDescription } from '../shared/factories';
 import { useDrawerContext } from './DrawerContext';
 
-/**
- * Descriptive text for the Drawer, automatically linked via aria-describedby.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Standardized via `createOverlayDescription`
- * - **Props**: DrawerDescriptionProps
- */
+/** Descriptive text for the Drawer, automatically linked via aria-describedby. */
 export const DrawerDescription = createOverlayDescription(useDrawerContext, 'DrawerDescription');

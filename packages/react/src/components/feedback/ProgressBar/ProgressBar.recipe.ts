@@ -6,12 +6,14 @@ import { defineSlotRecipe } from '@pandacss/dev';
 export const progressBarRecipe = defineSlotRecipe({
   className: 'progress-bar',
   description: 'Progress bar styling for root, track, bar, and label slots',
-  slots: ['container', 'root', 'track', 'bar', 'label'],
+  slots: ['container', 'root', 'track', 'bar', 'label', 'measurement'],
   base: {
     container: {
-      display: 'block',
+      display: 'grid',
       position: 'relative',
       width: 'var(--progress-width)',
+      maxWidth: '{sizes.full}',
+      minWidth: 0,
     },
     root: {
       position: 'relative',
@@ -24,117 +26,128 @@ export const progressBarRecipe = defineSlotRecipe({
     track: {
       position: 'absolute',
       top: 0,
-      left: 0,
+      insetInlineStart: 0,
       bottom: 0,
       width: '{sizes.full}',
     },
     bar: {
       position: 'absolute',
       top: 0,
-      left: 0,
+      insetInlineStart: 0,
       bottom: 0,
       height: '{sizes.full}',
       width: 'var(--progress-bar-width)',
       bg: 'currentColor',
-      transition: 'width 0.3s ease-in-out',
+      transition: 'none',
       zIndex: 1,
     },
     label: {
-      position: 'absolute',
-      top: '50%',
-      left: '50%',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      whiteSpace: 'nowrap',
+      minWidth: 0,
+      maxWidth: '{sizes.full}',
+      whiteSpace: 'normal',
+      overflowWrap: 'anywhere',
       fontWeight: 'bold',
       pointerEvents: 'none',
       zIndex: 1,
       color: '{colors.text.secondary}',
       fontSize: 'var(--progress-font-size)',
     },
+    measurement: {
+      position: 'absolute',
+      visibility: 'hidden',
+      pointerEvents: 'none',
+      whiteSpace: 'nowrap',
+      width: 'max-content',
+      fontWeight: 'bold',
+      fontSize: 'var(--progress-font-size)',
+      lineHeight: 'normal',
+      contain: 'layout style paint',
+    },
   },
   variants: {
-    variant: {
+    intent: {
       primary: {
+        container: {
+          '--progress-label-on-bar': '{colors.variants.primary.contrast}',
+        },
         root: {
           borderColor: '{colors.variants.primary.border}',
-          '--progress-label-on-bar': '{colors.variants.primary.contrast}',
         },
         track: { bg: '{colors.variants.primary.surface}' },
         bar: { color: '{colors.variants.primary.main}' },
       },
       secondary: {
+        container: {
+          '--progress-label-on-bar': '{colors.variants.secondary.contrast}',
+        },
         root: {
           borderColor: '{colors.variants.secondary.border}',
-          '--progress-label-on-bar': '{colors.variants.secondary.contrast}',
         },
         track: { bg: '{colors.variants.secondary.surface}' },
         bar: { color: '{colors.variants.secondary.main}' },
       },
       info: {
+        container: {
+          '--progress-label-on-bar': '{colors.variants.info.contrast}',
+        },
         root: {
           borderColor: '{colors.variants.info.border}',
-          '--progress-label-on-bar': '{colors.variants.info.contrast}',
         },
         track: { bg: '{colors.variants.info.surface}' },
         bar: { color: '{colors.variants.info.main}' },
       },
       success: {
+        container: {
+          '--progress-label-on-bar': '{colors.variants.success.contrast}',
+        },
         root: {
           borderColor: '{colors.variants.success.border}',
-          '--progress-label-on-bar': '{colors.variants.success.contrast}',
         },
         track: { bg: '{colors.variants.success.surface}' },
         bar: { color: '{colors.variants.success.main}' },
       },
       warning: {
+        container: {
+          '--progress-label-on-bar': '{colors.variants.warning.contrast}',
+        },
         root: {
           borderColor: '{colors.variants.warning.border}',
-          '--progress-label-on-bar': '{colors.variants.warning.contrast}',
         },
         track: { bg: '{colors.variants.warning.surface}' },
         bar: { color: '{colors.variants.warning.main}' },
       },
       danger: {
+        container: {
+          '--progress-label-on-bar': '{colors.variants.danger.contrast}',
+        },
         root: {
           borderColor: '{colors.variants.danger.border}',
-          '--progress-label-on-bar': '{colors.variants.danger.contrast}',
         },
         track: { bg: '{colors.variants.danger.surface}' },
         bar: { color: '{colors.variants.danger.main}' },
       },
       light: {
+        container: {
+          '--progress-label-on-bar': '{colors.variants.light.contrast}',
+        },
         root: {
           borderColor: '{colors.variants.light.border}',
-          '--progress-label-on-bar': '{colors.variants.light.contrast}',
         },
         track: { bg: '{colors.variants.light.surface}' },
         bar: { color: '{colors.variants.light.main}' },
       },
       dark: {
+        container: {
+          '--progress-label-on-bar': '{colors.variants.dark.contrast}',
+        },
         root: {
           borderColor: '{colors.variants.dark.border}',
-          '--progress-label-on-bar': '{colors.variants.dark.contrast}',
         },
         track: { bg: '{colors.variants.dark.surface}' },
         bar: { color: '{colors.variants.dark.main}' },
-      },
-      outline: {
-        root: {
-          borderColor: '{colors.variants.outline.border}',
-          '--progress-label-on-bar': '{colors.variants.outline.contrast}',
-        },
-        track: { bg: '{colors.variants.outline.surface}' },
-        bar: { color: '{colors.variants.outline.border}' },
-      },
-      ghost: {
-        root: {
-          borderColor: '{colors.variants.ghost.border}',
-          '--progress-label-on-bar': '{colors.variants.ghost.contrast}',
-        },
-        track: { bg: '{colors.variants.ghost.surface}' },
-        bar: { color: '{colors.variants.ghost.active}' },
       },
     },
     appearance: {
@@ -176,9 +189,21 @@ export const progressBarRecipe = defineSlotRecipe({
     },
 
     animationType: {
+      none: {
+        bar: {
+          animation: 'none',
+          transition: 'none',
+        },
+      },
       progress: {
         bar: {
           transition: `width ${(1 / Math.SQRT2).toFixed(3)}s cubic-bezier(0.4, 0, 0.2, 1)`,
+          _motionSubtle: {
+            transition: 'width 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+          },
+          _motionPop: {
+            transition: 'width 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          },
         },
       },
       load: {
@@ -188,6 +213,12 @@ export const progressBarRecipe = defineSlotRecipe({
           animationDuration: `${(1 + Math.SQRT2).toFixed(3)}s`,
           animationIterationCount: 'infinite',
           animationTimingFunction: 'ease-in-out',
+          _motionSubtle: {
+            animationDuration: '3.621s',
+          },
+          _motionPop: {
+            animationDuration: '1.932s',
+          },
           zIndex: 2,
           transition: 'none',
         },
@@ -205,57 +236,83 @@ export const progressBarRecipe = defineSlotRecipe({
     labelPosition: {
       center: {
         label: {
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
           transform: 'translate(-50%, -50%)',
           width: 'auto',
-          minW: '{spacing.2xl}',
+          maxWidth: '{sizes.full}',
           minH: 'calc(var(--progress-font-size) * 1.45)',
           px: '{spacing.xs}',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
           borderRadius: '{radii.full}',
           bg: 'color-mix(in srgb, {colors.layout.surface} 86%, transparent)',
           boxShadow: '0 0 0 1px color-mix(in srgb, {colors.layout.divider} 70%, transparent)',
         },
       },
       right: {
+        container: {
+          gridTemplateColumns: 'minmax(0, 1fr) fit-content(40%)',
+          columnGap: '{spacing.sm}',
+          alignItems: 'center',
+        },
+        root: {
+          gridColumn: '1',
+          width: '{sizes.full}',
+          maxWidth: '{sizes.full}',
+          minWidth: 0,
+        },
         label: {
-          top: '50%',
-          left: '100%',
-          right: 'auto',
-          bottom: 'auto',
-          transform: 'translateY(-50%)',
-          paddingLeft: '{spacing.sm}',
+          gridColumn: '2',
+          justifySelf: 'start',
+          textAlign: 'start',
           width: 'auto',
           justifyContent: 'flex-start',
         },
       },
       top: {
+        container: {
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          rowGap: '{spacing.2xs}',
+        },
+        root: {
+          gridColumn: '1',
+          gridRow: '2',
+        },
         label: {
-          bottom: '100%',
-          top: 'auto',
-          left: '50%',
-          right: 'auto',
-          transform: 'translateX(-50%)',
-          paddingBottom: '{spacing.2xs}',
+          gridColumn: '1',
+          gridRow: '1',
+          justifySelf: 'center',
+          textAlign: 'center',
           width: 'auto',
         },
       },
       bottom: {
+        container: {
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          rowGap: '{spacing.2xs}',
+        },
+        root: {
+          gridColumn: '1',
+          gridRow: '1',
+        },
         label: {
-          top: '100%',
-          bottom: 'auto',
-          left: '50%',
-          right: 'auto',
-          transform: 'translateX(-50%)',
-          paddingTop: '{spacing.2xs}',
+          gridColumn: '1',
+          gridRow: '2',
+          justifySelf: 'center',
+          textAlign: 'center',
           width: 'auto',
         },
       },
       inside: {
         label: {
+          position: 'absolute',
           top: '50%',
-          left: 0,
+          insetInlineStart: 0,
           transform: 'translateY(-50%)',
           display: 'block',
-          width: '{sizes.full}',
+          width: 'var(--progress-bar-width)',
           maxWidth: '{sizes.full}',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
@@ -267,7 +324,7 @@ export const progressBarRecipe = defineSlotRecipe({
     },
   },
   defaultVariants: {
-    variant: 'primary',
+    intent: 'primary',
     appearance: 'solid',
     shape: 'rounded',
     pattern: 'simple',

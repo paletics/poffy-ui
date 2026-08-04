@@ -6,16 +6,18 @@ import {
   type SemanticIntent,
   PrimitiveProps,
 } from '@poffy-ui/types';
+import type { ReactElement } from 'react';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Extracted variant types from the Panda CSS tag recipe.
- * ### AI Usage
- * - Use when extending tag styles.
- */
+/** Public type for `TagRecipeVariants`. */
 export type TagRecipeVariants = RecipeVariantProps<typeof tag>;
 
 /**
- * Public surface treatment for Tag.
+ * Visual surface treatment for Tag.
  */
 export type TagAppearance = Extract<NavigationAppearance, 'soft' | 'outline' | 'ghost'>;
 
@@ -28,32 +30,11 @@ export type TagIntent = Extract<
 >;
 
 /**
- * Public geometry control for Tag.
+ * Corner geometry for Tag.
  */
 export type TagShape = Extract<ControlShape | 'pill', 'rounded' | 'pill'>;
 
-/**
- * Base properties for the Tag component.
- * ### Formula
- * - Silver Ratio (1:1.414) applied to padding and border-radius tokens.
- *
- * @example
- * ```tsx
- * import { Tag } from '@poffy-ui/react/data-display';
- *
- * <Tag intent="info" appearance="soft">
- *   <Tag.Label>Documentation</Tag.Label>
- * </Tag>
- * ```
- *
- * ### Notes
- * Do: use Tag for compact labels, categories, and removable chips.
- * Don't: use Tag as a button substitute; put the action on `Tag.CloseButton`
- * or use an input/navigation component.
- *
- * ### AI Usage
- * - Use to type-check the Tag root element.
- */
+/** Shared base props for Tag. */
 export type TagBaseProps = TagRecipeVariants & {
   /**
    * Public appearance.
@@ -71,35 +52,47 @@ export type TagBaseProps = TagRecipeVariants & {
    */
   shape?: TagShape;
   /**
-   * Legacy appearance alias.
-   *
-   * ### Notes
-   * Prefer `appearance` for new code.
-   */
-  variant?: 'solid' | 'subtle' | 'outline';
-  /**
    * The size of the tag.
    * @defaultValue 'md'
    */
   size?: 'sm' | 'md' | 'lg';
-  /**
-   * Legacy semantic alias.
-   *
-   * ### Notes
-   * Prefer `intent` for new code.
-   */
-  colorScheme?: 'gray' | 'red' | 'green' | 'blue';
 };
 
 /**
  * Type checks Tag root props with native `span` attributes.
  */
-export type TagProps = PrimitiveProps<'span', TagBaseProps>;
+type TagRootNativeProps = PrimitiveProps<'span', TagBaseProps>;
+/** Props for Tag rendered with its default host. */
+export type TagDefaultProps = DefaultHostProps<TagRootNativeProps>;
+/** Props for Tag delegated to an asChild host. */
+export type TagAsChildProps = RetargetedAsChildHostProps<TagRootNativeProps, HTMLElement>;
+/** Public props for Tag. */
+export type TagProps = TagDefaultProps | TagAsChildProps;
+/** Polymorphic component call signatures for Tag. */
+export type TagComponent = PolymorphicAsChildComponent<
+  TagDefaultProps,
+  TagAsChildProps,
+  HTMLSpanElement,
+  HTMLElement
+>;
 
 /**
  * Type checks TagLabel wrapping a native `span`.
  */
-export type TagLabelProps = PrimitiveProps<'span'>;
+type TagLabelNativeProps = PrimitiveProps<'span'>;
+/** Props for TagLabel rendered with its default host. */
+export type TagLabelDefaultProps = DefaultHostProps<TagLabelNativeProps>;
+/** Props for TagLabel delegated to an asChild host. */
+export type TagLabelAsChildProps = RetargetedAsChildHostProps<TagLabelNativeProps, HTMLElement>;
+/** Public props for TagLabel. */
+export type TagLabelProps = TagLabelDefaultProps | TagLabelAsChildProps;
+/** Polymorphic component call signatures for TagLabel. */
+export type TagLabelComponent = PolymorphicAsChildComponent<
+  TagLabelDefaultProps,
+  TagLabelAsChildProps,
+  HTMLSpanElement,
+  HTMLElement
+>;
 
 /**
  * Base properties for the Tag dismiss button.
@@ -116,7 +109,7 @@ export interface TagCloseButtonBaseProps {
    */
   'aria-label'?: string;
   /**
-   * Disables the button
+   * Prevents all pointer and keyboard activation while preserving the control's label.
    */
   isDisabled?: boolean;
 }
@@ -124,4 +117,55 @@ export interface TagCloseButtonBaseProps {
 /**
  * Type checks TagCloseButton with native `button` attributes.
  */
-export type TagCloseButtonProps = PrimitiveProps<'button', TagCloseButtonBaseProps>;
+type TagCloseButtonNativeProps = Omit<PrimitiveProps<'button', TagCloseButtonBaseProps>, 'type'>;
+type TagCloseButtonAsChildElement = ReactElement<
+  Record<string, unknown>,
+  | 'a'
+  | 'abbr'
+  | 'b'
+  | 'bdi'
+  | 'bdo'
+  | 'button'
+  | 'cite'
+  | 'code'
+  | 'data'
+  | 'del'
+  | 'dfn'
+  | 'div'
+  | 'em'
+  | 'i'
+  | 'ins'
+  | 'kbd'
+  | 'mark'
+  | 'q'
+  | 'rp'
+  | 'rt'
+  | 'ruby'
+  | 's'
+  | 'samp'
+  | 'small'
+  | 'span'
+  | 'strong'
+  | 'sub'
+  | 'sup'
+  | 'time'
+  | 'u'
+  | 'var'
+>;
+/** Props for TagCloseButton rendered with its default host. */
+export type TagCloseButtonDefaultProps = DefaultHostProps<TagCloseButtonNativeProps>;
+/** Props for TagCloseButton delegated to an asChild host. */
+export type TagCloseButtonAsChildProps = RetargetedAsChildHostProps<
+  TagCloseButtonNativeProps,
+  HTMLElement,
+  TagCloseButtonAsChildElement
+>;
+/** Public props for TagCloseButton. */
+export type TagCloseButtonProps = TagCloseButtonDefaultProps | TagCloseButtonAsChildProps;
+/** Polymorphic component call signatures for TagCloseButton. */
+export type TagCloseButtonComponent = PolymorphicAsChildComponent<
+  TagCloseButtonDefaultProps,
+  TagCloseButtonAsChildProps,
+  HTMLButtonElement,
+  HTMLElement
+>;

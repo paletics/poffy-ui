@@ -1,16 +1,5 @@
 import { motionOffsets, motionScales, springs } from '../presets';
 
-/**
- * ReorderTransition Presets
- *
- * ### AI Context & Architecture
- * Defines enter/exit animation variants for items in an ReorderTransition container.
- * Unlike StaggerTransition (entrance-only), these variants include `exit` states to support
- * AnimatePresence-driven removal animations.
- * The `layout` FLIP transition is defined separately via `orderLayoutTransition` to decouple
- * reorder physics from enter/exit physics.
- */
-
 export const orderItemVariants = {
   /**
    * Pop: Scale-based entrance/exit. Best for tags, chips, and card grids.
@@ -65,12 +54,6 @@ export const orderItemVariants = {
   },
 } as const;
 
-/**
- * Layout transition spring for FLIP reorder animations.
- * ### AI Context & Architecture
- * - Intentionally softer than enter/exit springs to prevent oscillation
- * when multiple items reflow simultaneously during a reorder operation.
- */
 export const orderLayoutTransition = {
   type: 'spring' as const,
   stiffness: 300,

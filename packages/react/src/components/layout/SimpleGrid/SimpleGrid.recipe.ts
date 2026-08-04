@@ -7,7 +7,10 @@ export const simpleGridRecipe = defineRecipe({
   className: 'simple-grid',
   description: 'Simple grid styling for responsive equal-width column layouts',
   base: {
+    '--grid-columns': 'initial',
+    '--min-child-width': 'initial',
     display: 'grid',
+    minInlineSize: 0,
     gridTemplateColumns: 'var(--grid-columns)',
   },
   variants: {
@@ -24,7 +27,10 @@ export const simpleGridRecipe = defineRecipe({
       10: { gridTemplateColumns: 'repeat(10, minmax(0, 1fr))' },
       11: { gridTemplateColumns: 'repeat(11, minmax(0, 1fr))' },
       12: { gridTemplateColumns: 'repeat(12, minmax(0, 1fr))' },
-      auto: { gridTemplateColumns: 'repeat(auto-fit, minmax(var(--min-child-width, 20px), 1fr))' },
+      auto: {
+        gridTemplateColumns:
+          'repeat(auto-fit, minmax(min(100%, var(--min-child-width, 20px)), 1fr))',
+      },
     },
     gap: {
       none: { gap: '0' },

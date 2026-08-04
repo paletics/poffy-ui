@@ -3,26 +3,12 @@ import { HTMLMotionProps } from 'motion/react';
 import { CustomData } from '../types';
 import { TextRevealTransitionType } from './TextRevealTransition.presets';
 
-/**
- * Text Transition Type Definitions
- *
- * ### AI Context & Architecture
- * Defines prop interfaces and component types for `TextRevealTransition`.
- * Supports character-level and word-level splitting for cinematic text entrance.
- */
-
+/** Named text-reveal transition preset. */
 export type TextAnimationType = TextRevealTransitionType;
 
 /**
- * Base props for TextRevealTransition.
- *
- * ### Notes
- * Splits a short string into animated spans. Use for headings and hero
- * copy, not arbitrary rich text or long localized paragraphs.
- *
- * ### AI Usage
- * - **DO**: Pass plain string children or an `asChild` element with a single text node.
- * - **DON'T**: Use when preserving exact text node structure is required.
+ * Props for a text reveal that splits a short plain-text child into animated spans.
+ * @typeParam C - Custom data accepted by the selected preset.
  */
 export interface TextRevealTransitionBaseProps<C extends CustomData = CustomData> {
   /**

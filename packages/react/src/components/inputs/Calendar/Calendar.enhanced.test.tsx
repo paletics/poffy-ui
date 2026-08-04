@@ -172,4 +172,19 @@ describe('Molecules / Calendar (Enhanced Features)', () => {
 
     expect(screen.getByText(/May 2026/i)).toBeInTheDocument();
   });
+
+  it('disables Today when it is unavailable under calendar constraints', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 4, 18));
+    render(
+      <Calendar
+        defaultMonth={new Date(2023, 10, 15)}
+        maxDate={new Date(2023, 10, 30)}
+        locale="en-US"
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: /Go to today/i })).toBeDisabled();
+    expect(screen.getByText(/November 2023/i)).toBeInTheDocument();
+  });
 });

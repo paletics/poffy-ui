@@ -32,7 +32,7 @@ Use this order unless the component has a strong reason to differ.
 
 Fixed gallery stories are the most important stories for visual review and visual regression tests.
 
-- Use literal JSX for every important variant value.
+- Use literal JSX for every important appearance or intent value.
 - Do not rely on Storybook Controls values for Panda CSS extraction.
 - Avoid inline styles; use `css()` from `@/styled-system/css`.
 - Keep labels short and visual.
@@ -42,14 +42,14 @@ Fixed gallery stories are the most important stories for visual review and visua
 Example:
 
 ```tsx
-export const Variants: Story = {
+export const Intents: Story = {
   render: () => (
     <div className={css({ display: 'grid', gap: 'md', width: '320px' })}>
-      <ProgressBar variant="primary" value={64} />
-      <ProgressBar variant="secondary" value={64} />
-      <ProgressBar variant="success" value={64} />
-      <ProgressBar variant="warning" value={64} />
-      <ProgressBar variant="danger" value={64} />
+      <ProgressBar intent="primary" progressPercent={64} />
+      <ProgressBar intent="secondary" progressPercent={64} />
+      <ProgressBar intent="success" progressPercent={64} />
+      <ProgressBar intent="warning" progressPercent={64} />
+      <ProgressBar intent="danger" progressPercent={64} />
     </div>
   ),
 };

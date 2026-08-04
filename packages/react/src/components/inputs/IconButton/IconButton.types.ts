@@ -1,33 +1,35 @@
-import { ActionMotionType } from '@/components/animations/ActionMotion';
+import type { ActionMotionType } from '@/components/animations/ActionMotion';
 import type { IconButtonVariantProps } from '@/styled-system/recipes';
 import {
   type ActionAppearance,
   type ActionIntent,
   type ActionShape,
-  PrimitiveProps,
+  type PrimitiveProps,
 } from '@poffy-ui/types';
-import { ReactElement } from 'react';
+import type { ReactElement } from 'react';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Full props for the `IconButton` component.
- * Requires an `icon` element and a mandatory `aria-label` for accessibility.
- *
- * ### Formula
- * - Silver Ratio (1:1.414) governs all `size` token values (width/height) in the `iconButton` recipe.
- * ### AI Usage
- * - Use this type when typing `IconButton` or any icon-only button wrapper that requires accessible labelling.
- */
-export interface IconButtonProps
-  extends
-    PrimitiveProps<'button'>,
-    Omit<IconButtonVariantProps, 'intent' | 'appearance' | 'shape'> {
+/** Component-specific props for IconButton. */
+export interface IconButtonOwnProps extends Omit<
+  IconButtonVariantProps,
+  'intent' | 'appearance' | 'shape'
+> {
+  /** Semantic purpose used to select the action color treatment. @defaultValue `'primary'` */
   intent?: ActionIntent;
+
+  /** Visual treatment for the action. @defaultValue `'ghost'` */
   appearance?: ActionAppearance;
+
+  /** Outer geometry of the icon hit target. @defaultValue `'pill'` */
   shape?: ActionShape;
   /**
    * The icon element to display inside the button.
    * Cloned internally to inject `aria-hidden="true"` and `focusable="false"`.
-   * Typically an SVG icon component.
+   * Must render decorative, non-interactive SVG content; typically an SVG icon component.
    */
   icon: ReactElement;
 
@@ -40,13 +42,57 @@ export interface IconButtonProps
   /**
    * Puts the button into a loading state.
    * Replaces the icon with a spinner, sets `aria-busy="true"` and `aria-disabled="true"`.
-   * @defaultValue false
+   * @defaultValue `false`
    */
   loading?: boolean;
 
   /**
    * Physics preset applied via `ActionMotion` on press/hover.
-   * @defaultValue 'bouncy'
+   * @defaultValue `'bouncy'`
    */
   animationType?: ActionMotionType;
 }
+
+type IconButtonNativeProps = Omit<
+  PrimitiveProps<'button', IconButtonOwnProps>,
+  'aria-busy' | 'aria-disabled' | 'type'
+>;
+
+/** Props for IconButton's owned native `type="button"` host. */
+export type IconButtonDefaultProps = DefaultHostProps<IconButtonNativeProps>;
+
+type IconButtonDelegatedBaseProps = Omit<
+  IconButtonNativeProps,
+  | 'form'
+  | 'formAction'
+  | 'formEncType'
+  | 'formMethod'
+  | 'formNoValidate'
+  | 'formTarget'
+  | 'name'
+  | 'value'
+>;
+
+/**
+ * Props for IconButton delegated with `asChild`.
+ *
+ * A passive compatible host receives button role and keyboard semantics. A
+ * disabled delegated anchor has its destination removed; a disabled custom
+ * link-like host falls back to the owned native button.
+ */
+export type IconButtonAsChildProps = RetargetedAsChildHostProps<
+  IconButtonDelegatedBaseProps,
+  HTMLElement,
+  ReactElement
+>;
+
+/** Props accepted by IconButton's owned or delegated button host. */
+export type IconButtonProps = IconButtonDefaultProps | IconButtonAsChildProps;
+
+/** Ref-forwarding public component signature for IconButton. */
+export type IconButtonComponent = PolymorphicAsChildComponent<
+  IconButtonDefaultProps,
+  IconButtonAsChildProps,
+  HTMLButtonElement,
+  HTMLElement
+>;

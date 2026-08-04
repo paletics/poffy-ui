@@ -1,28 +1,29 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { Stack } from '@/components/layout/Stack';
+import { Box, Stack } from '@/components/layout';
 import { css } from '@/styled-system/css';
 import { DirectionalButton } from './DirectionalButton';
 import { DirectionalButtonGroup } from './DirectionalButtonGroup';
 
 const visuallyHiddenClass = css({
   position: 'absolute',
-  w: '1px',
-  h: '1px',
-  p: 0,
-  m: '-1px',
+  w: '[1px]',
+  h: '[1px]',
+  p: 'none',
+  m: '[-1px]',
   overflow: 'hidden',
   clip: 'rect(0, 0, 0, 0)',
   whiteSpace: 'nowrap',
   borderWidth: 0,
 });
 
-/**
- * Icon-only directional control for next/previous and increment/decrement affordances.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms / Molecules
- * - **Stack**: Panda CSS slot recipe, Radix Slot
- */
+const constrainedGroupFixturesClass = css({
+  display: 'grid',
+  gridTemplateColumns: 'auto 40px',
+  alignItems: 'center',
+  gap: 'sm',
+  width: 'fit-content',
+});
+
 const meta: Meta<typeof DirectionalButton> = {
   title: 'Inputs/DirectionalButton',
   component: DirectionalButton,
@@ -66,6 +67,26 @@ export const Group: Story = {
   ),
 };
 
+export const ConstrainedConnectedGroup: Story = {
+  render: () => (
+    <div className={constrainedGroupFixturesClass}>
+      <span>LTR</span>
+      <DirectionalButtonGroup
+        aria-label="Constrained LTR directional controls"
+        startButton={{ direction: 'left', 'aria-label': 'Previous LTR item' }}
+        endButton={{ direction: 'right', 'aria-label': 'Next LTR item' }}
+      />
+      <span>RTL</span>
+      <DirectionalButtonGroup
+        aria-label="Constrained RTL directional controls"
+        dir="rtl"
+        startButton={{ direction: 'right', 'aria-label': 'Previous RTL item' }}
+        endButton={{ direction: 'left', 'aria-label': 'Next RTL item' }}
+      />
+    </div>
+  ),
+};
+
 export const DisabledAsChild: Story = {
   render: () => (
     <DirectionalButton asChild disabled direction="right" aria-label="Disabled next item">
@@ -73,5 +94,27 @@ export const DisabledAsChild: Story = {
         <span className={visuallyHiddenClass}>Disabled next item</span>
       </a>
     </DirectionalButton>
+  ),
+};
+
+export const ConstrainedVisibleLabels: Story = {
+  render: () => (
+    <Stack direction="row" gap="md" align="start">
+      <Box width="[40px]" data-testid="directional-visible-40">
+        <DirectionalButton direction="right" size="sm">
+          LocalizedUnbrokenDirectionalAction
+        </DirectionalButton>
+      </Box>
+      <Box width="[80px]" dir="rtl" data-testid="directional-visible-80">
+        <DirectionalButton direction="left">
+          <span>LocalizedUnbrokenElementAction</span>
+        </DirectionalButton>
+      </Box>
+      <Box width="[120px]" data-testid="directional-visible-120">
+        <DirectionalButton asChild direction="right">
+          <a href="#directional-visible-label">LocalizedUnbrokenLinkAction</a>
+        </DirectionalButton>
+      </Box>
+    </Stack>
   ),
 };

@@ -1,40 +1,20 @@
 'use client';
 
-import { cx } from '@/styled-system/css';
-import { result } from '@/styled-system/recipes';
-import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
-import { useResultContext } from './ResultContext';
-import { ResultActionsProps } from './Result.types';
+import { createFeedbackActions } from '@/components/feedback/shared/createFeedbackParts';
+import { useResultContext } from '@/components/feedback/Result/ResultContext';
+import { getCommonMessages } from '@/components/shared/common.locales';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
 
 /**
- * ResultActions - Action buttons container for Result
+ * Groups follow-up controls for a `Result` with `role="group"` and a localized fallback label.
  *
- * @example
- * ```tsx
- * import { Result, ResultActions, ResultTitle } from '@poffy-ui/react/feedback';
- *
- * <Result intent="success">
- *   <ResultTitle>Success!</ResultTitle>
- *   <ResultActions>
- *     <button type="button">Continue</button>
- *     <button type="button">Cancel</button>
- *   </ResultActions>
- * </Result>
- * ```
+ * `asChild` accepts only one native `div`; an invalid host falls back to the owned group. The
+ * default `aria-live="off"` prevents asynchronous result changes from re-announcing its actions.
  */
-export const ResultActions = forwardRef<HTMLDivElement, ResultActionsProps>(
-  ({ asChild, className, children, ...rest }, ref) => {
-    const Component = asChild ? Slot : 'div';
-    const { status } = useResultContext();
-    const classes = result({ status });
-
-    return (
-      <Component ref={ref} className={cx(classes.actions, className)} {...rest}>
-        {children}
-      </Component>
-    );
-  },
-);
-
-ResultActions.displayName = 'ResultActions';
+export const ResultActions = createFeedbackActions({
+  allowedHosts: ['div'],
+  useDefaultAriaLabel: () => getCommonMessages(useOptionalLocale()?.locale).resultActions,
+  defaultAriaLive: 'off',
+  displayName: 'ResultActions',
+  useClasses: () => useResultContext().classes,
+});

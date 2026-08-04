@@ -158,9 +158,9 @@ test.describe('component keyboard interactions', () => {
   test('DatePicker opens the calendar and selects the next day from keyboard', async ({ page }) => {
     await gotoStory(page, 'inputs-datepicker--controlled');
 
-    const input = page.getByRole('combobox');
+    const input = page.getByRole('button', { name: 'Controlled date picker' });
 
-    await expect(input).toHaveValue(/Oct 15, 2023|2023年10月15日|2023\/10\/15/);
+    await expect(input).toHaveText(/Oct 15, 2023|2023年10月15日|2023\/10\/15/);
     await input.focus();
     await page.keyboard.press('Enter');
 
@@ -177,7 +177,7 @@ test.describe('component keyboard interactions', () => {
     await page.keyboard.press('Enter');
 
     await expect(input).toHaveAttribute('aria-expanded', 'false');
-    await expect(input).toHaveValue(/Oct 16, 2023|2023年10月16日|2023\/10\/16/);
+    await expect(input).toHaveText(/Oct 16, 2023|2023年10月16日|2023\/10\/16/);
   });
 
   test('ContextMenu moves focus through items and closes with Escape', async ({ page }) => {

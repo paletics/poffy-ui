@@ -1,29 +1,37 @@
 import { PoffyBrand } from '@/providers';
-import { ContextMenuVariantProps } from '@/styled-system/recipes';
 import type { MotionPrimitiveProps } from '@/types/motion';
+import type { PortalTargetProps } from '@/providers/PortalProvider.types';
 import type { KeyboardEvent, MouseEvent, ReactNode } from 'react';
 import type { OverlayTransitionType } from '../../animations/OverlayTransition/OverlayTransition.presets';
+import type { PortalOwnerDocument } from '../Portal/Portal.types';
 
 /**
  * Types of context menu items.
  */
-export type ContextMenuItemType = 'item' | 'separator' | 'submenu';
+export type ContextMenuItemType = 'item' | 'separator';
 
 /**
  * Definition of a single item within ContextMenu.
  *
- * Do: provide stable `id` values when items can reorder. Don't: rely on
- * `children` submenu behavior yet; nested menu rendering is intentionally not
- * implemented.
+ * Do: provide stable `id` values when items can reorder.
  */
-export interface ContextMenuItem {
+interface ContextMenuItemBase {
   /** Unique identifier for the item. */
   id?: string;
-  /** The type of menu item. @defaultValue 'item' */
-  type?: ContextMenuItemType;
-  /** The content to display for the item. */
-  label?: ReactNode;
-  /** Optional icon to display alongside the label. */
+  /** Custom CSS class name for the item container. */
+  className?: string;
+}
+
+/** Action item with a required textual accessible name. */
+interface ContextMenuActionItem extends ContextMenuItemBase {
+  /** Action items are the default item type. */
+  type?: 'item';
+  /**
+   * Visible and accessible action label. Rich presentation belongs in `icon`;
+   * keeping the action label textual guarantees a stable menuitem name.
+   */
+  label: string;
+  /** Optional non-interactive icon or presentation to display alongside the label. */
   icon?: ReactNode;
   /** Optional keyboard shortcut hints. */
   shortcut?: string;
@@ -33,29 +41,31 @@ export interface ContextMenuItem {
   danger?: boolean;
   /** Callback fired when the item is clicked or activated via keyboard. */
   onClick?: (e: MouseEvent<HTMLElement> | KeyboardEvent) => void;
-  /** Custom CSS class name for the item container. */
-  className?: string;
-  /**
-   * Sub-menu items for nested menus.
-   *
-   * Future behavior: this is not yet implemented. Passing this field has no
-   * effect; the `submenu` type currently only renders a trailing arrow
-   * indicator.
-   */
-  children?: ContextMenuItem[];
 }
+
+/** Non-interactive separator between groups of context-menu actions. */
+interface ContextMenuSeparatorItem extends ContextMenuItemBase {
+  type: 'separator';
+}
+
+/** Definition of an action or separator within ContextMenu. */
+export type ContextMenuItem = ContextMenuActionItem | ContextMenuSeparatorItem;
 
 /**
  * Props for ContextMenu.
  *
  * ContextMenu is fully controlled: pass `open`, `onClose`, `items`, and a
- * screen `position` or `target` anchor. It renders a portalled `role="menu"`
- * surface with roving focus for enabled menu items.
+ * screen `position` or `target` anchor. An open menu cannot be unanchored.
+ * It renders a portalled `role="menu"` surface with roving focus for enabled
+ * menu items, preserving its owner document through an exit animation.
+ * Pair it with `useContextMenuTrigger` on a focusable trigger and forward both
+ * its `onContextMenu` and `onKeyDown` handlers so Context Menu and Shift+F10
+ * keyboard invocation remain available.
  *
  * Accessibility: menu items should represent actions. Separators are skipped
  * by keyboard navigation, and disabled items are not focusable.
  *
- * Do: close the menu from item handlers after completing an action. Don't:
+ * Item handlers close the menu unless they prevent the event. Do: close the menu from item handlers after completing an action when retaining it is intentional. Don't:
  * put long-form interactive content inside a context menu; use Popover or
  * Modal for that.
  *
@@ -71,7 +81,10 @@ export interface ContextMenuItem {
  * />
  * ```
  */
-export interface ContextMenuProps extends MotionPrimitiveProps<'div'> {
+interface ContextMenuBaseProps extends Omit<
+  MotionPrimitiveProps<'div', PortalTargetProps>,
+  'asChild' | 'children' | 'role'
+> {
   /** Theme brand override. */
   brand?: PoffyBrand;
   /** Array of menu item definitions to render. */
@@ -85,13 +98,37 @@ export interface ContextMenuProps extends MotionPrimitiveProps<'div'> {
    * @defaultValue 'popover'
    */
   animationType?: OverlayTransitionType;
+  /** Owner document used for coordinate-only menus rendered outside the global document. */
+  ownerDocument?: PortalOwnerDocument;
+}
+
+/** Context-menu configuration anchored to explicit viewport coordinates. */
+export interface CoordinateContextMenuProps extends ContextMenuBaseProps {
   /** The screen coordinates { x, y } where the menu should be positioned. */
-  position?: { x: number; y: number };
-  /** The reference element to anchor the floating menu. */
+  position: { x: number; y: number };
+  /** Optional context element for the virtual anchor. */
   target?: HTMLElement | null;
 }
 
+/** Context-menu configuration anchored to a real element when no coordinates are available. */
+export interface TargetContextMenuProps extends ContextMenuBaseProps {
+  position?: never;
+  /** The reference element to anchor the floating menu. */
+  target: HTMLElement;
+}
+
+/** Closed context menu before a coordinate or target anchor has been established. */
+export interface UnanchoredClosedContextMenuProps extends ContextMenuBaseProps {
+  open: false;
+  position?: never;
+  target?: null;
+}
+
 /**
- * Public ContextMenu props including recipe variants.
+ * Context-menu public props. An open menu always has an explicit anchor, while
+ * a closed menu may be mounted before its first invocation establishes one.
  */
-export type ContextMenuCombinedProps = ContextMenuProps & ContextMenuVariantProps;
+export type ContextMenuProps =
+  | CoordinateContextMenuProps
+  | TargetContextMenuProps
+  | UnanchoredClosedContextMenuProps;

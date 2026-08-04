@@ -38,4 +38,15 @@ export interface DirectionProviderProps {
    * @defaultValue `true`
    */
   global?: boolean;
+  /**
+   * Document whose root receives the global `dir` attribute. Use when rendering
+   * into an iframe or another document. Defaults to the current document.
+   */
+  ownerDocument?: Document;
+  /**
+   * When `global={false}`, renders a local DOM boundary with the active `dir`.
+   *
+   * @defaultValue `false`
+   */
+  scope?: boolean;
 }

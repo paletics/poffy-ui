@@ -1,8 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
 import { Select } from './Select';
+import { FormControl, FormErrorMessage, FormHelperText, FormLabel } from '../FormControl';
 
 /**
  * ### Test Strategy: Select
@@ -107,6 +108,166 @@ describe('Select', () => {
     );
 
     expect(screen.getByRole('combobox')).toHaveAttribute('aria-invalid', 'true');
+  });
+
+  it('associates FormControl errors when aria-invalid is explicitly true', () => {
+    render(
+      <FormControl>
+        <Select aria-label="Status" error={false} aria-invalid>
+          <option value="active">Active</option>
+        </Select>
+        <FormErrorMessage id="status-error">Status is required.</FormErrorMessage>
+      </FormControl>,
+    );
+
+    const field = screen.getByRole('combobox', { name: 'Status' });
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    expect(field).toHaveAttribute('aria-describedby', 'status-error');
+    expect(field).toHaveAttribute('aria-errormessage', 'status-error');
+  });
+
+  it('inherits FormControl state and message references', () => {
+    render(
+      <FormControl id="status" isDisabled isInvalid isRequired>
+        <FormLabel>Status</FormLabel>
+        <Select>
+          <option value="active">Active</option>
+        </Select>
+        <FormHelperText id="status-help">Choose a status.</FormHelperText>
+        <FormErrorMessage id="status-error">Status is required.</FormErrorMessage>
+      </FormControl>,
+    );
+
+    const field = screen.getByRole('combobox', { name: 'Status' });
+    expect(field).toHaveAttribute('id', 'status');
+    expect(field).toBeDisabled();
+    expect(field).toBeRequired();
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    expect(field).toHaveAttribute('aria-describedby', 'status-help status-error');
+    expect(field).toHaveAttribute('aria-errormessage', 'status-error');
+  });
+
+  it('does not change when FormControl is read-only', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    render(
+      <FormControl isReadOnly>
+        <FormLabel>Status</FormLabel>
+        <Select defaultValue="active" onChange={onChange}>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+        </Select>
+      </FormControl>,
+    );
+
+    const field = screen.getByRole('combobox', { name: 'Status' });
+    await user.selectOptions(field, 'paused');
+
+    expect(field).toHaveValue('active');
+    expect(onChange).not.toHaveBeenCalled();
+    expect(field).toHaveAttribute('aria-readonly', 'true');
+  });
+
+  it('keeps read-only required semantics without creating an unsatisfiable validity state', () => {
+    const { container } = render(
+      <form>
+        <Select aria-label="Status" readOnly required defaultValue="">
+          <option value="">Choose a status</option>
+          <option value="active">Active</option>
+        </Select>
+      </form>,
+    );
+
+    const form = container.querySelector('form') as HTMLFormElement;
+    const field = screen.getByRole('combobox', { name: 'Status' });
+    expect(field).not.toHaveAttribute('required');
+    expect(field).toHaveAttribute('aria-required', 'true');
+    expect(form.checkValidity()).toBe(true);
+  });
+
+  it('retains every selected option when a multiple select is read-only', () => {
+    render(
+      <Select aria-label="Tags" multiple readOnly defaultValue={['a', 'b']}>
+        <option value="a">Alpha</option>
+        <option value="b">Beta</option>
+        <option value="c">Gamma</option>
+      </Select>,
+    );
+
+    const field = screen.getByRole('listbox', { name: 'Tags' }) as HTMLSelectElement;
+    fireEvent.change(field, { target: { value: 'c' } });
+
+    expect(Array.from(field.selectedOptions, (option) => option.value)).toEqual(['a', 'b']);
+  });
+
+  it('omits the disclosure chevron for a native multiple listbox', () => {
+    render(
+      <Select aria-label="Tags" multiple>
+        <option value="a">Alpha</option>
+        <option value="b">Beta</option>
+      </Select>,
+    );
+
+    const field = screen.getByRole('listbox', { name: 'Tags' });
+    expect(field.nextElementSibling).toBeNull();
+  });
+
+  it('uses the reset selection when a select later becomes read-only', async () => {
+    const user = userEvent.setup();
+    const { container, rerender } = render(
+      <form>
+        <Select aria-label="Status" defaultValue="active">
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+        </Select>
+      </form>,
+    );
+    const field = screen.getByRole('combobox');
+    await user.selectOptions(field, 'paused');
+    (container.querySelector('form') as HTMLFormElement).reset();
+    await waitFor(() => expect(field).toHaveValue('active'));
+
+    rerender(
+      <form>
+        <Select aria-label="Status" defaultValue="active" readOnly>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+        </Select>
+      </form>,
+    );
+    fireEvent.change(field, { target: { value: 'paused' } });
+
+    expect(field).toHaveValue('active');
+  });
+
+  it('captures reset values from a form referenced by the form attribute', async () => {
+    const user = userEvent.setup();
+    const { container, rerender } = render(
+      <>
+        <form id="status-form" />
+        <Select aria-label="Status" form="status-form" defaultValue="active">
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+        </Select>
+      </>,
+    );
+    const field = screen.getByRole('combobox');
+    await user.selectOptions(field, 'paused');
+    (container.querySelector('form') as HTMLFormElement).reset();
+    await waitFor(() => expect(field).toHaveValue('active'));
+
+    rerender(
+      <>
+        <form id="status-form" />
+        <Select aria-label="Status" form="status-form" defaultValue="active" readOnly>
+          <option value="active">Active</option>
+          <option value="paused">Paused</option>
+        </Select>
+      </>,
+    );
+    fireEvent.change(field, { target: { value: 'paused' } });
+
+    expect(field).toHaveValue('active');
   });
 
   it('forwards ref to the native select element', () => {

@@ -2,9 +2,29 @@ import { defineRecipe } from '@pandacss/dev';
 import {
   inputBaseStyles,
   inputErrorState,
-  inputSizeVariants,
   inputVisualVariants,
 } from '../shared/input.shared';
+
+const textareaSizeVariants = {
+  sm: {
+    minHeight: '{sizes.silver.2}',
+    fontSize: 'sm',
+    px: '{spacing.md}',
+    borderRadius: 'xl',
+  },
+  md: {
+    minHeight: '{sizes.root.2}',
+    fontSize: 'md',
+    px: '{spacing.base}',
+    borderRadius: '2xl',
+  },
+  lg: {
+    minHeight: '{sizes.silver.3}',
+    fontSize: 'lg',
+    px: '{spacing.lg}',
+    borderRadius: '3xl',
+  },
+};
 
 /**
  * Styles the Textarea component with Panda CSS recipe variants.
@@ -25,7 +45,7 @@ export const textareaRecipe = defineRecipe({
   },
   variants: {
     variant: inputVisualVariants,
-    size: inputSizeVariants,
+    size: textareaSizeVariants,
     error: inputErrorState,
   },
 });

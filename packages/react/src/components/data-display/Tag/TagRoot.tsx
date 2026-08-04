@@ -1,76 +1,75 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
+import { getFallbackChildrenPreservingVoidHost } from '@/components/shared/asChild';
 import { cx } from '@/styled-system/css';
 import { tag } from '@/styled-system/recipes';
-import { ElementType, forwardRef, useMemo } from 'react';
+import { Children, ElementType, forwardRef, isValidElement, type ReactNode, useMemo } from 'react';
 import { TagContext } from './TagContext';
-import { TagProps } from './Tag.types';
+import { TagCloseButton } from './TagCloseButton';
+import type { TagComponent, TagProps } from './Tag.types';
+import {
+  getTagInlineFallbackChildren,
+  isInteractiveTagRootAsChildHost,
+  isTagRootAsChildHost,
+} from './Tag.utils';
+import { materializeReactNodeTree } from '@/components/shared/flattenFragmentChildren';
 
-/**
- * The root container for the Tag compound component.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: tag), React Context, Radix Slot
- * ### Design Tokens
- * - padding/gap/borderRadius: silver-ratio tokens
- * ### Variant Logic
- * - variant: solid=filled, subtle=muted background, outline=bordered.
- * - colorScheme: semantic color (blue, green, red, etc.).
- * ### Notes
- * Establishes variant context consumed by TagLabel and TagCloseButton.
- * ### Accessibility
- * - If the tag can be dismissed, ensure TagCloseButton has `aria-label`.
- * @example
- * ```tsx
- * import { Tag } from '@poffy-ui/react/data-display';
- *
- * <Tag.Root appearance="soft" intent="info" size="md">
- *   <Tag.Label>TypeScript</Tag.Label>
- *   <Tag.CloseButton onClick={handleRemove} />
- * </Tag.Root>
- * ```
- */
-export const TagRoot = forwardRef<HTMLSpanElement, TagProps>((props, ref) => {
+const containsTagCloseButton = (children: ReactNode): boolean =>
+  Children.toArray(children).some((child) => {
+    if (!isValidElement<{ children?: ReactNode }>(child)) return false;
+    if (child.type === TagCloseButton) return true;
+    return child.props.children !== undefined && containsTagCloseButton(child.props.children);
+  });
+
+const TagRootImpl = forwardRef<HTMLElement, TagProps>((props, ref) => {
+  const { asChild, children, className, size, appearance, intent, shape, ...rest } = props;
   const {
-    asChild,
-    children,
-    className,
-    size,
-    appearance,
-    intent,
-    shape,
-    variant,
-    colorScheme,
-    ...rest
-  } = props;
-  const Component = asChild ? Slot : ('span' as ElementType);
-  const resolvedAppearance =
-    appearance ?? (variant === 'outline' ? 'outline' : variant === 'solid' ? 'soft' : 'soft');
-  const resolvedIntent =
-    intent ??
-    (colorScheme === 'red'
-      ? 'danger'
-      : colorScheme === 'green'
-        ? 'success'
-        : colorScheme === 'blue'
-          ? 'info'
-          : colorScheme === 'gray'
-            ? 'secondary'
-            : 'primary');
-  const classes = tag({ size, appearance: resolvedAppearance, intent: resolvedIntent, shape });
+    variant: _unsupportedVariant,
+    colorScheme: _unsupportedColorScheme,
+    ...safeRest
+  } = rest as typeof rest & { colorScheme?: unknown; variant?: unknown };
+  const materializedChildren = materializeReactNodeTree(children);
+  const asChildElement =
+    asChild && isTagRootAsChildHost(materializedChildren) ? materializedChildren : null;
+  const mustFallbackInteractiveRoot = Boolean(
+    asChildElement &&
+    containsTagCloseButton(asChildElement.props.children) &&
+    (isInteractiveTagRootAsChildHost(asChildElement)
+      ? true
+      : typeof asChildElement.type !== 'string'),
+  );
+  const canUseAsChild = Boolean(asChildElement && !mustFallbackInteractiveRoot);
+  const Component = (canUseAsChild ? Slot : 'span') as ElementType;
+  const classes = tag({ size, appearance, intent, shape });
 
   const contextValue = useMemo(
-    () => ({ size, appearance: resolvedAppearance, intent: resolvedIntent, shape }),
-    [size, resolvedAppearance, resolvedIntent, shape],
+    () => ({ size, appearance, intent, shape, classes }),
+    [size, appearance, intent, shape, classes],
   );
 
   return (
     <TagContext.Provider value={contextValue}>
-      <Component ref={ref} className={cx(classes.root, className)} {...rest}>
-        {children}
+      <Component ref={ref} className={cx(classes.root, className)} {...safeRest}>
+        {asChild && !canUseAsChild
+          ? getTagInlineFallbackChildren(
+              getFallbackChildrenPreservingVoidHost(asChildElement ?? materializedChildren),
+            )
+          : materializedChildren}
       </Component>
     </TagContext.Provider>
   );
 });
 
-TagRoot.displayName = 'Tag.Root';
+TagRootImpl.displayName = 'Tag.Root';
+
+/**
+ * Renders the Tag root and shares appearance variants with compound children.
+ *
+ * It falls back to a `span` if `asChild` is unsupported. It also rejects an
+ * interactive delegated host that contains `Tag.CloseButton`, because that
+ * would create nested interactive controls. Unsupported legacy visual props
+ * are not forwarded to the DOM.
+ */
+
+export const TagRoot = TagRootImpl as TagComponent;

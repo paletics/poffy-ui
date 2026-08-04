@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { acceptsFileUpload, filterAcceptedFiles, formatFileSize } from './file-upload';
+import {
+  acceptsFileUpload,
+  filterAcceptedFiles,
+  formatFileSize,
+  getFileUploadRejectionReasons,
+} from './file-upload';
 
 describe('file-upload behavior helpers', () => {
   it('formats bytes into human-readable labels', () => {
@@ -29,5 +34,16 @@ describe('file-upload behavior helpers', () => {
     ];
 
     expect(filterAcceptedFiles(files, { accept: 'image/png', maxSize: 5 })).toEqual([files[1]]);
+  });
+
+  it('reports every rejection reason and ignores invalid size constraints', () => {
+    const pdf = { name: 'document.pdf', size: 8, type: 'application/pdf' };
+
+    expect(getFileUploadRejectionReasons(pdf, { accept: 'image/png', maxSize: 5 })).toEqual([
+      'max-size',
+      'accept',
+    ]);
+    expect(acceptsFileUpload(pdf, { maxSize: Number.NaN })).toBe(true);
+    expect(acceptsFileUpload(pdf, { maxSize: -1 })).toBe(true);
   });
 });

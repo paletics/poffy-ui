@@ -1,0 +1,32 @@
+export const clientEntries = [
+  'index',
+  'activation/index',
+  'accordion/index',
+  'collapsible/index',
+  'combobox/index',
+  'command-menu/index',
+  'context-menu/index',
+  'date/react/index',
+  'dropdown/index',
+  'file-upload/react/index',
+  'hooks/index',
+  'listbox/react/index',
+  'multi-select/index',
+  'otp-input/react/index',
+  'radio-group/index',
+  'range-slider/react/index',
+  'scroll-area/index',
+  'split-button/index',
+  'time/index',
+  'tree-view/index',
+  'wheel-picker/react/index',
+];
+
+export const serverSafeEntries = [
+  'date/index',
+  'file-upload/index',
+  'listbox/index',
+  'otp-input/index',
+  'range-slider/index',
+  'wheel-picker/index',
+];

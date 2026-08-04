@@ -1,67 +1,64 @@
 import type { ComponentPropsWithoutRef } from 'react';
-import type { InputAppearance } from '@poffy-ui/types';
-import type { NumberInputSize, NumberInputVariant } from '../NumberInput/NumberInput.types';
-import type { TimeClockFormat } from '../TimeClock/TimeClock.types';
+import type { TimeConstraintOptions } from '@poffy-ui/behavior/time';
+import type { NumberInputSize } from '../NumberInput/NumberInput.types';
+import type { InputAppearanceProp } from '@/components/inputs/inputVariant';
 
-/**
- * Public size for TimePicker.
- */
+/** Field size for `TimePicker`. */
 export type TimePickerSize = NumberInputSize;
 
-/**
- * Legacy visual variant for TimePicker inputs.
- */
-export type TimePickerVariant = NumberInputVariant;
+/** Hour cycle used by `TimePicker`. */
+export type TimePickerFormat = '24h' | '12h';
 
-/**
- * Hour cycle used by TimePicker.
- */
-export type TimePickerFormat = TimeClockFormat;
+/** Localized default text shared by TimePicker and TimeClock. */
+export interface TimePickerMessages {
+  time: string;
+  hours: string;
+  minutes: string;
+  seconds: string;
+  meridiem: string;
+  am: string;
+  pm: string;
+  unavailable: string;
+}
 
 /**
  * Input interaction mode rendered by TimePicker.
  */
 export type TimePickerInputMode = 'segments' | 'clock' | 'wheel';
 
-/**
- * Props for time-only input.
- *
- * ### Notes
- * Values are strings in normalized clock form, for example `"09:30"` or
- * `"09:30:15"` when `withSeconds` is true. `value` is controlled and must be
- * updated from `onChange`; use `defaultValue` for uncontrolled initial state.
- * Provide a visible label, `aria-label`, or `aria-labelledby`.
- *
- * Do: choose `inputMode="segments"` for compact keyboard entry and
- * `inputMode="wheel"` for picker-style selection.
- * Don't: pass Date objects; use DateTimePicker for date and time together.
- *
- * @example
- * ```tsx
- * import { TimePicker } from '@poffy-ui/react/inputs';
- *
- * <TimePicker aria-label="Start time" value={time} onChange={setTime} />
- * ```
- *
- * Related: DateTimePickerProps for Date-backed date and time selection.
- * Related: WheelPickerProps for generic multi-column wheel selection.
- */
-export interface TimePickerProps extends Omit<
-  ComponentPropsWithoutRef<'div'>,
-  'defaultValue' | 'inputMode' | 'onChange'
-> {
+/** Shared props for a controlled or uncontrolled time-only field. Provide a visible or ARIA label. */
+export interface TimePickerBaseProps
+  extends
+    Omit<
+      ComponentPropsWithoutRef<'div'>,
+      | 'aria-disabled'
+      | 'aria-readonly'
+      | 'aria-required'
+      | 'defaultValue'
+      | 'inputMode'
+      | 'onChange'
+      | 'role'
+    >,
+    TimeConstraintOptions {
+  /** Controlled normalized value such as `"09:30"`. Reflect `onChange` to update it. */
   value?: string | null;
+  /** Initial uncontrolled normalized value, restored by native form reset. */
   defaultValue?: string | null;
+  /** Called after an accepted time change; unavailable candidate times are not reported. */
   onChange?: (value: string | null) => void;
   size?: TimePickerSize;
-  appearance?: InputAppearance;
-  variant?: TimePickerVariant;
+  appearance?: InputAppearanceProp;
   inputMode?: TimePickerInputMode;
   format?: TimePickerFormat;
+  /** BCP 47 locale used for default labels. Overrides the nearest LocaleProvider. */
+  locale?: string;
+  /** Overrides localized default labels and validation text. */
+  messages?: Partial<TimePickerMessages>;
   withSeconds?: boolean;
   error?: boolean;
   disabled?: boolean;
   readOnly?: boolean;
+  required?: boolean;
   hourStep?: number;
   minuteStep?: number;
   secondStep?: number;
@@ -73,3 +70,22 @@ export interface TimePickerProps extends Omit<
   secondLabel?: string;
   meridiemLabel?: string;
 }
+
+/**
+ * Props for a controlled or uncontrolled time-only field.
+ * A controlled `value` requires `onChange` and excludes `defaultValue`; omitting it selects
+ * hook-owned state that native form reset restores from `defaultValue`.
+ */
+export type TimePickerProps = Omit<TimePickerBaseProps, 'defaultValue' | 'onChange' | 'value'> &
+  (
+    | {
+        value: string | null;
+        defaultValue?: never;
+        onChange: (value: string | null) => void;
+      }
+    | {
+        value?: never;
+        defaultValue?: string | null;
+        onChange?: (value: string | null) => void;
+      }
+  );

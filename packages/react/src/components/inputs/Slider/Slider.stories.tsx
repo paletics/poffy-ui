@@ -1,18 +1,11 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { expect, within } from 'storybook/test';
 import { Slider } from '@/components/inputs/Slider';
-import { Stack } from '@/components/layout';
+import { Box, Stack } from '@/components/layout';
 import { Text } from '@/components/typography';
 import { useState } from 'react';
 
-/**
- * A range input wrapping a native `<input type="range">` inside a `<label>`.
- * Supports `sm`, `md`, `lg` sizes. Optional `children` render as a visible label.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`slider` SlotRecipe: `root` + `control` + `label`)
- */
+
 const meta: Meta<typeof Slider> = {
   title: 'Inputs/Slider',
   component: Slider,
@@ -92,4 +85,14 @@ export const Controlled: Story = {
       </Stack>
     );
   },
+};
+
+export const ConstrainedLongLabelRtl: Story = {
+  render: () => (
+    <Box width="[140px]" maxWidth="100%" dir="rtl">
+      <Slider defaultValue={40}>
+        https://example.com/preferences/audio/output/very-long-device-name
+      </Slider>
+    </Box>
+  ),
 };

@@ -9,7 +9,13 @@ import { useSidebar } from './SidebarContext';
  * The bottom section of the Sidebar, typically used for user profiles or secondary actions.
  */
 export const SidebarFooter = forwardRef<HTMLElement, SidebarFooterProps>((props, ref) => {
-  const { className, ...rest } = props;
+  const {
+    className,
+    asChild: _unsupportedAsChild,
+    ...rest
+  } = props as SidebarFooterProps & {
+    asChild?: boolean;
+  };
   const { classes } = useSidebar();
   return <footer ref={ref} className={cx(classes.footer, className)} {...rest} />;
 });

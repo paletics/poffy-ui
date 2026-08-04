@@ -23,6 +23,18 @@ describe('Flex Component', () => {
     expect(container.firstChild?.nodeName).toBe('SECTION');
   });
 
+  it('falls back to a div when asChild receives multiple children', () => {
+    const { container } = render(
+      <Flex asChild>
+        <span>First</span>
+        <span>Second</span>
+      </Flex>,
+    );
+    expect(container.firstChild?.nodeName).toBe('DIV');
+    expect(screen.getByText('First')).toBeInTheDocument();
+    expect(screen.getByText('Second')).toBeInTheDocument();
+  });
+
   it('applies flex class', () => {
     const { container } = render(<Flex>Content</Flex>);
     expect(container.firstChild).toHaveClass(/flex/);

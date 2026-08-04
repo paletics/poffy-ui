@@ -1,4 +1,7 @@
-import { testVisualStories } from '@/components/e2e/visualSpecUtils';
+import {
+  testStoriesDoNotOverflowOnMobile,
+  testVisualStories,
+} from '@/components/e2e/visualSpecUtils';
 
 testVisualStories({
   accessibilityStory: 'default',
@@ -12,4 +15,10 @@ testVisualStories({
     { name: 'Physical', story: 'physical' },
     { name: 'Bouncy', story: 'bouncy' },
   ],
+});
+
+testStoriesDoNotOverflowOnMobile({
+  componentId: 'animations-actionmotion',
+  title: 'ActionMotion',
+  stories: [{ name: 'Gallery', story: 'gallery' }],
 });

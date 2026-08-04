@@ -1,6 +1,10 @@
 import { defineSlotRecipe } from '@pandacss/dev';
 import {
   centeredOverlayStyles,
+  dialogViewportMaxHeightStyles,
+  fullOverlaySafeAreaStyles,
+  fullViewportHeightStyles,
+  fullViewportMaxHeightStyles,
   overlayBackdropStyles,
   overlayCloseButtonStyles,
   overlayInternalStyles,
@@ -20,6 +24,7 @@ export const modalRecipe = defineSlotRecipe({
     overlay: {
       ...overlayBackdropStyles,
       ...centeredOverlayStyles,
+      p: '{spacing.sm}',
     },
     content: {
       bg: 'layout.surface',
@@ -31,7 +36,9 @@ export const modalRecipe = defineSlotRecipe({
       boxShadow: '{shadows.lg}',
       width: '{sizes.full}',
       maxWidth: '{sizes.md}',
-      maxHeight: '85vh',
+      minInlineSize: 0,
+      boxSizing: 'border-box',
+      ...dialogViewportMaxHeightStyles,
       display: 'flex',
       flexDirection: 'column',
       position: 'relative',
@@ -69,16 +76,32 @@ export const modalRecipe = defineSlotRecipe({
     },
     size: {
       sm: { content: { maxWidth: '{sizes.sm}' } },
-      md: { content: { maxWidth: '{sizes.md}' } },
+      md: {
+        content: { maxWidth: '{sizes.md}' },
+        // A medium dialog is wide enough for the common cancel/confirm pair.
+        // Keep it on one row; wrapping remains the fallback for long labels.
+        footer: {
+          paddingInlineStart: '{spacing.sm}',
+          paddingInlineEnd: '{spacing.sm}',
+          gap: '{spacing.xs}',
+        },
+      },
       lg: { content: { maxWidth: '{sizes.lg}' } },
       xl: { content: { maxWidth: '{sizes.xl}' } },
       full: {
-        content: { maxWidth: '100vw', height: '100vh', maxHeight: '100vh', borderRadius: '0' },
+        overlay: { p: '0' },
+        content: {
+          maxWidth: '100%',
+          borderRadius: '0',
+          ...fullOverlaySafeAreaStyles,
+          ...fullViewportHeightStyles,
+          ...fullViewportMaxHeightStyles,
+        },
       },
     },
     scrollBehavior: {
       inside: {
-        content: { maxHeight: '85vh' },
+        content: dialogViewportMaxHeightStyles,
         body: { overflowY: 'auto' },
       },
       outside: {
@@ -89,7 +112,7 @@ export const modalRecipe = defineSlotRecipe({
   },
   defaultVariants: {
     appearance: 'soft',
-    size: 'md',
+    size: 'lg',
     scrollBehavior: 'inside',
   },
 });

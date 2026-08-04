@@ -8,6 +8,8 @@ export const textRecipe = defineRecipe({
   description: 'Text styling for body copy, captions, and muted typography variants',
   base: {
     margin: 0,
+    minInlineSize: 0,
+    overflowWrap: 'anywhere',
   },
   variants: {
     variant: {
@@ -34,6 +36,8 @@ export const textRecipe = defineRecipe({
       bold: { fontWeight: 'bold' },
     },
     align: {
+      start: { textAlign: 'start' },
+      end: { textAlign: 'end' },
       left: { textAlign: 'left' },
       center: { textAlign: 'center' },
       right: { textAlign: 'right' },
@@ -49,7 +53,7 @@ export const textRecipe = defineRecipe({
   defaultVariants: {
     variant: 'body1',
     weight: 'normal',
-    align: 'left',
+    align: 'start',
     transform: 'none',
   },
 });

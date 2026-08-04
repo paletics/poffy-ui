@@ -1,0 +1,17 @@
+export const clientEntries = [
+  'index',
+  'providers/index',
+  'hooks/index',
+  'animations/index',
+  'layout/index',
+  'typography/index',
+  'inputs/index',
+  'data-display/index',
+  'feedback/index',
+  'navigation/index',
+  'overlay/index',
+  'surfaces/index',
+  'media/index',
+  'tree-view/index',
+  'screen-composer/index',
+];

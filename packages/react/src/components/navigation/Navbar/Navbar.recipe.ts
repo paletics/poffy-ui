@@ -17,36 +17,64 @@ export const navbarRecipe = defineSlotRecipe({
       alignItems: 'center',
       justifyContent: 'space-between',
       width: '{sizes.full}',
-      h: '{spacing.3xl}',
+      maxWidth: '{sizes.full}',
+      minH: '{sizes.control.minimumTarget}',
       px: '{spacing.base}',
+      boxSizing: 'border-box',
+      overflowX: 'auto',
       bg: 'layout.surface',
-      borderBottom: '1px solid',
+      borderBlockEnd: '1px solid',
       borderColor: 'layout.divider',
     },
     brand: {
+      display: 'inline-flex',
+      alignItems: 'center',
+      minBlockSize: '{sizes.control.minimumTarget}',
       fontSize: 'lg',
       fontWeight: 'bold',
       color: 'text.primary',
       textDecoration: 'none',
+      _focusVisible: {
+        outline: '2px solid',
+        outlineColor: 'brand.main',
+        outlineOffset: '-2px',
+        borderRadius: '{radii.sm}',
+      },
     },
     content: {
       display: 'flex',
       alignItems: 'center',
       gap: '{spacing.base}',
+      flexShrink: 0,
     },
     item: {
       listStyle: 'none',
     },
     link: {
-      fontSize: 'xs',
+      display: 'inline-flex',
+      alignItems: 'center',
+      minBlockSize: '{sizes.control.minimumTarget}',
+      px: '{spacing.xs}',
+      fontSize: 'sm',
       color: 'text.secondary',
       textDecoration: 'none',
       transitionProperty: 'color',
       transitionDuration: '{durations.fast}',
       transitionTimingFunction: '{easings.soft}',
+      _motionSubtle: { transitionDuration: '{durations.ultraFast}' },
+      _motionPop: {
+        transitionDuration: '{durations.standard}',
+        transitionTimingFunction: '{easings.bounce}',
+      },
       cursor: 'pointer',
       _hover: {
         color: 'text.primary',
+      },
+      _focusVisible: {
+        outline: '2px solid',
+        outlineColor: 'brand.main',
+        outlineOffset: '-2px',
+        borderRadius: '{radii.sm}',
       },
       '&[aria-current="page"], &[data-active]': {
         color: 'text.primary',
@@ -68,9 +96,9 @@ export const navbarRecipe = defineSlotRecipe({
       outline: {
         root: {
           bg: 'transparent',
-          borderTop: '1px solid',
-          borderLeft: '1px solid',
-          borderRight: '1px solid',
+          borderBlockStart: '1px solid',
+          borderInlineStart: '1px solid',
+          borderInlineEnd: '1px solid',
           borderColor: 'layout.divider',
         },
       },
@@ -85,8 +113,38 @@ export const navbarRecipe = defineSlotRecipe({
       true: {
         root: {
           position: 'sticky',
-          top: 0,
+          insetBlockStart: 0,
           zIndex: 'appBar',
+        },
+      },
+    },
+    narrowLayout: {
+      scroll: {},
+      wrap: {
+        root: {
+          flexWrap: 'wrap',
+          overflowX: 'visible',
+          rowGap: '{spacing.sm}',
+        },
+        content: {
+          minWidth: 0,
+          maxWidth: '{sizes.full}',
+          flexShrink: 1,
+          flexWrap: 'wrap',
+        },
+        brand: {
+          minInlineSize: 0,
+          maxWidth: '{sizes.full}',
+          overflowWrap: 'anywhere',
+        },
+        item: {
+          minInlineSize: 0,
+          maxWidth: '{sizes.full}',
+        },
+        link: {
+          minInlineSize: 0,
+          maxWidth: '{sizes.full}',
+          overflowWrap: 'anywhere',
         },
       },
     },
@@ -100,6 +158,7 @@ export const navbarRecipe = defineSlotRecipe({
   defaultVariants: {
     appearance: 'soft',
     sticky: false,
+    narrowLayout: 'scroll',
     justify: 'start',
   },
 });

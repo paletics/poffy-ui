@@ -9,6 +9,7 @@ export const centerRecipe = defineRecipe({
   description: 'Center layout styling for horizontal and vertical child alignment',
   base: {
     display: 'flex',
+    minInlineSize: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },

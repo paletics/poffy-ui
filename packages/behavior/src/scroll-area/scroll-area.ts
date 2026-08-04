@@ -7,6 +7,10 @@ export const MIN_SCROLL_AREA_THUMB_SIZE = 20;
 
 /**
  * Calculates scrollbar thumb size and offset for a scrollable track.
+ *
+ * `clientSize` is the track length, `scrollSize` is the scrollable content length, and
+ * `scrollPos` is clamped to the available scroll range. A non-scrollable or zero-sized input
+ * reports `isOverflowing: false`; its thumb starts at offset zero.
  */
 export const calcScrollAreaThumb = (
   clientSize: number,

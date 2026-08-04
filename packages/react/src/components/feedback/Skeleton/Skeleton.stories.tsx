@@ -1,15 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Skeleton } from '@/components/feedback/Skeleton';
 import { Stack } from '@/components/layout/Stack';
+import { AnimationProvider } from '@/providers/AnimationProvider';
+import { css } from '@/styled-system/css';
 
-/**
- * Loading placeholder that mimics content shape (text, circle, or rect) while data is being fetched.
- * Use to reduce perceived latency by rendering a structural stand-in before real content arrives.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (skeleton recipe), motion/react, Radix Slot
- */
 const meta: Meta<typeof Skeleton> = {
   title: 'Feedback/Skeleton',
   component: Skeleton,
@@ -32,10 +26,14 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
+const constrainedCircleClass = css({ width: '[5rem]' });
+
 export const Default: Story = {
   args: {
     shape: 'text',
     animation: 'pulse',
+    'data-testid': 'default-skeleton',
+    width: '20rem',
   },
 };
 
@@ -52,6 +50,14 @@ export const Circle: Story = {
   },
 };
 
+export const ConstrainedCircle: Story = {
+  render: () => (
+    <div className={constrainedCircleClass} data-testid="constrained-circle-parent">
+      <Skeleton animation="none" data-testid="constrained-circle" shape="circle" width={200} />
+    </div>
+  ),
+};
+
 export const RectNoAnimation: Story = {
   args: {
     shape: 'rect',
@@ -59,6 +65,36 @@ export const RectNoAnimation: Story = {
     width: '200px',
     height: '100px',
   },
+};
+
+export const Shimmer: Story = {
+  args: {
+    animation: 'shimmer',
+    'data-testid': 'shimmer-skeleton',
+    height: '1.2rem',
+    shape: 'text',
+    width: '20rem',
+  },
+};
+
+export const DefaultDimensions: Story = {
+  render: () => (
+    <Stack gap="md">
+      <Skeleton animation="none" shape="circle" />
+      <Skeleton animation="none" shape="rect" />
+    </Stack>
+  ),
+};
+
+export const MotionDisabled: Story = {
+  render: () => (
+    <AnimationProvider global={false} defaultAnimationEnabled={false}>
+      <Stack data-testid="motion-disabled-skeletons" gap="xs">
+        <Skeleton animation="pulse" width="20rem" />
+        <Skeleton animation="shimmer" width="16rem" />
+      </Stack>
+    </AnimationProvider>
+  ),
 };
 
 export const ArticleLoading: Story = {
@@ -71,12 +107,12 @@ export const ArticleLoading: Story = {
   ),
 };
 
-export const LegacyVariants: Story = {
+export const Intents: Story = {
   render: () => (
     <Stack gap="xs">
-      <Skeleton variant="primary" width="full" />
-      <Skeleton variant="success" width="80%" />
-      <Skeleton variant="danger" width="60%" />
+      <Skeleton intent="primary" width="100%" />
+      <Skeleton intent="success" width="80%" />
+      <Skeleton intent="danger" width="60%" />
     </Stack>
   ),
 };

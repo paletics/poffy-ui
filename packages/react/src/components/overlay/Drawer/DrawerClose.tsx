@@ -3,12 +3,5 @@
 import { createOverlayClose } from '../shared/factories';
 import { useDrawerContext } from './DrawerContext';
 
-/**
- * Close button for the Drawer.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Standardized via `createOverlayClose`
- * - **Props**: DrawerCloseProps
- */
+/** Close button for the Drawer. */
 export const DrawerClose = createOverlayClose(useDrawerContext, 'DrawerClose', 24);

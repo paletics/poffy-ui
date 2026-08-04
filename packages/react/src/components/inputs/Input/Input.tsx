@@ -2,63 +2,38 @@
 
 import { css, cx } from '@/styled-system/css';
 import { input, inputGroup } from '@/styled-system/recipes';
+import { isInputAsChildHost } from '@/components/shared/asChild';
+import { guardActivationHandlers } from '@poffy-ui/behavior/activation';
 import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
-import { InputProps } from './Input.types';
+import { cloneElement, forwardRef, isValidElement } from 'react';
+import type { ChangeEventHandler } from 'react';
+import type { InputProps } from '@/components/inputs/Input/Input.types';
 import { ActionMotion } from '@/components/animations';
-import { useFormControl } from '../FormControl/useFormControl';
+import { resolveInputVariant } from '@/components/inputs/inputVariant';
+import {
+  hasAriaInvalid,
+  resolveFormControlAria,
+} from '@/components/inputs/FormControl/formControlAria';
+import { useFormControl } from '@/components/inputs/FormControl/useFormControl';
+
+interface InputChangeGuardProps {
+  onChange?: ChangeEventHandler<HTMLInputElement>;
+  onChangeCapture?: ChangeEventHandler<HTMLInputElement>;
+}
 
 /**
- * Standard text input for form data entry. Supports multiple visual variants, sizing,
- * error states, and optional start/end adornments (icons, prefixes, etc.).
+ * Text-like native form field with optional inline adornments.
  *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`input` + `inputGroup` recipes), Radix Slot, `ActionMotion`
- * - **Props**: `PrimitiveProps<'input'>`
- *
- * ### Design Tokens
- * - **spacing**: padding → `silver.md` / `silver.lg` per size
- * - **color**: focus ring → `brand.main`; error state → `danger.main`
- * - **duration**: focus transition → `subtle` preset; error → `shake` preset
- *
- * ### Variant Logic
- * - **variant="outline"**: Default. Bordered input — standard form usage.
- * - **variant="filled"**: Filled background, no visible border — use on light neutral surfaces.
- * - **variant="flushed"**: Bottom border only — compact or minimal form layouts.
- *
- * ### Accessibility
- * - **Role**: `textbox` (implicit via `<input>`)
- * - **Keyboard**: Tab: focus | Escape: blur (via blur on parent)
- * - **States**: `aria-invalid` set automatically when `error` is `true`
- * - **Required**: Provide an associated `<label>` or `aria-label` — the component does not render one
- *
- * @example Standard usage
- * ```tsx
- * <Input placeholder="Enter your name" />
- * ```
- *
- * @example With start adornment (search)
- * ```tsx
- * <Input startElement={<SearchIcon />} placeholder="Search..." />
- * ```
- *
- * @example Error state
- * ```tsx
- * <Input error placeholder="Invalid value" aria-label="Email" />
- * ```
- *
- * @example Polymorphic — masked input library
- * ```tsx
- * <Input asChild>
- *   <InputMask mask="99/99/9999" placeholder="MM/DD/YYYY" />
- * </Input>
- * ```
+ * Values supplied directly for `disabled`, `readOnly`, `required`, `id`, and `error` take
+ * precedence over the nearest `FormControl`; the resolved state also manages invalid and helper
+ * text ARIA associations. Decorative adornments are inert and hidden from assistive technology
+ * unless their matching `*Interactive` prop is true. `asChild` accepts an input host or a custom
+ * component that forwards input props and an `HTMLInputElement` ref.
  */
 export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
   const {
     appearance = 'outline',
-    variant,
+    variant: _unsupportedVariant,
     size,
     error,
     disabled,
@@ -67,49 +42,52 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
     id,
     className,
     asChild,
+    children,
     startElement,
+    startElementInteractive = false,
     endElement,
+    endElementInteractive = false,
     'aria-describedby': ariaDescribedBy,
     'aria-errormessage': ariaErrorMessage,
     'aria-invalid': ariaInvalid,
     ...rest
-  } = props;
+  } = props as InputProps & { variant?: unknown };
   const formControl = useFormControl();
 
   const isInvalid = error ?? formControl.isInvalid;
   const isDisabled = disabled ?? formControl.isDisabled;
   const isReadOnly = readOnly ?? formControl.isReadOnly;
   const isRequired = required ?? formControl.isRequired;
+  const hasExplicitInvalid = hasAriaInvalid(ariaInvalid);
+  const shouldAssociateErrorMessage = Boolean(isInvalid || hasExplicitInvalid);
   const inputId = id ?? formControl.id;
-  const formControlDescribedBy = [
-    formControl.helperTextId,
-    isInvalid ? formControl.errorMessageId : undefined,
-  ]
-    .filter(Boolean)
-    .join(' ');
-  const describedBy =
-    ariaDescribedBy ?? (formControlDescribedBy.length > 0 ? formControlDescribedBy : undefined);
-  const errorMessage = ariaErrorMessage ?? (isInvalid ? formControl.errorMessageId : undefined);
+  const { describedBy, errorMessage } = resolveFormControlAria({
+    ariaDescribedBy,
+    ariaErrorMessage,
+    errorMessageIds: formControl.errorMessageIds,
+    helperTextIds: formControl.helperTextIds,
+    isInvalid: shouldAssociateErrorMessage,
+  });
 
   const resolvedSize = size ?? 'md';
   const hasStart = !!startElement;
   const hasEnd = !!endElement;
   const hasAdornment = [hasStart, hasEnd].some(Boolean);
 
-  const resolvedVariant = variant ?? (appearance === 'soft' ? 'filled' : 'outline');
+  const resolvedVariant = resolveInputVariant(appearance);
   const recipeClass = input({ variant: resolvedVariant, size, error: isInvalid });
   const groupStyles = inputGroup({ size: resolvedSize });
   const adornmentPaddingClass =
     hasAdornment &&
     css({
-      pl: hasStart
+      paddingInlineStart: hasStart
         ? resolvedSize === 'lg'
           ? '3xl'
           : resolvedSize === 'md'
             ? '2xl'
             : 'xl'
         : undefined,
-      pr: hasEnd
+      paddingInlineEnd: hasEnd
         ? resolvedSize === 'lg'
           ? '3xl'
           : resolvedSize === 'md'
@@ -117,7 +95,72 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
             : 'xl'
         : undefined,
     });
-  const Comp = asChild ? Slot : 'input';
+  const asChildElement = asChild && isInputAsChildHost(children) ? children : null;
+  const canUseAsChild = Boolean(asChildElement);
+  const Comp = canUseAsChild ? Slot : 'input';
+  const asChildTag = typeof asChildElement?.type === 'string' ? asChildElement.type : undefined;
+  const isCustomAsChildComponent = canUseAsChild && asChildTag === undefined;
+  const supportsNativeInputProps = [
+    !canUseAsChild,
+    isCustomAsChildComponent,
+    asChildTag === 'input',
+  ].some(Boolean);
+  const supportsDisabled = supportsNativeInputProps;
+  const supportsReadOnly = supportsNativeInputProps;
+  const supportsRequired = supportsNativeInputProps;
+  const preventDisabledInputInteraction = (event: {
+    preventDefault: () => void;
+    stopPropagation: () => void;
+  }) => {
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  const preventDisabledInputKey = (event: {
+    key: string;
+    preventDefault: () => void;
+    stopPropagation: () => void;
+  }) => {
+    if (event.key !== 'Tab') {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  };
+  const changeGuardedChildren =
+    canUseAsChild && isDisabled && isValidElement<InputChangeGuardProps>(children)
+      ? cloneElement(children, {
+          onChangeCapture: preventDisabledInputInteraction,
+          onChange: preventDisabledInputInteraction,
+        })
+      : children;
+  const guardedChildren = guardActivationHandlers(
+    changeGuardedChildren,
+    Boolean(canUseAsChild && isDisabled),
+    {
+      onClickCapture: preventDisabledInputInteraction,
+      onClick: preventDisabledInputInteraction,
+      onKeyDownCapture: preventDisabledInputKey,
+      onKeyDown: preventDisabledInputKey,
+      onKeyUpCapture: preventDisabledInputKey,
+      onKeyUp: preventDisabledInputKey,
+      onPointerDownCapture: preventDisabledInputInteraction,
+      onPointerDown: preventDisabledInputInteraction,
+      onPointerUpCapture: preventDisabledInputInteraction,
+      onPointerUp: preventDisabledInputInteraction,
+    },
+  );
+  const ownedChildren =
+    canUseAsChild && isValidElement<Record<string, unknown>>(guardedChildren)
+      ? cloneElement(guardedChildren, {
+          id: inputId,
+          disabled: supportsDisabled ? isDisabled : undefined,
+          readOnly: supportsReadOnly ? isReadOnly : undefined,
+          required: supportsRequired ? isRequired : undefined,
+          'aria-disabled': isDisabled ? true : undefined,
+          'aria-invalid': isInvalid ? true : ariaInvalid,
+          'aria-describedby': describedBy,
+          'aria-errormessage': errorMessage,
+        })
+      : guardedChildren;
 
   const motionCustomData = {
     glowColor: isInvalid
@@ -138,25 +181,37 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
     >
       <Comp
         ref={ref}
-        // Native disabled on Slot would become an invalid HTML attribute on non-input children.
         id={inputId}
-        disabled={asChild ? undefined : isDisabled}
-        readOnly={isReadOnly}
-        required={isRequired}
-        aria-disabled={isDisabled ? true : undefined}
+        disabled={supportsDisabled ? isDisabled : undefined}
+        readOnly={supportsReadOnly ? isReadOnly : undefined}
+        required={supportsRequired ? isRequired : undefined}
         className={cx(
           recipeClass,
           hasAdornment && groupStyles.input,
           adornmentPaddingClass,
           className,
         )}
+        {...rest}
+        aria-disabled={isDisabled ? true : undefined}
         aria-invalid={isInvalid ? true : ariaInvalid}
         aria-describedby={describedBy}
         aria-errormessage={errorMessage}
+        data-has-start-element={hasStart ? '' : undefined}
+        data-has-end-element={hasEnd ? '' : undefined}
         data-has-left-element={hasStart ? '' : undefined}
         data-has-right-element={hasEnd ? '' : undefined}
-        {...rest}
-      />
+        onClickCapture={canUseAsChild && isDisabled ? preventDisabledInputInteraction : undefined}
+        onPointerDownCapture={
+          canUseAsChild && isDisabled ? preventDisabledInputInteraction : undefined
+        }
+        onPointerUpCapture={
+          canUseAsChild && isDisabled ? preventDisabledInputInteraction : undefined
+        }
+        onKeyDownCapture={canUseAsChild && isDisabled ? preventDisabledInputKey : undefined}
+        onKeyUpCapture={canUseAsChild && isDisabled ? preventDisabledInputKey : undefined}
+      >
+        {canUseAsChild ? ownedChildren : undefined}
+      </Comp>
     </ActionMotion>
   );
 
@@ -165,17 +220,39 @@ export const Input = forwardRef<HTMLInputElement, InputProps>((props, ref) => {
   return (
     <div
       className={groupStyles.root}
+      data-has-start-element={hasStart ? '' : undefined}
+      data-has-end-element={hasEnd ? '' : undefined}
       data-has-left-element={hasStart ? '' : undefined}
       data-has-right-element={hasEnd ? '' : undefined}
     >
       {startElement && (
-        <div className={groupStyles.element} data-placement="left" aria-hidden="true">
+        <div
+          className={cx(
+            groupStyles.element,
+            startElementInteractive && css({ pointerEvents: 'auto' }),
+          )}
+          data-input-group-element=""
+          data-placement="start"
+          data-interactive={startElementInteractive ? '' : undefined}
+          aria-hidden={startElementInteractive ? undefined : true}
+          inert={startElementInteractive ? undefined : true}
+        >
           {startElement}
         </div>
       )}
       {inputEl}
       {endElement && (
-        <div className={groupStyles.element} data-placement="right" aria-hidden="true">
+        <div
+          className={cx(
+            groupStyles.element,
+            endElementInteractive && css({ pointerEvents: 'auto' }),
+          )}
+          data-input-group-element=""
+          data-placement="end"
+          data-interactive={endElementInteractive ? '' : undefined}
+          aria-hidden={endElementInteractive ? undefined : true}
+          inert={endElementInteractive ? undefined : true}
+        >
           {endElement}
         </div>
       )}

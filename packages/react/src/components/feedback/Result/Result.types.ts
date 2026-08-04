@@ -6,27 +6,8 @@ import {
 } from '@poffy-ui/types';
 
 /**
- * Props for the Result container component.
- * Uses NativeProps since the outer element is always a fixed `div`.
- *
- * @example
- * ```tsx
- * import { Result } from '@poffy-ui/react/feedback';
- *
- * <Result intent="success">
- *   <Result.Icon />
- *   <Result.Title>Project published</Result.Title>
- *   <Result.Description>The public page is now live.</Result.Description>
- * </Result>
- * ```
- *
- * ### Notes
- * Do: use Result for a stable outcome page, panel, or empty-flow completion state.
- * Don't: use Result for transient inline validation; use Alert or field-level messaging.
- *
- * ### AI Usage
- * - Use for success/error/warning/info outcomes after a task completes.
- * - Keep actions in `Result.Actions` so call-to-action layout remains consistent.
+ * Props for a stable outcome surface. Use Result for completed flows or persistent states, rather
+ * than transient inline validation; keep follow-up controls in ResultActions.
  */
 export type ResultProps = NativeProps<
   'div',
@@ -42,9 +23,11 @@ export type ResultProps = NativeProps<
      */
     appearance?: Extract<FeedbackAppearance, 'soft' | 'outline'>;
     /**
-     * Legacy status alias.
+     * Announcement priority when this result is inserted or updated.
+     * Use `'off'` for stable page content that should not announce itself.
+     * @defaultValue `'off'`
      */
-    status?: 'success' | 'error' | 'warning' | 'info';
+    live?: 'polite' | 'assertive' | 'off';
   }
 >;
 
@@ -53,8 +36,8 @@ export type ResultProps = NativeProps<
  * Uses NativeProps since the wrapper element is always a fixed `div`.
  *
  * ### Notes
- * The icon slot is decorative by default. Ensure the title or
- * description carries the actual outcome text.
+ * The icon slot is decorative by default. Set `aria-hidden={false}` only for
+ * a meaningful, labeled icon. The default decorative slot is inert.
  */
 export type ResultIconProps = NativeProps<'div'>;
 
@@ -63,7 +46,8 @@ export type ResultIconProps = NativeProps<'div'>;
  * Uses PrimitiveProps to support the asChild Slot pattern.
  *
  * ### Notes
- * Render one concise heading that names the outcome.
+ * Render one concise heading that names the outcome. `asChild` accepts one
+ * native h1-h6 element; other children fall back to textual content in h3.
  */
 export type ResultTitleProps = PrimitiveProps<'h3'>;
 
@@ -72,12 +56,15 @@ export type ResultTitleProps = PrimitiveProps<'h3'>;
  * Uses PrimitiveProps to support the asChild Slot pattern.
  *
  * ### Notes
- * Explain what happened and, when useful, what the user can do next.
+ * Explain what happened and, when useful, what the user can do next. `asChild`
+ * accepts one native p element; other children fall back to textual content in p.
  */
 export type ResultDescriptionProps = PrimitiveProps<'p'>;
 
 /**
  * Props for the ResultActions component.
  * Uses PrimitiveProps to support the asChild Slot pattern.
+ * `asChild` accepts one native div element; other children use the default div.
+ * Actions opt out of an ancestor Result live region unless `aria-live` is supplied.
  */
 export type ResultActionsProps = PrimitiveProps<'div'>;

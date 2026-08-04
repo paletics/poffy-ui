@@ -2,13 +2,7 @@
 import { Wrap } from './Wrap';
 import { Box } from '../Box';
 
-/**
- * A flex-wrap layout primitive that lays out children horizontally and wraps to new rows automatically, ideal for tag clouds and chip groups.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Flex with wrap="wrap" hardcoded), Radix Slot (inherited via Flex)
- */
+
 const meta: Meta<typeof Wrap> = {
   title: 'Layout/Wrap',
   component: Wrap,
@@ -30,9 +24,9 @@ type Story = StoryObj<typeof Wrap>;
 export const Default: Story = {
   args: {
     gap: 'md',
-    w: '300px',
+    w: '[300px]',
     children: Array.from({ length: 12 }).map((_, i) => (
-      <Box key={i} p="2" bg="teal.100" borderRadius="md">
+      <Box key={i} p="sm" bg="teal.100" borderRadius="md">
         Tag {i + 1}
       </Box>
     )),

@@ -33,7 +33,6 @@ const addMonthsClamped = (date: Date, monthDelta: number): Date => {
 /**
  * Derives the initial visible month for the calendar.
  *
- * ### Notes
  * Priority is `defaultMonth`, then the selected value's anchor date, then
  * `fallbackDate`, then the current date. The returned `Date` is not cloned when
  * it comes from caller-provided input, so React components should treat it as
@@ -56,7 +55,6 @@ export const getInitialCalendarMonth = ({
 /**
  * Derives the initial focused date for the calendar.
  *
- * ### Notes
  * Priority is the selected value's anchor date, then `fallbackDate`, then the
  * current date. React components should use this as roving-tabindex focus state
  * and keep it synchronized with visible month navigation.
@@ -72,7 +70,6 @@ export const getInitialCalendarFocusDate = ({
 /**
  * Derives the next focused date for keyboard navigation.
  *
- * ### Notes
  * Handles Arrow keys by day/week, PageUp/PageDown by month, Shift+PageUp and
  * Shift+PageDown by year, and Home/End by month boundary. Returns `null` for
  * unhandled keys so components can leave unrelated keyboard behavior alone.

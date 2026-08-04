@@ -1,20 +1,16 @@
 'use client';
 
-import {
-  createContext,
-  ReactElement,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { createContext, ReactElement, useCallback, useContext, useMemo, useState } from 'react';
+import { useMediaQuery } from '@poffy-ui/behavior/hooks';
 import type {
   ColorModeContextType,
   ColorModeProviderProps,
   PoffyResolvedColorMode,
 } from './ColorModeProvider.types';
+import { createGlobalDocumentOwnerStack } from './globalDocumentOwnership';
+import { ProviderScope } from './ProviderScope';
+import { useGlobalDocumentOwner } from './useGlobalDocumentOwner';
+import { useGlobalPreferenceRestoreGate } from './useGlobalPreferenceRestoreGate';
 
 /**
  * Public color mode provider context and props types.
@@ -26,95 +22,92 @@ export type {
 } from './ColorModeProvider.types';
 
 const ColorModeContext = createContext<ColorModeContextType | undefined>(undefined);
+const COLOR_MODE_STORAGE_KEY = 'poffy-color-mode';
 
-const subscribe = (callback: () => void): (() => void) => {
-  const mq = window.matchMedia('(prefers-color-scheme: dark)');
-  mq.addEventListener('change', callback);
-  return () => mq.removeEventListener('change', callback);
-};
+interface ColorModeDocumentState {
+  colorMode: ColorModeContextType['colorMode'];
+  resolvedColorMode: PoffyResolvedColorMode;
+}
 
-const getSnapshot = (): PoffyResolvedColorMode =>
-  window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+const colorModeOwnerStack = createGlobalDocumentOwnerStack<
+  ColorModeDocumentState,
+  { theme: string | null; light: boolean; dark: boolean }
+>({
+  capture: (targetDocument) => ({
+    theme: targetDocument.documentElement.getAttribute('data-theme'),
+    light: targetDocument.documentElement.classList.contains('light'),
+    dark: targetDocument.documentElement.classList.contains('dark'),
+  }),
+  apply: (targetDocument, { resolvedColorMode }) => {
+    targetDocument.documentElement.setAttribute('data-theme', resolvedColorMode);
+    targetDocument.documentElement.classList.remove('light', 'dark');
+    targetDocument.documentElement.classList.add(resolvedColorMode);
+  },
+  restore: (targetDocument, { theme, light, dark }) => {
+    if (theme === null) targetDocument.documentElement.removeAttribute('data-theme');
+    else targetDocument.documentElement.setAttribute('data-theme', theme);
+    targetDocument.documentElement.classList.toggle('light', light);
+    targetDocument.documentElement.classList.toggle('dark', dark);
+  },
+  onActiveChange: (targetDocument, { colorMode }) => {
+    try {
+      targetDocument.defaultView?.localStorage.setItem(COLOR_MODE_STORAGE_KEY, colorMode);
+    } catch {
+      // localStorage unavailable (e.g. private browsing, storage quota exceeded)
+    }
+  },
+});
 
-const getServerSnapshot = (): PoffyResolvedColorMode => 'light';
+const DARK_MODE_QUERY = '(prefers-color-scheme: dark)';
 
 /**
- * Injects color mode state (`light` / `dark` / `system`) into the component tree
- * and exposes controls for runtime switching.
- *
- * ### AI Context & Architecture
- * - **Tier**: Provider / Infrastructure
- * - **Scope**: App Root — place once in `_app.tsx` or `layout.tsx`
- * - **SSR Safety**: `colorMode` lazy-initializes from `localStorage` (client-only, SSR guard applied).
- *   `systemTheme` uses `useSyncExternalStore` with a `'light'` server snapshot — no hydration mismatch.
- * - **Persistence**: `localStorage` write only occurs when `global=true`.
- *
- * ### AI Usage
- * - **DO**: Place at the top of the React tree, outside any routing or layout component.
- * - **DON'T**: Do not nest two `ColorModeProvider` instances — the inner one silently overrides the outer.
- * - **DON'T**: Set `global={false}` at the app root — CSS tokens will not resolve on `document.documentElement`.
- *
- * @example
- * ```tsx
- * import { ColorModeProvider } from '@poffy-ui/react';
- *
- * // App root — global mode (default)
- * <ColorModeProvider defaultColorMode="system">
- *   <App />
- * </ColorModeProvider>
- * ```
- *
- * @example
- * ```tsx
- * import { ColorModeProvider } from '@poffy-ui/react';
- *
- * // Scoped mode — does not touch document.documentElement
- * <ColorModeProvider defaultColorMode="dark" global={false}>
- *   <Widget />
- * </ColorModeProvider>
- * ```
+ * Provides light, dark, or system color mode to a subtree. At the application root, `global`
+ * synchronizes the resolved mode to the owner document and restores the persisted preference after
+ * hydration; with `global={false}` and `scope`, it applies only to the local subtree.
  */
 export const ColorModeProvider = ({
   children,
   defaultColorMode = 'light',
   global = true,
+  ownerDocument,
+  scope = false,
 }: ColorModeProviderProps): ReactElement => {
-  const [colorMode, setColorModeState] = useState(() => {
-    if (typeof window === 'undefined') return defaultColorMode;
-    if (!global) return defaultColorMode;
-    try {
-      const saved = localStorage.getItem('poffy-color-mode');
-      if (saved === 'light' || saved === 'dark' || saved === 'system') return saved;
-    } catch {
-      // localStorage unavailable (e.g. private browsing, storage quota exceeded)
-    }
-    return defaultColorMode;
-  });
+  const [colorMode, setColorModeState] = useState(defaultColorMode);
 
-  const systemTheme = useSyncExternalStore<PoffyResolvedColorMode>(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
-  );
+  const resolvedOwnerDocument =
+    ownerDocument ?? (typeof document === 'undefined' ? undefined : document);
+  const mediaWindow = resolvedOwnerDocument?.defaultView ?? null;
+  const systemTheme: PoffyResolvedColorMode = useMediaQuery(DARK_MODE_QUERY, {
+    targetWindow: mediaWindow,
+  })
+    ? 'dark'
+    : 'light';
 
   const resolvedColorMode: PoffyResolvedColorMode = useMemo(
     () => (colorMode === 'system' ? systemTheme : colorMode),
     [colorMode, systemTheme],
   );
 
-  useEffect(() => {
-    if (!global) return;
-
-    document.documentElement.setAttribute('data-theme', resolvedColorMode);
-    document.documentElement.classList.remove('light', 'dark');
-    document.documentElement.classList.add(resolvedColorMode);
-
+  const restorePreferences = useCallback(() => {
     try {
-      localStorage.setItem('poffy-color-mode', colorMode);
+      const saved =
+        resolvedOwnerDocument?.defaultView?.localStorage.getItem(COLOR_MODE_STORAGE_KEY);
+      if (saved === 'light' || saved === 'dark' || saved === 'system') setColorModeState(saved);
     } catch {
       // localStorage unavailable (e.g. private browsing, storage quota exceeded)
     }
-  }, [resolvedColorMode, colorMode, global]);
+  }, [resolvedOwnerDocument]);
+
+  const documentState = useMemo(
+    () => ({ colorMode, resolvedColorMode }),
+    [colorMode, resolvedColorMode],
+  );
+  const canOwnDocument = useGlobalPreferenceRestoreGate({
+    enabled: global,
+    restore: restorePreferences,
+    restoreKey: resolvedOwnerDocument,
+  });
+  useGlobalDocumentOwner(colorModeOwnerStack, documentState, canOwnDocument, resolvedOwnerDocument);
 
   // Toggle based on resolvedColorMode — prevents 'system' being misread as 'light'
   const toggleColorMode = useCallback(() => {
@@ -131,24 +124,18 @@ export const ColorModeProvider = ({
     [colorMode, resolvedColorMode, toggleColorMode],
   );
 
-  return <ColorModeContext.Provider value={value}>{children}</ColorModeContext.Provider>;
+  return (
+    <ColorModeContext.Provider value={value}>
+      {!global && scope ? (
+        <ProviderScope colorMode={resolvedColorMode}>{children}</ProviderScope>
+      ) : (
+        children
+      )}
+    </ColorModeContext.Provider>
+  );
 };
 
-/**
- * Returns the current color mode and controls from the nearest `ColorModeProvider`.
- *
- * ### AI Usage
- * - **DON'T**: Do not call outside a `ColorModeProvider` tree — throws at runtime
- *
- * @returns `{ colorMode, resolvedColorMode, setColorMode, toggleColorMode }`
- *
- * @example
- * ```tsx
- * import { useColorMode } from '@poffy-ui/react';
- *
- * const { colorMode, resolvedColorMode, setColorMode, toggleColorMode } = useColorMode();
- * ```
- */
+/** Returns the nearest color-mode state and controls, or throws when no provider is present. */
 export const useColorMode = (): ColorModeContextType => {
   const context = useContext(ColorModeContext);
   if (!context) {

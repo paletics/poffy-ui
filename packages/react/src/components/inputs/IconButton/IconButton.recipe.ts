@@ -185,6 +185,8 @@ export const iconButtonRecipe = defineRecipe({
     '& [data-disclosure-icon]': {
       display: 'inline-flex',
       transition: 'transform 160ms ease',
+      _motionSubtle: { transition: 'transform {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'transform {durations.standard} {easings.bounce}' },
     },
     '&[data-state="open"] [data-disclosure-icon]': {
       transform: 'rotate(180deg)',
@@ -194,8 +196,8 @@ export const iconButtonRecipe = defineRecipe({
   variants: {
     size: {
       xs: {
-        width: '{sizes.root.1}',
-        height: '{sizes.root.1}',
+        width: '{sizes.control.minimumTarget}',
+        height: '{sizes.control.minimumTarget}',
         fontSize: 'sm',
       },
       sm: {

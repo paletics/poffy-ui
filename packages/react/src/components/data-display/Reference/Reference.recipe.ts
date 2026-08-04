@@ -13,7 +13,7 @@ export const referenceRecipe = defineSlotRecipe({
       display: 'inline-flex',
       alignItems: 'center',
       minW: 0,
-      minH: '{sizes.root.1}',
+      minH: '{sizes.control.minimumTarget}',
       gap: '{spacing.xs}',
       maxWidth: '100%',
       borderRadius: '{radii.md}',
@@ -25,6 +25,14 @@ export const referenceRecipe = defineSlotRecipe({
       transitionProperty: 'background-color, color, opacity, border-color, box-shadow',
       transitionDuration: '{durations.fast}',
       transitionTimingFunction: '{easings.default}',
+      _motionSubtle: {
+        transitionDuration: '{durations.ultraFast}',
+        transitionTimingFunction: '{easings.soft}',
+      },
+      _motionPop: {
+        transitionDuration: '{durations.standard}',
+        transitionTimingFunction: '{easings.bounce}',
+      },
       _hover: {
         color: '{colors.brand.hover}',
       },
@@ -59,8 +67,8 @@ export const referenceRecipe = defineSlotRecipe({
     },
     description: {
       minW: 0,
-      pl: '{spacing.xs}',
-      borderLeft: '1px solid',
+      paddingInlineStart: '{spacing.xs}',
+      borderInlineStart: '1px solid',
       borderColor: '{colors.layout.divider}',
       color: '{colors.text.secondary}',
       fontSize: 'sm',
@@ -113,9 +121,61 @@ export const referenceRecipe = defineSlotRecipe({
         root: { fontSize: 'md' },
       },
     },
+    overflow: {
+      truncate: {},
+      wrap: {
+        root: {
+          display: 'grid',
+          gridTemplateColumns: 'minmax(0, 1fr)',
+          alignItems: 'start',
+          width: '100%',
+          '&[data-has-marker]': {
+            gridTemplateColumns: 'max-content minmax(0, 1fr)',
+          },
+        },
+        marker: {
+          gridColumn: '1',
+          gridRow: '1',
+        },
+        label: {
+          gridColumn: '1',
+          gridRow: '1',
+          overflow: 'visible',
+          overflowWrap: 'break-word',
+          textOverflow: 'clip',
+          whiteSpace: 'normal',
+        },
+        description: {
+          gridColumn: '1',
+          gridRow: '2',
+          paddingInlineStart: 0,
+          borderInlineStart: 0,
+          overflow: 'visible',
+          overflowWrap: 'break-word',
+          textOverflow: 'clip',
+          whiteSpace: 'normal',
+        },
+      },
+    },
   },
   defaultVariants: {
     appearance: 'plain',
     size: 'md',
+    overflow: 'truncate',
   },
+  compoundVariants: [
+    {
+      overflow: 'wrap',
+      css: {
+        root: {
+          '&[data-has-marker] [data-part=label]': {
+            gridColumn: '2',
+          },
+          '&[data-has-marker] [data-part=description]': {
+            gridColumn: '2',
+          },
+        },
+      },
+    },
+  ],
 });

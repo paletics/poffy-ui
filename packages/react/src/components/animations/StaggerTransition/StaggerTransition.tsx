@@ -1,16 +1,24 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
-import { forwardRef, useMemo } from 'react';
+import type { AnimationDefinition } from 'motion/react';
+import { forwardRef, Fragment, isValidElement, type ReactNode, useMemo } from 'react';
 import { useOptionalAnimation } from '@/providers/AnimationProvider';
-import { getMotionComponent } from '../utils';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
+import { getMotionComponent, resolvePresetKey } from '../utils';
+import { useOneShotEntranceVariant } from '../useOneShotEntranceVariant';
 import { staggerContainerVariants } from './StaggerTransition.presets';
 import { StaggerTransitionItem } from './StaggerTransitionItem';
 import { StaggerContext } from './StaggerTransitionContext';
 import type { StaggerTransitionType } from './StaggerTransition.presets';
 import type { StaggerTransitionProps } from './StaggerTransition.types';
 
-const StaggerTransitionRoot = forwardRef<HTMLDivElement, StaggerTransitionProps>(
+const StaggerTransitionRootImpl = forwardRef<HTMLDivElement, StaggerTransitionProps>(
   (
     {
       asChild,
@@ -23,14 +31,45 @@ const StaggerTransitionRoot = forwardRef<HTMLDivElement, StaggerTransitionProps>
       initial = true,
       className,
       style,
+      onAnimationComplete: consumerAnimationComplete,
       ...rest
     },
     ref,
   ) => {
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'div'), [asChild]);
-    const { isAnimating } = useOptionalAnimation();
-    const animationKey = animationType as StaggerTransitionType;
+    const canUseAsChild = Boolean(
+      asChild && isValidElement(children) && children.type !== Fragment,
+    );
+    const Component = useMemo(
+      () => getMotionComponent(canUseAsChild ? Slot : 'div'),
+      [canUseAsChild],
+    );
+    const { isAnimating, resolvedMotionStyle } = useOptionalAnimation();
+    const safeRest = sanitizeControlledMotionProps(rest);
+    const animationKey = resolvePresetKey<typeof staggerContainerVariants, StaggerTransitionType>(
+      staggerContainerVariants,
+      animationType,
+      'base',
+    );
     const variants = staggerContainerVariants[animationKey];
+    const { completeSettlement, isHydrated, settleEntrance, target } = useOneShotEntranceVariant({
+      enabled: isAnimating,
+      enter: '__poffyStaggerEnter',
+      entranceIdentity: animationKey,
+      settled: '__poffyStaggerSettled',
+      shouldEnter: initial,
+    });
+    const handleAnimationComplete = (definition: AnimationDefinition) => {
+      if (definition === '__poffyStaggerEnter') settleEntrance();
+      if (definition === '__poffyStaggerSettled') {
+        completeSettlement();
+        return;
+      }
+      consumerAnimationComplete?.(definition);
+    };
+    const fallbackChildren =
+      asChild && isValidElement<{ children?: ReactNode }>(children) && children.type !== Fragment
+        ? children.props.children
+        : children;
 
     const contextValue = useMemo(() => ({ itemAnimationType }), [itemAnimationType]);
 
@@ -49,56 +88,39 @@ const StaggerTransitionRoot = forwardRef<HTMLDivElement, StaggerTransitionProps>
         <Component
           ref={ref}
           className={className}
-          style={style}
-          variants={isAnimating ? variants : undefined}
-          initial={isAnimating && initial ? 'hidden' : false}
-          animate={isAnimating ? 'visible' : undefined}
-          exit={isAnimating ? 'exit' : undefined}
+          style={sanitizeStaticStyle(style)}
+          {...safeRest}
+          variants={
+            isHydrated
+              ? applyMotionStyle(variants, isAnimating ? resolvedMotionStyle : 'none')
+              : undefined
+          }
+          initial={false}
+          animate={target}
+          onAnimationComplete={handleAnimationComplete}
+          exit={isHydrated && isAnimating ? 'exit' : undefined}
           custom={combinedCustom}
-          {...rest}
         >
-          {children}
+          {(canUseAsChild ? children : fallbackChildren) as ReactNode}
         </Component>
       </StaggerContext.Provider>
     );
   },
 );
 
-StaggerTransitionRoot.displayName = 'StaggerTransition';
+StaggerTransitionRootImpl.displayName = 'StaggerTransition';
+
+const StaggerTransitionRoot = defineMotionSlotComponent<HTMLDivElement, StaggerTransitionProps>(
+  StaggerTransitionRootImpl,
+);
 
 /**
- * Compound stagger transition component with an item subcomponent.
- * Use for non-semantic groups such as card grids, masonry layouts, and generic flow content.
+ * Coordinates a one-time staggered entrance for a generic child group.
  *
- * ### AI Context & Architecture
- * - Tier: Molecules
- * - Stack: Framer Motion variant propagation, React Context, compound `StaggerTransition.Item`
- *
- * ### Design Tokens
- * - Motion cadence comes from `staggerContainerVariants` and `staggerItemVariants`.
- * - Layout spacing stays with the grid, stack, or owning layout component.
- *
- * ### Variant Logic
- * - `animationType`: Controls the parent stagger rhythm (`base`, `burst`, or `lazy`).
- * - `itemAnimationType`: Sets the default child entrance style.
- *
- * ### Accessibility
- * - Renders a `div` by default and does not add list semantics.
- * - Honors reduced-motion handling through the underlying motion primitives.
- *
- * ### AI Usage
- * - Use for one-time entrance choreography across a static group of children.
- * - Do not use for semantic lists when `ListTransition` better matches the markup.
- *
- * @example
- * ```tsx
- * import { StaggerTransition } from '@poffy-ui/react';
- *
- * <StaggerTransition animationType="burst" itemAnimationType="pop">
- *   <StaggerTransition.Item>Card A</StaggerTransition.Item>
- *   <StaggerTransition.Item>Card B</StaggerTransition.Item>
- * </StaggerTransition>
- * ```
+ * It intentionally adds no list semantics or item roles. Use `Item` for
+ * descendants that should receive the parent’s timing; collection state and
+ * announcements remain caller-owned. Motion policy can reduce the group to a
+ * static render.
  */
 export const StaggerTransition = Object.assign(StaggerTransitionRoot, {
   Item: StaggerTransitionItem,

@@ -1,4 +1,7 @@
-import { testVisualStories } from '@/components/e2e/visualSpecUtils';
+import {
+  testStoriesDoNotOverflowOnMobile,
+  testVisualStories,
+} from '@/components/e2e/visualSpecUtils';
 
 testVisualStories({
   accessibilityStory: 'default',
@@ -10,4 +13,10 @@ testVisualStories({
     { name: 'Gallery', story: 'gallery' },
     { name: 'Toggle', story: 'toggle' },
   ],
+});
+
+testStoriesDoNotOverflowOnMobile({
+  componentId: 'animations-pathdrawtransition',
+  title: 'PathDrawTransition',
+  stories: [{ name: 'Gallery', story: 'gallery' }],
 });

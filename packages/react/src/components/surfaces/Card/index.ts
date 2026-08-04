@@ -5,7 +5,10 @@ export { CardHeader } from './CardHeader';
 
 export type {
   CardAppearance,
+  CardAsChildProps,
   CardBodyProps,
+  CardComponent,
+  CardDefaultProps,
   CardFooterProps,
   CardHeaderProps,
   CardIntent,

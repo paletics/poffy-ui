@@ -35,7 +35,6 @@ const getNextArrowUpIndex = (enabledIndices: number[], focusedIndex: number): nu
 /**
  * Shared menu state and keyboard interactions for split buttons.
  *
- * ### Notes
  * This hook owns disclosure state, focused menu index, outside-pointer close,
  * Escape close, and ArrowUp/ArrowDown/Enter/Space menu-item activation. React
  * split-button components should wrap it with the primary action button, menu
@@ -48,7 +47,17 @@ export const useSplitButton = ({
 }: UseSplitButtonOptions): UseSplitButtonReturn => {
   const [isOpen, setIsOpen] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [previousDisabled, setPreviousDisabled] = useState(disabled);
   const rootRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLElement | null>(null);
+
+  if (disabled !== previousDisabled) {
+    setPreviousDisabled(disabled);
+    if (disabled) {
+      setIsOpen(false);
+      setFocusedIndex(-1);
+    }
+  }
 
   const closeMenu = useCallback(() => {
     setIsOpen(false);
@@ -57,9 +66,25 @@ export const useSplitButton = ({
 
   useEffect(() => {
     if (!isOpen) return;
+    const ownerDocument =
+      rootRef.current?.ownerDocument ?? (typeof document === 'undefined' ? undefined : document);
+    if (!ownerDocument) return;
 
     const handlePointerDownOutside = (event: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(event.target as Node)) {
+      const eventPath = event.composedPath();
+      const isWithinRoot = rootRef.current ? eventPath.includes(rootRef.current) : false;
+      const isWithinMenu = menuRef.current ? eventPath.includes(menuRef.current) : false;
+      if (isWithinRoot || isWithinMenu) return;
+
+      const target = event.target;
+      const NodeConstructor = ownerDocument.defaultView?.Node;
+      if (
+        NodeConstructor &&
+        target instanceof NodeConstructor &&
+        rootRef.current &&
+        !rootRef.current.contains(target) &&
+        !menuRef.current?.contains(target)
+      ) {
         closeMenu();
       }
     };
@@ -70,11 +95,11 @@ export const useSplitButton = ({
       }
     };
 
-    document.addEventListener('mousedown', handlePointerDownOutside);
-    document.addEventListener('keydown', handleEscapeKey);
+    ownerDocument.addEventListener('mousedown', handlePointerDownOutside);
+    ownerDocument.addEventListener('keydown', handleEscapeKey);
     return () => {
-      document.removeEventListener('mousedown', handlePointerDownOutside);
-      document.removeEventListener('keydown', handleEscapeKey);
+      ownerDocument.removeEventListener('mousedown', handlePointerDownOutside);
+      ownerDocument.removeEventListener('keydown', handleEscapeKey);
     };
   }, [closeMenu, isOpen]);
 
@@ -87,17 +112,19 @@ export const useSplitButton = ({
 
   const onMenuItemClick = useCallback(
     (itemIndex: number) => {
+      if (disabled) return;
       const item = items[itemIndex];
       if (!item || item.disabled) return;
 
       item.onClick?.();
       closeMenu();
     },
-    [closeMenu, items],
+    [closeMenu, disabled, items],
   );
 
   const onMenuKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLElement>) => {
+      if (disabled) return;
       const enabledIndices = getEnabledIndices(items);
 
       switch (event.key) {
@@ -122,12 +149,13 @@ export const useSplitButton = ({
           break;
       }
     },
-    [closeMenu, focusedIndex, items, onMenuItemClick],
+    [closeMenu, disabled, focusedIndex, items, onMenuItemClick],
   );
 
   return {
     focusedIndex,
     isOpen,
+    menuRef,
     rootRef,
     closeMenu,
     onMenuItemClick,

@@ -1,18 +1,15 @@
 import { JsxStyleProps } from '@/styled-system/types';
 import { PrimitiveProps } from '@poffy-ui/types';
 import { ReactNode } from 'react';
+import type {
+  AsChildHostProps,
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+} from '@/components/shared/polymorphicAsChild.types';
 
 /**
- * Own props for the AspectRatio component.
- *
- * ### Notes
- * Use `AspectRatio` for media, embeds, and placeholders that need stable layout
- * dimensions before their content loads. It prevents layout shift; it does not
- * resize or crop the child on its own.
- *
- * ### AI Usage
- * - Do: set the child to `width: 100%` and `height: 100%` when embedding media.
- * - Don't: use it as a generic spacing wrapper.
+ * Props that reserve a stable ratio for media, embeds, or placeholders. The wrapper does not resize
+ * or crop its child, so embedded content must fill the available box itself.
  */
 export type AspectRatioBaseProps = JsxStyleProps & {
   /** Single visual child whose box should maintain the requested ratio. */
@@ -20,7 +17,7 @@ export type AspectRatioBaseProps = JsxStyleProps & {
   /** Additional CSS class names merged onto the root element. */
   className?: string;
   /**
-   * Width divided by height.
+   * Width divided by height. Non-positive or non-finite values use the default.
    *
    * @defaultValue `16 / 9`
    * @example `16 / 9`, `4 / 3`, `1`
@@ -28,15 +25,17 @@ export type AspectRatioBaseProps = JsxStyleProps & {
   ratio?: number;
 };
 
-/**
- * Public props for the AspectRatio component.
- *
- * @example
- * ```tsx
- * import { AspectRatio } from '@poffy-ui/react/layout';
- * ```
- *
- * ### AI Usage
- * Use this type when exposing wrapper components that forward AspectRatio props.
- */
-export type AspectRatioProps = PrimitiveProps<'div', AspectRatioBaseProps>;
+
+type AspectRatioNativeProps = PrimitiveProps<'div', AspectRatioBaseProps>;
+/** Props for AspectRatio rendered with its default host. */
+export type AspectRatioDefaultProps = DefaultHostProps<AspectRatioNativeProps>;
+/** Props for AspectRatio delegated to an asChild host. */
+export type AspectRatioAsChildProps = AsChildHostProps<AspectRatioNativeProps>;
+/** Public props for AspectRatio. */
+export type AspectRatioProps = AspectRatioDefaultProps | AspectRatioAsChildProps;
+/** Polymorphic component call signatures for AspectRatio. */
+export type AspectRatioComponent = PolymorphicAsChildComponent<
+  AspectRatioDefaultProps,
+  AspectRatioAsChildProps,
+  HTMLDivElement
+>;

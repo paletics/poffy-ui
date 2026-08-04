@@ -3,27 +3,12 @@ import { HTMLMotionProps } from 'motion/react';
 import { CustomData } from '../types';
 import { RevealTransitionType } from './RevealTransition.presets';
 
-/**
- * Reveal Transition Type Definitions
- *
- * ### AI Context & Architecture
- * Defines prop interfaces and component types for `RevealTransition`.
- * Leverages Framer Motion's `whileInView` for scroll-triggered animations.
- */
-
+/** Named viewport-reveal transition preset. */
 export type RevealAnimationType = RevealTransitionType;
 
 /**
- * Base props for RevealTransition.
- *
- * ### Notes
- * Reveal timing is viewport-driven through Framer Motion's
- * intersection observer integration. Use `once` when content should not replay
- * as users scroll back and forth.
- *
- * ### AI Usage
- * - **DO**: Use for scroll-enter content and marketing/editorial reveals.
- * - **DON'T**: Use for content that must be visible immediately for measurement or SEO-critical layout.
+ * Props for viewport-triggered content reveal.
+ * @typeParam C - Custom data accepted by the selected preset.
  */
 export interface RevealTransitionBaseProps<C extends CustomData = CustomData> {
   /**
@@ -58,6 +43,16 @@ export interface RevealTransitionBaseProps<C extends CustomData = CustomData> {
    * @defaultValue `0`
    */
   delay?: number;
+  /**
+   * Overrides the preset duration in seconds.
+   */
+  duration?: number;
+  /**
+   * Initial blur radius in pixels for the `blur` animation preset.
+   *
+   * @defaultValue preset-defined blur radius
+   */
+  blurAmount?: number;
 }
 
 /**

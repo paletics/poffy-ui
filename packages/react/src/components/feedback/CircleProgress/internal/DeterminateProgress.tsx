@@ -1,9 +1,9 @@
 import { InternalProgressProps } from '../CircleProgress.types';
 
-interface DeterminateProgressProps extends InternalProgressProps {
-  value: number;
-  animation?: 'progress' | 'none';
-}
+type DeterminateProgressProps = Pick<
+  InternalProgressProps,
+  'classes' | 'radius' | 'size' | 'thickness'
+>;
 
 /**
  * Renders the determinate CircleProgress indicator stroke.

@@ -165,34 +165,6 @@ const generateCompoundVariants = (): RecipeConfig['compoundVariants'] => {
   return variants;
 };
 
-/**
- * Styles for the Button component. All spacing and height values follow the Silver Ratio (1:1.414)
- * via tokens defined in `src/theme/tokens.ts`. Compound variants are generated programmatically
- * by `generateCompoundVariants()` to cover all `intent` × `appearance` combinations.
- *
- * ### Variant Logic
- * - **intent="primary"**: Highest visual weight CTA. Limit to one per view.
- * - **intent="secondary"**: Supporting action. Place alongside `primary` on the same surface.
- * - **intent="info" | "success" | "warning"**: Contextual feedback intents — status banners, toasts.
- * - **intent="danger"**: Destructive operations only (delete, revoke, unsubscribe).
- * - **intent="light" | "dark"**: Neutral surface intents for low-emphasis or monochrome layouts.
- * - **appearance="solid"**: Filled surface. Maximum prominence. Amplifies intent weight.
- * - **appearance="soft"**: Surface-tinted background. One step below `solid` — avoids visual competition.
- * - **appearance="neo"**: Neo-Brutalism style with thick border and hard shadow. Decorative / statement contexts.
- * - **appearance="glass"**: Frosted translucent surface. Use only on image or gradient backdrops.
- * - **appearance="outline"**: Border only. Secondary action hierarchy alongside `solid`.
- * - **appearance="ghost"**: No background. Use inside toolbars and list rows to blend into context.
- * - **appearance="minimal"**: Flat fill, no border. Highest information density — dense UIs only.
- * - **size="sm|md|lg"**: Choose based on surrounding content density. Default `md` in body contexts.
- * - **shape="rounded|pill|square"**: Controls corner radius — `pill` for the signature Poffy feel.
- * - **glow="true"**: Pulsing radial glow animation. Reserve for hero or primary-action emphasis.
- * - **isGrow="true"**: `width: full` — use inside flex containers that dictate width.
- *
- * ### AI Usage Constraints
- * - **DON'T**: Do not use `appearance="glass"` on solid-color backgrounds — it requires a translucent backdrop.
- * - **DON'T**: Do not define disabled styles as a variant — disabled state is handled via `[data-disabled]` / `[data-loading]` selectors in `base`.
- * - **DON'T**: Do not write animations in `base` — all motion is delegated to `ActionMotion`.
- */
 export const buttonRecipe = defineRecipe({
   className: 'button',
   description:
@@ -207,7 +179,12 @@ export const buttonRecipe = defineRecipe({
     fontFamily: 'body',
     textAlign: 'center',
     textDecoration: 'none',
-    whiteSpace: 'nowrap',
+    whiteSpace: 'normal',
+    overflowWrap: 'break-word',
+    wordBreak: 'normal',
+    hyphens: 'auto',
+    maxWidth: '{sizes.full}',
+    minWidth: 0,
     userSelect: 'none',
     outline: 'none',
     position: 'relative',
@@ -246,6 +223,7 @@ export const buttonRecipe = defineRecipe({
     '& svg': {
       width: '1.4em',
       height: '1.4em',
+      flexShrink: 0,
     },
     '& [data-part="icon"]': {
       display: 'inline-flex',
@@ -283,13 +261,26 @@ export const buttonRecipe = defineRecipe({
     size: {
       sm: {
         px: '{sizes.root.1}',
-        h: '{sizes.silver.2}',
+        minH: '{sizes.silver.2}',
+        py: '{spacing.2xs}',
         gap: '{spacing.sm}',
         textStyle: 'button',
         fontSize: 'sm',
       },
-      md: { px: '{sizes.silver.2}', h: '{sizes.root.2}', gap: '{spacing.md}', textStyle: 'button' },
-      lg: { px: '{sizes.root.2}', h: '{sizes.silver.3}', gap: '{spacing.base}', textStyle: 'h6' },
+      md: {
+        px: '{sizes.silver.2}',
+        minH: '{sizes.root.2}',
+        py: '{spacing.xs}',
+        gap: '{spacing.md}',
+        textStyle: 'button',
+      },
+      lg: {
+        px: '{sizes.root.2}',
+        minH: '{sizes.silver.3}',
+        py: '{spacing.sm}',
+        gap: '{spacing.base}',
+        textStyle: 'h6',
+      },
     },
     shape: {
       rounded: { borderRadius: '{radii.md}' },
@@ -299,6 +290,12 @@ export const buttonRecipe = defineRecipe({
     glow: {
       true: {
         animation: 'glow 2s infinite ease-in-out',
+        _motionSubtle: {
+          animation: 'none',
+        },
+        _motionPop: {
+          animationDuration: '{durations.slow}',
+        },
       },
       false: {},
     },

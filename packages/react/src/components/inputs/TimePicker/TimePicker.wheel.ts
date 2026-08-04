@@ -10,9 +10,11 @@ import {
 import type { WheelPickerColumn, WheelPickerValue } from '../WheelPicker';
 
 interface TimeWheelLabels {
+  amLabel?: string;
   hourLabel: string;
   meridiemLabel: string;
   minuteLabel: string;
+  pmLabel?: string;
   secondLabel: string;
 }
 
@@ -45,6 +47,7 @@ const toWheelOptions = (values: number[], currentValue: number) =>
  * Builds WheelPicker columns for a TimePicker value.
  */
 export const buildTimeWheelColumns = ({
+  amLabel = 'AM',
   displayHour,
   format,
   hourLabel,
@@ -53,6 +56,7 @@ export const buildTimeWheelColumns = ({
   minuteLabel,
   minuteStep,
   parts,
+  pmLabel = 'PM',
   secondLabel,
   secondStep,
   withSeconds,
@@ -67,7 +71,7 @@ export const buildTimeWheelColumns = ({
   }
 
   if (format === '12h') {
-    columns.push(buildMeridiemColumn(meridiemLabel));
+    columns.push(buildMeridiemColumn(meridiemLabel, amLabel, pmLabel));
   }
 
   return columns;
@@ -150,12 +154,12 @@ const buildSecondColumn = ({
   options: toWheelOptions(buildTimeUnitRange(0, 59, secondStep ?? 1), parts.second),
 });
 
-const buildMeridiemColumn = (meridiemLabel: string) => ({
+const buildMeridiemColumn = (meridiemLabel: string, amLabel: string, pmLabel: string) => ({
   id: 'meridiem',
   label: meridiemLabel,
   options: [
-    { value: 'am', label: 'AM' },
-    { value: 'pm', label: 'PM' },
+    { value: 'am', label: amLabel },
+    { value: 'pm', label: pmLabel },
   ],
 });
 

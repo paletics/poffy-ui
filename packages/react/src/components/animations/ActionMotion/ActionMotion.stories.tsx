@@ -10,13 +10,6 @@ import {
   actionVariants,
 } from '@/components/animations/ActionMotion/ActionMotion.presets';
 
-/**
- * Provides standardized micro-interaction animations (hover, tap, focus) for interactive elements. Used as a mandatory wrapper for every interactive atomic element to enforce system-wide motion consistency.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react, ActionMotion presets, Radix Slot
- */
 const meta: Meta<typeof ActionMotion> = {
   title: 'Animations/ActionMotion',
   component: ActionMotion,
@@ -45,7 +38,7 @@ const buttonBaseClass = css({
   justifyContent: 'center',
   width: '[120px]',
   height: '[50px]',
-  color: '[white]',
+  color: 'white',
   fontWeight: 'bold',
   borderRadius: 'xl',
   cursor: 'pointer',
@@ -75,7 +68,7 @@ const buttonResetClass = css({
 
 const renderActionGalleryItem = (type: ActionMotionType) => (
   <Stack key={type} alignItems="center">
-    <Text mb="2" fontSize="2xs" color="slate.500" fontWeight="medium">
+    <Text mb="sm" fontSize="xs" color="slate.500" fontWeight="medium">
       {type.toUpperCase()}
     </Text>
     <ActionMotion animationType={type}>
@@ -146,9 +139,10 @@ export const Gallery: Story = {
     <Grid
       className={css({
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '8',
-        p: '8',
+        gridTemplateColumns: '[repeat(auto-fit, minmax(min(120px, 100%), 1fr))]',
+        gap: 'xl',
+        p: { base: 'base', md: 'xl' },
+        width: '[min(440px, calc(100vw - 4rem))]',
       })}
     >
       {renderActionGalleryItem('press')}

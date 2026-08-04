@@ -1,3 +1,4 @@
+import { formatDateISO } from '../date';
 import { formatTimeParts, parseTimeValue } from '../time';
 
 /**
@@ -14,7 +15,32 @@ export const formatDateTimeValue = (value: Date, withSeconds: boolean): string =
   );
 
 /**
- * Merges a selected date with the time portion of an existing value.
+ * Formats a Date as a local `YYYY-MM-DDTHH:mm` or `YYYY-MM-DDTHH:mm:ss` value.
+ *
+ * Use for timezone-less local datetime form values. This intentionally does
+ * not call `toISOString()`, which would shift dates through UTC.
+ */
+export const formatLocalDateTimeValue = (value: Date, withSeconds: boolean): string =>
+  `${formatDateISO(value)}T${formatDateTimeValue(value, withSeconds)}`;
+
+/** Serializes a combined date-time field according to its public form policy. */
+export const formatDateTimeFormValue = (
+  date: Date | null,
+  valueFormat: 'iso-datetime' | 'iso-local' | ((date: Date) => string),
+  withSeconds: boolean,
+): string => {
+  if (!date || !Number.isFinite(date.getTime())) return '';
+  if (typeof valueFormat === 'function') return valueFormat(date);
+  return valueFormat === 'iso-local'
+    ? formatLocalDateTimeValue(date, withSeconds)
+    : date.toISOString();
+};
+
+/**
+ * Merges a selected date with the local time portion of an existing value.
+ *
+ * Returns `null` when no date is selected. Otherwise it creates a new `Date`, preserving the
+ * base hour and minute (and optionally seconds), or using local midnight when no base is present.
  */
 export const mergeDateAndTime = (
   date: Date | null | undefined,
@@ -35,7 +61,11 @@ export const mergeDateAndTime = (
 };
 
 /**
- * Applies a time-input string to a Date value.
+ * Applies a parsed local time-input string to a Date value.
+ *
+ * Invalid or absent time input returns the original value unchanged. When the time is valid and
+ * no date is supplied, the result uses the current local date; successful updates always return a
+ * new `Date` with milliseconds cleared.
  */
 export const mergeTimeValueIntoDate = (
   value: Date | null | undefined,

@@ -2,77 +2,107 @@
 
 import { Slot } from '@radix-ui/react-slot';
 import { AnimatePresence } from 'motion/react';
-import { forwardRef, ReactNode, useMemo } from 'react';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  createNoMotionStyle,
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
+import {
+  Children,
+  cloneElement,
+  forwardRef,
+  Fragment,
+  isValidElement,
+  type ReactNode,
+  useMemo,
+} from 'react';
+import { withNoMotionStyle } from '@/components/shared/withNoMotionStyle';
 import { getMotionComponent } from '../utils';
+import { useHydratedAnimationPolicy } from '../useHydratedAnimationPolicy';
 import { orderLayoutTransition } from './ReorderTransition.presets';
 import { OrderContext } from './ReorderTransitionContext';
 import { ReorderTransitionItem } from './ReorderTransitionItem';
 import type { ReorderTransitionProps } from './ReorderTransition.types';
+import { materializeReactNodeTree } from '@/components/shared/flattenFragmentChildren';
 
-const ReorderTransitionRoot = forwardRef<HTMLDivElement, ReorderTransitionProps>(
+const ReorderTransitionRootImpl = forwardRef<HTMLDivElement, ReorderTransitionProps>(
   (
     { asChild, animationType = 'pop', exitMode = 'popLayout', children, className, style, ...rest },
     ref,
   ) => {
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'div'), [asChild]);
+    const materializedChildren = materializeReactNodeTree(children as ReactNode);
+    const canUseAsChild = Boolean(
+      asChild && isValidElement(materializedChildren) && materializedChildren.type !== Fragment,
+    );
+    const Component = useMemo(
+      () => getMotionComponent(canUseAsChild ? Slot : 'div'),
+      [canUseAsChild],
+    );
+    const { resolvedMotionStyle, shouldAnimate } = useHydratedAnimationPolicy();
+    const safeRest = sanitizeControlledMotionProps(rest);
     const contextValue = useMemo(() => ({ animationType }), [animationType]);
+    const transitionChildren: ReactNode =
+      isValidElement<{ children?: ReactNode }>(materializedChildren) &&
+      materializedChildren.type === Fragment
+        ? materializedChildren.props.children
+        : materializedChildren;
+    const presenceChildrenSource: ReactNode =
+      canUseAsChild && isValidElement<{ children?: ReactNode }>(materializedChildren)
+        ? materializedChildren.props.children
+        : transitionChildren;
+    const canAnimatePresence = Children.toArray(presenceChildrenSource).every(isValidElement);
+    const presenceChildren = canAnimatePresence ? (
+      <AnimatePresence initial={false} mode={exitMode}>
+        {presenceChildrenSource}
+      </AnimatePresence>
+    ) : (
+      presenceChildrenSource
+    );
+    const staticChildren = withNoMotionStyle(materializedChildren, !shouldAnimate && canUseAsChild);
+    const renderedChildren =
+      canUseAsChild && isValidElement<{ children?: ReactNode }>(staticChildren)
+        ? cloneElement(staticChildren, {
+            children: presenceChildren,
+          })
+        : presenceChildren;
 
     return (
       <OrderContext.Provider value={contextValue}>
         {/* eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support. */}
         <Component
           ref={ref}
-          layout
-          transition={{ layout: orderLayoutTransition }}
+          {...safeRest}
+          layout={shouldAnimate}
+          transition={
+            shouldAnimate
+              ? applyMotionStyle({ layout: orderLayoutTransition }, resolvedMotionStyle)
+              : undefined
+          }
           className={className}
-          style={style}
-          {...rest}
+          style={shouldAnimate ? sanitizeStaticStyle(style) : createNoMotionStyle(style)}
         >
-          <AnimatePresence initial={false} mode={exitMode}>
-            {children as ReactNode}
-          </AnimatePresence>
+          {renderedChildren}
         </Component>
       </OrderContext.Provider>
     );
   },
 );
 
-ReorderTransitionRoot.displayName = 'ReorderTransition';
+ReorderTransitionRootImpl.displayName = 'ReorderTransition';
+
+const ReorderTransitionRoot = defineMotionSlotComponent<HTMLDivElement, ReorderTransitionProps>(
+  ReorderTransitionRootImpl,
+);
 
 /**
- * Compound transition component for add/remove/reorder list mutations.
- * Use when item identity changes at runtime and each child has a stable React key.
+ * Coordinates animation for keyed additions, removals, and reorders.
  *
- * ### AI Context & Architecture
- * - Tier: Molecules
- * - Stack: Framer Motion layout transitions, compound `ReorderTransition.Item`
- *
- * ### Design Tokens
- * - Motion timing comes from `orderItemVariants` and `orderLayoutTransition`.
- * - Spacing and item layout remain owned by the rendered children.
- *
- * ### Variant Logic
- * - `animationType`: Controls how items enter, exit, or shift during reorder operations.
- * - `layoutMode`: Controls the Framer Motion layout pop behavior for reorder-heavy lists.
- *
- * ### Accessibility
- * - Does not announce reordering by itself; add live-region messaging in the owning sortable pattern when needed.
- * - Keep stable keys so assistive technology and React preserve item identity.
- *
- * ### AI Usage
- * - **DO**: Use when item identity changes at runtime and each child has a stable React key.
- * - **DON'T**: Use for static entrance animation; prefer `ListTransition` or `StaggerTransition`.
- *
- * @example
- * ```tsx
- * import { ReorderTransition } from '@poffy-ui/react';
- *
- * <ReorderTransition>
- *   {items.map((item) => (
- *     <ReorderTransition.Item key={item.id}>{item.label}</ReorderTransition.Item>
- *   ))}
- * </ReorderTransition>
- * ```
+ * Keys identify items across renders. The caller retains collection state,
+ * persistence, keyboard reordering, and live announcements. Use the compound
+ * `Item` for individual animated children; policy-disabled motion settles
+ * without animation.
  */
 export const ReorderTransition = Object.assign(ReorderTransitionRoot, {
   Item: ReorderTransitionItem,

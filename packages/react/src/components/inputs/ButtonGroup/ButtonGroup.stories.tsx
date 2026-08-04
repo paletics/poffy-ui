@@ -7,14 +7,6 @@ import { Text } from '@/components/typography';
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from 'storybook/test';
 
-/**
- * A layout molecule for grouping related `Button` atoms with consistent spacing
- * and a connected visual mode for toolbar-style segmented controls.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`buttonGroup` recipe), `ButtonGroupContext`, `ActionMotion`
- */
 const meta = {
   title: 'Inputs/ButtonGroup',
   component: ButtonGroup,
@@ -40,11 +32,13 @@ export const Default: Story = {
     },
   },
   render: () => (
-    <ButtonGroup>
-      <Button>First</Button>
-      <Button>Second</Button>
-      <Button>Third</Button>
-    </ButtonGroup>
+    <Box width="[min(400px, calc(100vw - 4rem))]">
+      <ButtonGroup wrap>
+        <Button>First</Button>
+        <Button>Second</Button>
+        <Button>Third</Button>
+      </ButtonGroup>
+    </Box>
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -63,6 +57,25 @@ export const Playground: Story = {
   render: Default.render,
 };
 
+export const ConstrainedWrapping: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A full-width wrapping group. Buttons move as whole flex items, while a single long label can wrap within the parent width.',
+      },
+    },
+  },
+  render: () => (
+    <Box width="[10rem]" maxWidth="100%" aria-label="Constrained wrapping container">
+      <ButtonGroup fullWidth wrap aria-label="Constrained actions">
+        <Button>A deliberately long primary action</Button>
+        <Button>Cancel</Button>
+      </ButtonGroup>
+    </Box>
+  ),
+};
+
 export const Spacing: Story = {
   args: { children: null },
   parameters: {
@@ -76,7 +89,7 @@ export const Spacing: Story = {
   render: () => (
     <Stack gap="md">
       <Box>
-        <Text fontSize="sm" mb="2" color="text.secondary">
+        <Text fontSize="sm" mb="sm" color="text.secondary">
           None
         </Text>
         <ButtonGroup spacing="none">
@@ -86,7 +99,7 @@ export const Spacing: Story = {
         </ButtonGroup>
       </Box>
       <Box>
-        <Text fontSize="sm" mb="2" color="text.secondary">
+        <Text fontSize="sm" mb="sm" color="text.secondary">
           Small
         </Text>
         <ButtonGroup spacing="sm">
@@ -96,7 +109,7 @@ export const Spacing: Story = {
         </ButtonGroup>
       </Box>
       <Box>
-        <Text fontSize="sm" mb="2" color="text.secondary">
+        <Text fontSize="sm" mb="sm" color="text.secondary">
           Medium (default)
         </Text>
         <ButtonGroup spacing="md">
@@ -106,7 +119,7 @@ export const Spacing: Story = {
         </ButtonGroup>
       </Box>
       <Box>
-        <Text fontSize="sm" mb="2" color="text.secondary">
+        <Text fontSize="sm" mb="sm" color="text.secondary">
           Large
         </Text>
         <ButtonGroup spacing="lg">
@@ -134,6 +147,19 @@ export const Connected: Story = {
       <Button>Cut</Button>
       <Button>Copy</Button>
       <Button>Paste</Button>
+    </ButtonGroup>
+  ),
+};
+
+export const AsChildConnected: Story = {
+  args: { children: null },
+  render: () => (
+    <ButtonGroup asChild connected aria-label="Clipboard actions">
+      <section>
+        <Button>Cut</Button>
+        <Button>Copy</Button>
+        <Button>Paste</Button>
+      </section>
     </ButtonGroup>
   ),
 };
@@ -187,7 +213,7 @@ export const FullWidth: Story = {
     },
   },
   render: () => (
-    <Box width="[400px]">
+    <Box width="[min(400px, calc(100vw - 4rem))]">
       <ButtonGroup fullWidth>
         <Button>Left</Button>
         <Button>Center</Button>
@@ -209,23 +235,25 @@ export const Toolbar: Story = {
   },
   render: () => (
     <Box
-      p="2"
+      width="[min(360px, calc(100vw - 4rem))]"
+      p="sm"
       bg="layout.surface"
       borderRadius="md"
-      border="[1px solid]"
+      borderWidth="thin"
+      borderStyle="solid"
       borderColor="layout.divider"
     >
-      <Flex gap="md">
+      <Flex gap="xs" wrap="wrap" justify="center">
         <ButtonGroup connected>
-          <Button>Bold</Button>
-          <Button>Italic</Button>
-          <Button>Underline</Button>
+          <Button size="sm">Bold</Button>
+          <Button size="sm">Italic</Button>
+          <Button size="sm">Underline</Button>
         </ButtonGroup>
-        <Divider orientation="vertical" my="1" />
+        <Divider orientation="vertical" my="2xs" />
         <ButtonGroup connected>
-          <Button>Left</Button>
-          <Button>Center</Button>
-          <Button>Right</Button>
+          <Button size="sm">Left</Button>
+          <Button size="sm">Center</Button>
+          <Button size="sm">Right</Button>
         </ButtonGroup>
       </Flex>
     </Box>
@@ -245,16 +273,34 @@ export const Pagination: Story = {
     },
   },
   render: () => (
-    <Flex gap="xs" align="center">
-      <Button>Previous</Button>
+    <Flex gap="xs" align="center" wrap="wrap" justify="center">
+      <Button size="sm">Previous</Button>
       <ButtonGroup connected>
-        <Button>1</Button>
-        <Button>2</Button>
-        <Button>3</Button>
-        <Button>4</Button>
-        <Button>5</Button>
+        <Button size="sm">1</Button>
+        <Button size="sm">2</Button>
+        <Button size="sm">3</Button>
+        <Button size="sm">4</Button>
+        <Button size="sm">5</Button>
       </ButtonGroup>
-      <Button>Next</Button>
+      <Button size="sm">Next</Button>
     </Flex>
+  ),
+};
+
+export const NarrowConnectedRtl: Story = {
+  args: { children: null },
+  render: () => (
+    <Stack gap="md" width="[160px]" dir="rtl">
+      <ButtonGroup connected fullWidth aria-label="إجراءات">
+        <Button>الإجراء الأول الطويل</Button>
+        <Button>الإجراء الثاني الطويل</Button>
+        <Button>الثالث</Button>
+      </ButtonGroup>
+      <ButtonGroup orientation="vertical" connected fullWidth aria-label="خيارات">
+        <Button>الخيار الأول الطويل</Button>
+        <Button>الخيار الثاني</Button>
+        <Button>الثالث</Button>
+      </ButtonGroup>
+    </Stack>
   ),
 };

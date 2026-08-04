@@ -1,19 +1,13 @@
-import { FlexProps } from '../Flex/Flex.types';
+import type { FlexAsChildProps, FlexDefaultProps } from '../Flex/Flex.types';
+import type { PolymorphicAsChildComponent } from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Properties for the Wrap component.
- *
- * ### Notes
- * Wrap is a directional Flex alias with `wrap="wrap"` fixed. Use it for
- * variable-width inline collections such as tags, chips, and action groups.
- *
- * @example
- * ```tsx
- * import { Wrap } from '@poffy-ui/react/layout';
- * ```
- *
- * ### AI Usage
- * - Do: use for collections that can naturally flow to multiple rows.
- * - Don't: use for fixed single-row navigation; use `HStack`.
- */
-export type WrapProps = FlexProps;
+
+export type WrapDefaultProps = Omit<FlexDefaultProps, 'wrap'>;
+export type WrapAsChildProps = Omit<FlexAsChildProps, 'wrap'>;
+/** Public props for Wrap. */
+export type WrapProps = WrapDefaultProps | WrapAsChildProps;
+export type WrapComponent = PolymorphicAsChildComponent<
+  WrapDefaultProps,
+  WrapAsChildProps,
+  HTMLDivElement
+>;

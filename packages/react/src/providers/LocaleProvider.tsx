@@ -1,7 +1,10 @@
 'use client';
 
-import { createContext, ReactElement, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, ReactElement, useContext, useMemo, useState } from 'react';
 import type { LocaleContextType, LocaleProviderProps, PoffyLocale } from './LocaleProvider.types';
+import { createGlobalDocumentOwnerStack } from './globalDocumentOwnership';
+import { ProviderScope } from './ProviderScope';
+import { useGlobalDocumentOwner } from './useGlobalDocumentOwner';
 
 /**
  * Public locale provider context and locale value types.
@@ -10,74 +13,39 @@ export type { PoffyLocale, LocaleContextType } from './LocaleProvider.types';
 
 const LocaleContext = createContext<LocaleContextType | undefined>(undefined);
 
+const localeOwnerStack = createGlobalDocumentOwnerStack<PoffyLocale, string | null>({
+  capture: (targetDocument) => targetDocument.documentElement.getAttribute('lang'),
+  apply: (targetDocument, locale) => targetDocument.documentElement.setAttribute('lang', locale),
+  restore: (targetDocument, locale) => {
+    if (locale === null) targetDocument.documentElement.removeAttribute('lang');
+    else targetDocument.documentElement.setAttribute('lang', locale);
+  },
+});
+
 /**
- * Injects the active BCP 47 locale into the component tree and optionally syncs
- * the `lang` attribute on `document.documentElement` for accessibility and SEO.
- *
- * ### AI Context & Architecture
- * - **Tier**: Provider / Infrastructure
- * - **Scope**: App Root — place once in `_app.tsx` or `layout.tsx`
- * - **SSR Safety**: No `localStorage` reads — locale is determined by props only.
- *   Safe for server rendering without hydration mismatch.
- *
- * ### AI Usage
- * - **DO**: Consume `useLocale()` in components that format dates, numbers, or relative times
- *   via `Intl.*` APIs (e.g. `Pagination`, `DatePicker`, `NumberInput`).
- * - **DON'T**: Do not nest two `LocaleProvider` instances — the inner one silently overrides the outer.
- * - **DON'T**: Use raw `navigator.language` in components — always read from `useLocale()` for consistency.
- *
- * @example Global locale (default)
- * ```tsx
- * import { LocaleProvider } from '@poffy-ui/react';
- *
- * // app/layout.tsx
- * <LocaleProvider defaultLocale="ja-JP">
- *   <App />
- * </LocaleProvider>
- * ```
- *
- * @example Scoped locale — does not touch document.documentElement
- * ```tsx
- * import { LocaleProvider } from '@poffy-ui/react';
- *
- * <LocaleProvider defaultLocale="ar-SA" global={false}>
- *   <Widget />
- * </LocaleProvider>
- * ```
+ * Provides a BCP 47 locale to a subtree. At the application root, `global` synchronizes `lang` to
+ * the owner document; with `global={false}` and `scope`, it applies only to the local subtree.
  */
 export const LocaleProvider = ({
   children,
   defaultLocale = 'en-US',
   global = true,
+  ownerDocument,
+  scope = false,
 }: LocaleProviderProps): ReactElement => {
   const [locale, setLocale] = useState<PoffyLocale>(defaultLocale);
-
-  useEffect(() => {
-    if (!global) return;
-    document.documentElement.setAttribute('lang', locale);
-  }, [locale, global]);
+  useGlobalDocumentOwner(localeOwnerStack, locale, global, ownerDocument);
 
   const contextValue = useMemo(() => ({ locale, setLocale }), [locale]);
 
-  return <LocaleContext.Provider value={contextValue}>{children}</LocaleContext.Provider>;
+  return (
+    <LocaleContext.Provider value={contextValue}>
+      {!global && scope ? <ProviderScope locale={locale}>{children}</ProviderScope> : children}
+    </LocaleContext.Provider>
+  );
 };
 
-/**
- * Returns the current locale and its setter from the nearest `LocaleProvider`.
- *
- * ### AI Usage
- * - **DON'T**: Do not call outside a `LocaleProvider` tree — throws at runtime
- *
- * @returns `{ locale, setLocale }`
- *
- * @example
- * ```tsx
- * import { useLocale } from '@poffy-ui/react';
- *
- * const { locale, setLocale } = useLocale();
- * const formatted = new Intl.DateTimeFormat(locale).format(new Date());
- * ```
- */
+/** Returns the nearest locale and setter, or throws when no provider is present. */
 export const useLocale = (): LocaleContextType => {
   const context = useContext(LocaleContext);
   if (!context) {
@@ -85,3 +53,6 @@ export const useLocale = (): LocaleContextType => {
   }
   return context;
 };
+
+/** Returns the nearest locale context when one exists. */
+export const useOptionalLocale = (): LocaleContextType | undefined => useContext(LocaleContext);

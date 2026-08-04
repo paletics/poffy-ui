@@ -5,23 +5,16 @@ import { DisclosureIconButton } from './DisclosureIconButton';
 
 const visuallyHiddenClass = css({
   position: 'absolute',
-  w: '1px',
-  h: '1px',
-  p: 0,
-  m: '-1px',
+  w: '[1px]',
+  h: '[1px]',
+  p: 'none',
+  m: '[-1px]',
   overflow: 'hidden',
   clip: 'rect(0, 0, 0, 0)',
   whiteSpace: 'nowrap',
   borderWidth: 0,
 });
 
-/**
- * Icon button preset for controlled disclosure triggers.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: IconButton with `open` / `onOpenChange`
- */
 const meta: Meta<typeof DisclosureIconButton> = {
   title: 'Inputs/DisclosureIconButton',
   component: DisclosureIconButton,

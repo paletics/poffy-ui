@@ -1,25 +1,16 @@
 import { PrimitiveProps } from '@poffy-ui/types';
 import { AvatarGroupVariantProps } from '@/styled-system/recipes';
-import { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Extracted variant types from the Panda CSS avatarGroup recipe.
- *
- * ### Notes
- * Prefer `AvatarGroupProps` in application code. Use this type for
- * wrapper components that need the recipe's `size` and layout variants.
- *
- * ### AI Usage
- * - Use this when extending avatar group styles.
- */
+/** Public type for `AvatarGroupRecipeVariants`. */
 export type AvatarGroupRecipeVariants = AvatarGroupVariantProps;
 
-/**
- * Valid spacing token keys defined in src/theme/tokens-config.ts.
- * ### AI Context & Architecture
- * - Mirrors the `spacing` keys in baseTokens to ensure type-safe
- * token lookups via the `token()` utility without resorting to `as any`.
- */
+/** Public type for `SpacingTokenKey`. */
 export type SpacingTokenKey =
   | 'none'
   | '2xs'
@@ -47,36 +38,15 @@ export interface AvatarGroupContextValue {
   size?: AvatarGroupRecipeVariants['size'];
   /** Shared overlap or spacing value inherited by compound children. */
   spacing?: SpacingValue;
+  /** Localized accessible text used by the internal excess indicator. */
+  showMoreLabel?: (count: number) => string;
 }
 
-/**
- * Comprehensive properties for the AvatarGroupRoot component.
- * ### Formula
- * - Silver Ratio (1:1.414) is applied to spacing variants when overlapping avatars.
- *
- * @example
- * ```tsx
- * import { Avatar, AvatarGroup } from '@poffy-ui/react/data-display';
- *
- * <AvatarGroup max={3} total={12} aria-label="Project members">
- *   <Avatar src="/a.jpg" alt="Alice Lee" name="Alice Lee" />
- *   <Avatar src="/b.jpg" alt="Bo Chen" name="Bo Chen" />
- * </AvatarGroup>
- * ```
- *
- * ### Notes
- * Do: give the group an accessible label when the collection meaning is not
- * already clear from surrounding text.
- * Don't: use the group for arbitrary overlapping media; it propagates Avatar sizing.
- *
- * ### AI Usage
- * - Use for a visible subset of people or entities represented by avatars.
- * - Set `total` when the rendered children are only a page or sample of the full set.
- */
 export interface AvatarGroupRootBaseProps extends AvatarGroupRecipeVariants {
   children: ReactNode;
   /**
-   * Maximum number of avatars to show.
+   * Maximum number of element children to show. Fractions are rounded down and
+   * negative or non-finite values mean zero or no limit respectively.
    *
    * ### Notes
    * Extra rendered children are replaced by `AvatarGroup.Excess`.
@@ -90,12 +60,13 @@ export interface AvatarGroupRootBaseProps extends AvatarGroupRecipeVariants {
    */
   spacing?: SpacingValue;
   /**
-   * Total number of avatars. Used to calculate excess indicator if greater than children length.
-   * Useful when only fetching a subset of users.
+   * Total member count, including members not supplied as children. It is
+   * rounded down and cannot reduce the actual child count.
    */
   total?: number;
   /**
-   * Callback when the excess indicator is clicked.
+   * Called when the generated excess marker is activated. Its presence changes
+   * that marker from text to a button.
    *
    * ### Notes
    * If this opens a popover or dialog, ensure the excess control has an
@@ -107,7 +78,24 @@ export interface AvatarGroupRootBaseProps extends AvatarGroupRecipeVariants {
 /**
  * Type checks AvatarGroupRoot instances for the complete set of valid props.
  */
-export type AvatarGroupRootProps = PrimitiveProps<'div', AvatarGroupRootBaseProps>;
+type AvatarGroupNativeProps = PrimitiveProps<'div', AvatarGroupRootBaseProps>;
+type AvatarGroupAsChildElement = ReactElement<
+  Record<string, unknown>,
+  'article' | 'aside' | 'div' | 'footer' | 'header' | 'main' | 'nav' | 'section' | 'span'
+>;
+export type AvatarGroupDefaultProps = DefaultHostProps<AvatarGroupNativeProps>;
+export type AvatarGroupAsChildProps = RetargetedAsChildHostProps<
+  AvatarGroupNativeProps,
+  HTMLElement,
+  AvatarGroupAsChildElement
+>;
+export type AvatarGroupRootProps = AvatarGroupDefaultProps | AvatarGroupAsChildProps;
+export type AvatarGroupComponent = PolymorphicAsChildComponent<
+  AvatarGroupDefaultProps,
+  AvatarGroupAsChildProps,
+  HTMLDivElement,
+  HTMLElement
+>;
 
 /**
  * Base properties for the AvatarGroupExcess indicator.
@@ -124,7 +112,13 @@ export interface AvatarGroupExcessBaseProps {
 /**
  * Prop type for identifying the excess counter in AvatarGroup.
  */
-export type AvatarGroupExcessProps = PrimitiveProps<'span', AvatarGroupExcessBaseProps>;
+export type AvatarGroupExcessProps = Omit<
+  PrimitiveProps<'span', AvatarGroupExcessBaseProps>,
+  'aria-hidden' | 'asChild' | 'children' | 'data-status'
+> & {
+  'aria-hidden'?: never;
+  'data-status'?: never;
+};
 
 /**
  * Type checks AvatarGroup instances for the complete set of valid props.

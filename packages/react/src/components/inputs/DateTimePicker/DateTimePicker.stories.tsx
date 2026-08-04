@@ -1,17 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { DateTimePicker } from '@/components/inputs/DateTimePicker';
-import { Stack } from '@/components/layout';
+import { Box, Stack } from '@/components/layout';
 import { Text } from '@/components/typography';
 import { useState } from 'react';
 
-/**
- * Storybook documentation and visual review surface for DateTimePicker.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
 const meta = {
   title: 'Inputs/DateTimePicker',
   component: DateTimePicker,
@@ -20,16 +12,17 @@ const meta = {
     docs: {
       description: {
         component:
-          'Combines DatePicker and TimePicker into a single scheduling control. The public value is a Date object while the time segment stays editable with steppers.',
+          'Combines DatePicker and TimePicker into a single scheduling control. The public value is a Date object while the time segment supports segment, clock, and wheel input modes.',
       },
     },
   },
   argTypes: {
-    appearance: { control: 'select', options: ['outline', 'soft'] },
+    appearance: { control: 'select', options: ['outline', 'soft', 'flushed'] },
     size: { control: 'select', options: ['sm', 'md', 'lg'] },
     timeFormat: { control: 'select', options: ['24h', '12h'] },
-    timeInputMode: { control: 'select', options: ['segments', 'clock'] },
+    timeInputMode: { control: 'select', options: ['segments', 'clock', 'wheel'] },
     withSeconds: { control: 'boolean' },
+    requireDateBeforeTime: { control: 'boolean' },
   },
 } satisfies Meta<typeof DateTimePicker>;
 
@@ -62,11 +55,37 @@ export const Controlled: Story = {
   },
 };
 
+export const DateFirst: Story = {
+  args: {
+    'aria-label': 'Appointment',
+  },
+};
+
+export const TimeFirstOptOut: Story = {
+  args: {
+    'aria-label': 'Appointment',
+    requireDateBeforeTime: false,
+  },
+};
+
 export const TwelveHourWithSeconds: Story = {
   args: {
     defaultValue: new Date(2026, 3, 14, 21, 5, 30),
     timeFormat: '12h',
     withSeconds: true,
+  },
+  render: (args) => (
+    <Box width="[min(420px, calc(100vw - 4rem))]">
+      <DateTimePicker {...args} />
+    </Box>
+  ),
+};
+
+export const Constrained: Story = {
+  args: {
+    defaultValue: new Date(2026, 3, 14, 9, 30),
+    minDate: new Date(2026, 3, 10),
+    maxDate: new Date(2026, 3, 20),
   },
 };
 
@@ -75,4 +94,22 @@ export const ClockTimeInput: Story = {
     defaultValue: new Date(2026, 3, 14, 9, 30),
     timeInputMode: 'clock',
   },
+};
+
+export const WheelTimeInput: Story = {
+  args: {
+    defaultValue: new Date(2026, 3, 14, 9, 30),
+    timeInputMode: 'wheel',
+  },
+};
+
+export const NarrowContainer: Story = {
+  render: () => (
+    <Box width="[180px]" aria-label="Constrained date-time container">
+      <DateTimePicker
+        aria-label="Constrained appointment"
+        defaultValue={new Date(2026, 3, 14, 9, 30)}
+      />
+    </Box>
+  ),
 };

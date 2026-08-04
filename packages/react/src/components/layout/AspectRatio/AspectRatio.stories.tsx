@@ -1,15 +1,10 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { css } from '@/styled-system/css';
+import { Button } from '../../inputs/Button/Button';
 import { AspectRatio } from './AspectRatio';
 import { Box } from '../Box/Box';
 
-/**
- * A layout container that enforces a fixed proportional aspect ratio on its child element, preventing layout shift while media loads.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Recipe: aspectRatioStyle), Radix Slot
- */
+
 const meta: Meta<typeof AspectRatio> = {
   title: 'Layout/AspectRatio',
   component: AspectRatio,
@@ -35,6 +30,7 @@ type Story = StoryObj<typeof AspectRatio>;
 const embedClass = css({ border: 'none', width: '100%', height: '100%' });
 const coverImageClass = css({ width: '100%', height: '100%', objectFit: 'cover' });
 const containImageClass = css({ width: '100%', height: '100%', objectFit: 'contain' });
+const storyWidth = (width: number) => `[min(${width}px,calc(100vw - 3rem))]`;
 const sampleImageSrc =
   'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500"%3E%3Crect width="800" height="500" fill="%23dbeafe"/%3E%3Ccircle cx="560" cy="150" r="90" fill="%23fbbf24"/%3E%3Cpath d="M0 390 180 220l130 120 120-95 370 260H0z" fill="%232563eb"/%3E%3Cpath d="M0 430 240 270l150 105 110-70 300 210H0z" fill="%230f766e"/%3E%3C/svg%3E';
 const mapEmbedSrcDoc = `
@@ -71,7 +67,7 @@ export const Default: Story = {
     ratio: 16 / 9,
   },
   render: (args) => (
-    <Box w="560px">
+    <Box w={storyWidth(560)}>
       <AspectRatio {...args}>
         <Box
           bg="slate.800"
@@ -85,6 +81,28 @@ export const Default: Story = {
         >
           16:9 Video
         </Box>
+      </AspectRatio>
+    </Box>
+  ),
+};
+
+export const FocusableContent: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story: 'A focusable child keeps its external focus ring visible at the aspect-ratio edge.',
+      },
+    },
+  },
+  args: {
+    ratio: 16 / 9,
+  },
+  render: (args) => (
+    <Box w={storyWidth(400)}>
+      <AspectRatio {...args}>
+        <Button w="100%" h="100%">
+          Focusable content
+        </Button>
       </AspectRatio>
     </Box>
   ),
@@ -105,7 +123,7 @@ export const Video4x3: Story = {
     ratio: 4 / 3,
   },
   render: (args) => (
-    <Box w="400px">
+    <Box w={storyWidth(400)}>
       <AspectRatio {...args}>
         <Box
           bg="slate.800"
@@ -132,7 +150,7 @@ export const UltraWide21x9: Story = {
     ratio: 21 / 9,
   },
   render: (args) => (
-    <Box w="600px">
+    <Box w={storyWidth(600)}>
       <AspectRatio {...args}>
         <Box
           bg="violet.800"
@@ -161,7 +179,7 @@ export const Square1x1: Story = {
     ratio: 1,
   },
   render: (args) => (
-    <Box w="300px">
+    <Box w={storyWidth(300)}>
       <AspectRatio {...args}>
         <img src={sampleImageSrc} alt="Profile" className={coverImageClass} />
       </AspectRatio>
@@ -177,7 +195,7 @@ export const ImageCover: Story = {
     ratio: 16 / 9,
   },
   render: (args) => (
-    <Box w="500px">
+    <Box w={storyWidth(500)}>
       <AspectRatio {...args}>
         <img src={sampleImageSrc} alt="Modern living room" className={coverImageClass} />
       </AspectRatio>
@@ -197,7 +215,7 @@ export const ImageContain: Story = {
     ratio: 16 / 9,
   },
   render: (args) => (
-    <Box w="500px">
+    <Box w={storyWidth(500)}>
       <AspectRatio {...args} bg="slate.100">
         <img src={sampleImageSrc} alt="Modern living room" className={containImageClass} />
       </AspectRatio>
@@ -213,7 +231,7 @@ export const MapEmbed: Story = {
     ratio: 1,
   },
   render: (args) => (
-    <Box w="400px">
+    <Box w={storyWidth(400)}>
       <AspectRatio {...args}>
         <iframe
           srcDoc={mapEmbedSrcDoc}
@@ -235,12 +253,12 @@ export const CardThumbnail: Story = {
     ratio: 16 / 9,
   },
   render: (args) => (
-    <Box w="350px" borderWidth="1px" borderRadius="lg" overflow="hidden">
+    <Box w={storyWidth(350)} borderWidth="thin" borderRadius="lg" overflow="hidden">
       <AspectRatio {...args}>
         <img src={sampleImageSrc} alt="House" className={coverImageClass} />
       </AspectRatio>
-      <Box p="4">
-        <Box fontWeight="bold" fontSize="lg" mb="2">
+      <Box p="base">
+        <Box fontWeight="bold" fontSize="lg" mb="sm">
           Modern House
         </Box>
         <Box color="slate.600">Perfect family home with 3 bedrooms</Box>
@@ -258,7 +276,7 @@ export const AsChildPattern: Story = {
     ratio: 16 / 9,
   },
   render: (args) => (
-    <Box w="500px">
+    <Box w={storyWidth(500)}>
       <AspectRatio {...args}>
         <a href="https://example.com" target="_blank" rel="noopener noreferrer">
           <Box
@@ -274,7 +292,7 @@ export const AsChildPattern: Story = {
             cursor="pointer"
             _hover={{ bg: 'blue.600' }}
           >
-            <Box fontSize="2xl" mb="2">
+            <Box fontSize="2xl" mb="sm">
               Click Me
             </Box>
             <Box fontSize="sm" opacity={0.8}>
@@ -294,8 +312,8 @@ export const ResponsiveRatios: Story = {
     },
   },
   render: () => (
-    <Box w={{ base: '100%', md: '600px' }}>
-      <Box mb="4" fontWeight="bold">
+    <Box w={{ base: '100%', md: storyWidth(600) }}>
+      <Box mb="base" fontWeight="bold">
         Resize window to see ratio change (mobile: 1:1, desktop: 16:9)
       </Box>
       <Box display={{ base: 'block', md: 'none' }}>
@@ -341,9 +359,14 @@ export const MultipleRatios: Story = {
     docs: { description: { story: 'Multiple aspect ratios in a grid layout.' } },
   },
   render: () => (
-    <Box display="grid" gridTemplateColumns="repeat(3, 1fr)" gap="md" w="700px">
+    <Box
+      display="grid"
+      gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
+      gap="md"
+      w={storyWidth(700)}
+    >
       <Box>
-        <Box mb="2" fontSize="sm" fontWeight="bold">
+        <Box mb="sm" fontSize="sm" fontWeight="bold">
           16:9
         </Box>
         <AspectRatio ratio={16 / 9}>
@@ -351,7 +374,7 @@ export const MultipleRatios: Story = {
         </AspectRatio>
       </Box>
       <Box>
-        <Box mb="2" fontSize="sm" fontWeight="bold">
+        <Box mb="sm" fontSize="sm" fontWeight="bold">
           4:3
         </Box>
         <AspectRatio ratio={4 / 3}>
@@ -359,7 +382,7 @@ export const MultipleRatios: Story = {
         </AspectRatio>
       </Box>
       <Box>
-        <Box mb="2" fontSize="sm" fontWeight="bold">
+        <Box mb="sm" fontSize="sm" fontWeight="bold">
           1:1
         </Box>
         <AspectRatio ratio={1}>

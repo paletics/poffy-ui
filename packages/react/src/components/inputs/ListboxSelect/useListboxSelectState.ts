@@ -1,140 +1,117 @@
-import { useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { KeyboardEvent, RefObject } from 'react';
-import {
-  getFirstEnabledListboxIndex,
-  getLastEnabledListboxIndex,
-  getNextEnabledListboxIndex,
-  getPreviousEnabledListboxIndex,
-} from '@poffy-ui/behavior/listbox';
+import { useListboxSelectState as useListboxSelectBehaviorState } from '@poffy-ui/behavior/listbox/react';
 import type { ListboxSelectProps } from './ListboxSelect.types';
 import {
   getInitialListboxSelectValue,
-  getListboxSelectSelectedIndex,
   type ListboxSelectOptionRecord,
 } from './ListboxSelect.utils';
+import { useFormReset } from '@/components/inputs/shared/useFormControlBridge';
 
 interface UseListboxSelectStateParams {
   disabled: boolean;
+  isInteractionDisabledNow: () => boolean;
+  readOnly: boolean;
   nativeSelectRef: RefObject<HTMLSelectElement | null>;
   options: ListboxSelectOptionRecord[];
   props: ListboxSelectProps;
   valueProp: ListboxSelectProps['value'];
 }
 
-/**
- * Manages custom ListboxSelect open state, highlighted option, and native select syncing.
- */
+/** Connects shared listbox-select behavior to its native select and form adapters. */
 export const useListboxSelectState = ({
   disabled,
+  isInteractionDisabledNow,
+  readOnly,
   nativeSelectRef,
   options,
   props,
   valueProp,
 }: UseListboxSelectStateParams) => {
-  const isControlled = valueProp !== undefined;
-  const [uncontrolledValue, setUncontrolledValue] = useState(() =>
-    getInitialListboxSelectValue(props, options),
-  );
-  const selectedValue = isControlled ? String(valueProp ?? '') : uncontrolledValue;
-  const selectedIndex = getListboxSelectSelectedIndex(options, selectedValue);
-  const [isOpen, setIsOpen] = useState(false);
-  const firstEnabledIndex = getFirstEnabledListboxIndex(options);
-  const lastEnabledIndex = getLastEnabledListboxIndex(options);
-  const [highlightedIndex, setHighlightedIndex] = useState(() =>
-    selectedIndex >= 0 ? selectedIndex : firstEnabledIndex,
-  );
+  const controlledValue = valueProp === undefined ? undefined : String(valueProp);
+  const initialValue = getInitialListboxSelectValue(props, options);
+  const {
+    handleKeyDown: handleBehaviorKeyDown,
+    handleSelectionChange,
+    highlightedIndex,
+    isControlled,
+    isOpen,
+    reset,
+    selectedIndex,
+    selectedValue,
+    selectIndex,
+    setHighlightedIndex,
+    setOpen,
+    toggleOpen,
+  } = useListboxSelectBehaviorState({
+    value: controlledValue,
+    defaultValue: initialValue,
+    interactionBlocked: [disabled, readOnly].some(Boolean),
+    isInteractionBlockedNow: isInteractionDisabledNow,
+    options,
+    onRequestSelection: (index) => commitNativeOption(nativeSelectRef.current, index),
+  });
+  const currentStateRef = useRef({ selectedIndex, selectedValue });
+  useLayoutEffect(() => {
+    currentStateRef.current = { selectedIndex, selectedValue };
+  }, [selectedIndex, selectedValue]);
 
-  const commitValue = (nextValue: string) => {
-    if (!isControlled) {
-      setUncontrolledValue(nextValue);
-    }
+  useLayoutEffect(() => {
     const nativeSelect = nativeSelectRef.current;
-    if (!nativeSelect) return;
-    nativeSelect.value = nextValue;
-    nativeSelect.dispatchEvent(new Event('change', { bubbles: true }));
-  };
+    if (!nativeSelect || selectedIndex < 0 || nativeSelect.selectedIndex === selectedIndex) return;
+    nativeSelect.selectedIndex = selectedIndex;
+  }, [nativeSelectRef, options, selectedIndex]);
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (disabled || nextOpen === isOpen) return;
-    setIsOpen(nextOpen);
-    if (nextOpen) {
-      setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : firstEnabledIndex);
+  const formResetRef = useFormReset<HTMLSelectElement>(() => {
+    reset();
+    if (isControlled && nativeSelectRef.current) {
+      nativeSelectRef.current.selectedIndex = currentStateRef.current.selectedIndex;
     }
-  };
+  });
 
-  const handleSelectOption = (index: number) => {
-    const option = options[index];
-    if (!option || option.disabled) return;
-    commitValue(option.value);
-    setIsOpen(false);
-    setHighlightedIndex(index);
+  const handleNativeChange = (nextValue: string, nextIndex: number) => {
+    if (isInteractionDisabledNow()) {
+      const nativeSelect = nativeSelectRef.current;
+      if (nativeSelect) nativeSelect.selectedIndex = selectedIndex;
+      return false;
+    }
+    const changed = handleSelectionChange(nextValue, nextIndex);
+    if (!changed) {
+      const nativeSelect = nativeSelectRef.current;
+      if (nativeSelect) nativeSelect.selectedIndex = selectedIndex;
+    }
+    return changed;
   };
-
-  const toggleFromTrigger = () => {
-    handleOpenChange(!isOpen);
-  };
-
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (disabled) return;
-    switch (event.key) {
-      case 'ArrowDown':
-        event.preventDefault();
-        if (!isOpen) {
-          handleOpenChange(true);
-          break;
-        }
-        setHighlightedIndex((index) =>
-          index < 0 ? firstEnabledIndex : getNextEnabledListboxIndex(options, index),
-        );
-        break;
-      case 'ArrowUp':
-        event.preventDefault();
-        if (!isOpen) {
-          handleOpenChange(true);
-          break;
-        }
-        setHighlightedIndex((index) =>
-          index < 0 ? lastEnabledIndex : getPreviousEnabledListboxIndex(options, index),
-        );
-        break;
-      case 'Home':
-        event.preventDefault();
-        setHighlightedIndex(firstEnabledIndex);
-        break;
-      case 'End':
-        event.preventDefault();
-        setHighlightedIndex(lastEnabledIndex);
-        break;
-      case 'Enter':
-      case ' ':
-        event.preventDefault();
-        if (!isOpen) {
-          handleOpenChange(true);
-          break;
-        }
-        handleSelectOption(highlightedIndex);
-        break;
-      case 'Escape':
-        if (isOpen) {
-          event.preventDefault();
-          setIsOpen(false);
-        }
-        break;
-      case 'Tab':
-        setIsOpen(false);
-        break;
-    }
+    if (event.defaultPrevented) return;
+    const handled = handleBehaviorKeyDown({
+      isComposing: event.nativeEvent.isComposing,
+      key: event.key,
+      keyCode: event.nativeEvent.keyCode,
+    });
+    if (handled) event.preventDefault();
   };
 
   return {
     handleKeyDown,
-    handleOpenChange,
-    handleSelectOption,
+    handleNativeChange,
+    handleOpenChange: setOpen,
+    handleSelectOption: selectIndex,
+    formResetRef,
     highlightedIndex,
     isOpen,
     selectedIndex,
     selectedValue,
     setHighlightedIndex,
-    toggleFromTrigger,
+    toggleFromTrigger: toggleOpen,
   };
+};
+
+const commitNativeOption = (nativeSelect: HTMLSelectElement | null, index: number) => {
+  if (!nativeSelect) return;
+  nativeSelect.selectedIndex = index;
+  const EventConstructor = nativeSelect.ownerDocument.defaultView?.Event;
+  if (EventConstructor) {
+    nativeSelect.dispatchEvent(new EventConstructor('change', { bubbles: true, cancelable: true }));
+  }
 };

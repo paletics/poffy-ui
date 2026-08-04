@@ -3,6 +3,7 @@
 import type { LayoutAnimationType } from '@/components/animations/LayoutTransition';
 import { pagination } from '@/styled-system/recipes';
 import { createContext, useContext } from 'react';
+import type { PaginationLabels } from './Pagination.types';
 
 /**
  * Shared Pagination state and navigation handlers for child page controls.
@@ -20,6 +21,8 @@ interface PaginationContextValue {
    * Animation preset for the active page indicator.
    */
   indicatorAnimation: LayoutAnimationType;
+  /** Resolved localized labels shared with compound parts. */
+  labels: PaginationLabels;
 }
 
 /**
@@ -30,13 +33,13 @@ export const PaginationContext = createContext<PaginationContextValue | null>(nu
 /**
  * Custom hook to access Pagination context.
  *
- * @throws {Error} `usePagination must be used within a <Pagination /> component`
+ * @throws {Error} `usePagination must be used within a <PaginationRoot /> component`
  * @returns Pagination context value.
  */
 export const usePagination = () => {
   const context = useContext(PaginationContext);
   if (!context) {
-    throw new Error('usePagination must be used within a <Pagination /> component');
+    throw new Error('usePagination must be used within a <PaginationRoot /> component');
   }
   return context;
 };

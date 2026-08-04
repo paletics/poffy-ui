@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { WheelPicker } from '@/components/inputs/WheelPicker';
 import type { WheelPickerValue } from '@/components/inputs/WheelPicker/WheelPicker.types';
-import { Stack } from '@/components/layout';
+import { Box, Stack } from '@/components/layout';
 import { Text } from '@/components/typography';
 import { useState } from 'react';
 
@@ -65,6 +65,32 @@ export const Controlled: Story = {
   },
 };
 
+export const RuntimeSizeChange: Story = {
+  render: function RuntimeSizeChangeStory() {
+    const [size, setSize] = useState<'sm' | 'md' | 'lg'>('sm');
+    const [value, setValue] = useState<WheelPickerValue>({ minute: '45' });
+
+    return (
+      <Stack gap="md">
+        <button
+          type="button"
+          onClick={() => setSize((current) => (current === 'lg' ? 'sm' : 'lg'))}
+        >
+          Toggle size
+        </button>
+        <WheelPicker
+          aria-label="Runtime size picker"
+          columns={[{ id: 'minute', label: 'Minute', options: minuteOptions }]}
+          onChange={setValue}
+          size={size}
+          value={value}
+        />
+        <Text aria-label="Runtime selected value">{value.minute}</Text>
+      </Stack>
+    );
+  },
+};
+
 export const Sizes: Story = {
   render: () => (
     <Stack gap="lg">
@@ -84,5 +110,22 @@ export const Sizes: Story = {
         defaultValue={{ minute: '45' }}
       />
     </Stack>
+  ),
+};
+
+export const NarrowContainer: Story = {
+  render: () => (
+    <Box width="[220px]" aria-label="Constrained wheel picker container">
+      <WheelPicker
+        aria-label="Constrained duration"
+        size="lg"
+        columns={[
+          { id: 'hour', label: 'Hour', options: hourOptions },
+          { id: 'minute', label: 'Minute', options: minuteOptions },
+          { id: 'second', label: 'Second', options: minuteOptions },
+        ]}
+        defaultValue={{ hour: '9', minute: '30', second: '0' }}
+      />
+    </Box>
   ),
 };

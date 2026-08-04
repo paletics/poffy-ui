@@ -12,6 +12,13 @@ export const listContainerVariants = {
    */
   flow: {
     hidden: { opacity: 0 },
+    __poffyListEnter: (custom?: CustomData) => ({
+      opacity: [0, 1] as number[],
+      transition: {
+        staggerChildren: getCustomValue(custom, 'stagger', baseTokens.motion.stagger.base),
+        delayChildren: getCustomValue(custom, 'delay', 0),
+      },
+    }),
     visible: (custom?: CustomData) => ({
       opacity: 1,
       transition: {
@@ -19,6 +26,7 @@ export const listContainerVariants = {
         delayChildren: getCustomValue(custom, 'delay', 0),
       },
     }),
+    __poffyListSettled: { opacity: 1, transition: { duration: 0 } },
   },
 
   /**
@@ -26,12 +34,19 @@ export const listContainerVariants = {
    */
   burst: {
     hidden: { opacity: 0 },
+    __poffyListEnter: {
+      opacity: [0, 1] as number[],
+      transition: {
+        staggerChildren: baseTokens.motion.stagger.fast,
+      },
+    },
     visible: {
       opacity: 1,
       transition: {
         staggerChildren: baseTokens.motion.stagger.fast,
       },
     },
+    __poffyListSettled: { opacity: 1, transition: { duration: 0 } },
   },
 
   /**
@@ -39,12 +54,19 @@ export const listContainerVariants = {
    */
   lazy: {
     hidden: { opacity: 0 },
+    __poffyListEnter: {
+      opacity: [0, 1] as number[],
+      transition: {
+        staggerChildren: baseTokens.motion.stagger.slow,
+      },
+    },
     visible: {
       opacity: 1,
       transition: {
         staggerChildren: baseTokens.motion.stagger.slow,
       },
     },
+    __poffyListSettled: { opacity: 1, transition: { duration: 0 } },
   },
 } as const;
 
@@ -57,11 +79,17 @@ export const listItemVariants = {
    */
   fade: {
     hidden: { opacity: 0, y: motionOffsets.sm },
+    __poffyListEnter: {
+      opacity: [0, 1] as number[],
+      y: [motionOffsets.sm, 0] as number[],
+      transition: { ...springs.snappy, type: 'spring' },
+    },
     visible: {
       opacity: 1,
       y: 0,
       transition: { ...springs.snappy, type: 'spring' },
     },
+    __poffyListSettled: { opacity: 1, y: 0, transition: { duration: 0 } },
   },
 
   /**
@@ -69,11 +97,17 @@ export const listItemVariants = {
    */
   slide: {
     hidden: { opacity: 0, x: -motionOffsets.md },
+    __poffyListEnter: {
+      opacity: [0, 1] as number[],
+      x: [-motionOffsets.md, 0] as number[],
+      transition: { ...springs.bouncy, type: 'spring' },
+    },
     visible: {
       opacity: 1,
       x: 0,
       transition: { ...springs.bouncy, type: 'spring' },
     },
+    __poffyListSettled: { opacity: 1, x: 0, transition: { duration: 0 } },
   },
 
   /**
@@ -81,11 +115,17 @@ export const listItemVariants = {
    */
   pop: {
     hidden: { opacity: 0, scale: motionScales.in },
+    __poffyListEnter: {
+      opacity: [0, 1] as number[],
+      scale: [motionScales.in, 1] as number[],
+      transition: { type: 'spring', stiffness: 300, damping: 20 },
+    },
     visible: {
       opacity: 1,
       scale: 1,
       transition: { type: 'spring', stiffness: 300, damping: 20 },
     },
+    __poffyListSettled: { opacity: 1, scale: 1, transition: { duration: 0 } },
   },
 } as const;
 

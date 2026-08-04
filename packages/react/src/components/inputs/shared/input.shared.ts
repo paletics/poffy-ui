@@ -11,6 +11,11 @@ export const inputBaseStyles = {
   transitionDuration: '{durations.standard}',
   transitionProperty: 'box-shadow, border-color, color, background',
   transitionTimingFunction: 'default',
+  _motionSubtle: { transitionDuration: '{durations.fast}' },
+  _motionPop: {
+    transitionDuration: '{durations.complex}',
+    transitionTimingFunction: '{easings.bounce}',
+  },
   _placeholder: {
     color: 'text.secondary',
   },
@@ -40,9 +45,9 @@ export const inputShellRootStyles = {
  */
 export const inputEndDecoratorStyles = {
   position: 'absolute',
-  right: '0',
-  top: '0',
-  bottom: '0',
+  insetInlineEnd: '0',
+  insetBlockStart: '0',
+  insetBlockEnd: '0',
   zIndex: 2,
   display: 'flex',
   alignItems: 'center',

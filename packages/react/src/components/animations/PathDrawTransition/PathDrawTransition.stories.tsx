@@ -6,13 +6,6 @@ import { Stack } from '@/components/layout';
 import { PathDrawTransition } from './PathDrawTransition';
 import { pathDrawVariants } from './PathDrawTransition.presets';
 
-/**
- * Standardizes SVG stroke drawing for checkmarks, status glyphs, and progress-like path icons.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: motion/react SVG primitives, PathDrawTransition presets
- */
 const meta: Meta<typeof PathDrawTransition> = {
   title: 'Animations/PathDrawTransition',
   component: PathDrawTransition,
@@ -44,10 +37,11 @@ const iconClass = css({
 
 const galleryClass = css({
   display: 'grid',
-  gridTemplateColumns: '[repeat(3, 120px)]',
-  gap: '5',
+  gridTemplateColumns: '[repeat(auto-fit, minmax(min(120px, 100%), 1fr))]',
+  gap: 'lg',
   alignItems: 'center',
   justifyItems: 'center',
+  width: '[min(380px, calc(100vw - 4rem))]',
 });
 
 export const Default: Story = {

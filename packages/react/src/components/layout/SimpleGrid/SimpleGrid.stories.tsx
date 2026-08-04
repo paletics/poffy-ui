@@ -4,13 +4,7 @@ import { Box } from '@/components/layout/Box';
 import { SimpleGrid } from '@/components/layout/SimpleGrid';
 import { Stack } from '@/components/layout/Stack';
 
-/**
- * A responsive CSS Grid primitive for equal-width column layouts, supporting fixed column counts and fluid auto-fit via minChildWidth.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Recipe: simpleGrid, splitCssProps), Radix Slot
- */
+
 const meta: Meta<typeof SimpleGrid> = {
   title: 'Layout/SimpleGrid',
   component: SimpleGrid,
@@ -123,8 +117,14 @@ export const MinChildWidth: Story = {
     children: items,
   },
   render: (args) => (
-    <Box w="[600px]" borderWidth="thin" borderStyle="dashed" borderColor="layout.divider" p="md">
-      <SimpleGrid {...args} />
+    <Box
+      w="[min(600px,calc(100vw - 3rem))]"
+      borderWidth="thin"
+      borderStyle="dashed"
+      borderColor="layout.divider"
+      p="md"
+    >
+      <SimpleGrid {...args} aria-label="Constrained responsive grid" />
     </Box>
   ),
 };

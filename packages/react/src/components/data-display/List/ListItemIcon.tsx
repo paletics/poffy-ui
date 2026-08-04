@@ -1,44 +1,34 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
+import { getSafeInteractiveContent } from '@/components/shared/getSafeInteractiveContent';
 import { cx } from '@/styled-system/css';
-import { list } from '@/styled-system/recipes';
 import { ElementType, forwardRef } from 'react';
-import { ListItemIconProps } from './List.types';
+import type { ListItemIconComponent, ListItemIconProps } from './List.types';
 import { useListContext } from './ListContext';
+import { isListIconAsChildHost } from './List.utils';
 
-/**
- * An icon slot within a ListItem, providing consistent alignment.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: list), Radix Slot
- * ### Variant Logic
- * - Inherits parent variant from ListContext.
- * ### Notes
- * Renders as `div` by default. Aligns icons consistently with list text.
- * ### Accessibility
- * - Icons should be `aria-hidden` if decorative.
- * @example
- * ```tsx
- * import { List } from '@poffy-ui/react/data-display';
- * import { HomeIcon } from '@poffy-ui/react/media';
- *
- * <List.Item>
- *   <List.Icon aria-hidden><HomeIcon /></List.Icon>
- *   <List.Text primary="Home" />
- * </List.Item>
- * ```
- */
-export const ListItemIcon = forwardRef<HTMLDivElement, ListItemIconProps>((props, ref) => {
+const ListItemIconImpl = forwardRef<Element, ListItemIconProps>((props, ref) => {
   const { asChild, children, className, ...rest } = props;
-  const { variant } = useListContext();
-  const classes = list({ variant });
-  const Component = asChild ? Slot : ('div' as ElementType);
+  const { classes } = useListContext();
+  const canUseAsChild = Boolean(asChild && isListIconAsChildHost(children));
+  const Component = (canUseAsChild ? Slot : 'div') as ElementType;
 
   return (
     <Component ref={ref} className={cx(classes.icon, className)} {...rest}>
-      {children}
+      {getSafeInteractiveContent(children, { preserveOpaque: true })}
     </Component>
   );
 });
 
-ListItemIcon.displayName = 'List.Icon';
+ListItemIconImpl.displayName = 'List.Icon';
+
+/**
+ * Renders the leading visual region of a list item.
+ *
+ * Content is sanitized to avoid nested interactive controls. `asChild`
+ * delegates only to a supported icon host; otherwise this component renders a
+ * `div`. Decorative icons should remain hidden from assistive technology.
+ */
+
+export const ListItemIcon = ListItemIconImpl as ListItemIconComponent;

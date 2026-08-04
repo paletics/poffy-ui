@@ -1,7 +1,22 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from 'storybook/test';
+import { css } from '@/styled-system/css';
 import { Select } from './Select';
 import { Stack } from '../../layout/Stack';
+
+const constrainedWidthsClass = css({
+  display: 'grid',
+  gridTemplateColumns: 'auto 1fr',
+  alignItems: 'center',
+  gap: 'sm',
+  width: 'fit-content',
+});
+
+const width40Class = css({ width: '[40px]' });
+const width64Class = css({ width: '[64px]' });
+const width65Class = css({ width: '[65px]' });
+const width112Class = css({ width: '[112px]' });
+const width113Class = css({ width: '[113px]' });
 
 /**
  * Storybook documentation and visual review surface for native Select.
@@ -18,7 +33,7 @@ const meta: Meta<typeof Select> = {
     },
     appearance: {
       control: 'select',
-      options: ['outline', 'soft', 'neo'],
+      options: ['outline', 'soft', 'flushed', 'neo'],
     },
     disabled: {
       control: 'boolean',
@@ -96,6 +111,9 @@ export const Variants = () => (
     <Select appearance="soft" aria-label="Soft select">
       <option>Soft</option>
     </Select>
+    <Select appearance="flushed" aria-label="Flushed select">
+      <option>Flushed</option>
+    </Select>
     <Select appearance="neo" aria-label="Neo select">
       <option>Neo</option>
     </Select>
@@ -111,4 +129,46 @@ export const States = () => (
       <option>Error</option>
     </Select>
   </Stack>
+);
+
+export const ConstrainedWidths = () => (
+  <div className={constrainedWidthsClass}>
+    <span>40px</span>
+    <div className={width40Class} aria-label="40 pixel native select fixture">
+      <Select aria-label="40 pixel native select">
+        <option>Supercalifragilisticexpialidocious</option>
+      </Select>
+    </div>
+    <span>64px RTL neo</span>
+    <div className={width64Class} dir="rtl" aria-label="64 pixel RTL native select fixture">
+      <Select appearance="neo" aria-label="64 pixel RTL native select">
+        <option>InternationalizationWithoutBreaks</option>
+      </Select>
+    </div>
+    <span>65px</span>
+    <div className={width65Class} aria-label="65 pixel native select fixture">
+      <Select aria-label="65 pixel native select">
+        <option>BoundaryDecorationVisible</option>
+      </Select>
+    </div>
+    <span>112px</span>
+    <div className={width112Class} aria-label="112 pixel native select fixture">
+      <Select aria-label="112 pixel native select">
+        <option>CompactPaddingBoundary</option>
+      </Select>
+    </div>
+    <span>113px</span>
+    <div className={width113Class} aria-label="113 pixel native select fixture">
+      <Select aria-label="113 pixel native select">
+        <option>NormalPaddingBoundary</option>
+      </Select>
+    </div>
+    <span>112px multiple</span>
+    <div className={width112Class} aria-label="112 pixel multiple select fixture">
+      <Select multiple aria-label="112 pixel multiple select" defaultValue={['first']}>
+        <option value="first">First option</option>
+        <option value="second">Second option</option>
+      </Select>
+    </div>
+  </div>
 );

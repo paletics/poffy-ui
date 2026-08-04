@@ -223,19 +223,58 @@ const generateCompoundVariants = (): SlotRecipeConfig['compoundVariants'] => {
 export const puffRecipe = defineSlotRecipe({
   className: 'puff',
   description: 'Toast notification styling for container, root, title, content, and spacer slots',
-  slots: ['container', 'root', 'simple', 'title', 'content', 'spacer'],
+  slots: ['container', 'viewport', 'root', 'simple', 'title', 'content', 'spacer'],
   base: {
     container: {
       display: 'flex',
       pointerEvents: 'none',
       position: 'fixed',
       zIndex: 'puff',
+      '--puff-viewport-max-block-size':
+        '[calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem)]',
+      maxWidth:
+        '[calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 2rem)]',
+      maxHeight: 'var(--puff-viewport-max-block-size)',
+      '@supports (width: 100dvw)': {
+        maxWidth:
+          '[calc(100dvw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px) - 2rem)]',
+      },
+      '@supports (height: 100dvh)': {
+        '--puff-viewport-max-block-size':
+          '[calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 2rem)]',
+      },
+    },
+    viewport: {
+      display: 'flex',
       gap: '{spacing.sm}',
-      maxWidth: '[calc(100vw - 2rem)]',
+      maxWidth: '{sizes.full}',
+      // Percentages cannot provide a reliable cap while the fixed container
+      // sizes itself from its content. Use the same definite viewport cap.
+      maxHeight: 'var(--puff-viewport-max-block-size)',
+      // The viewport clips stacked notifications on both axes when either
+      // overflow axis scrolls. Keep a complete external focus ring visible.
+      boxSizing: 'border-box',
+      paddingBlock: 'calc({focusRing.width} + {focusRing.offset})',
+      paddingInline: 'calc({focusRing.width} + {focusRing.offset})',
+      scrollPaddingBlock: 'calc({focusRing.width} + {focusRing.offset})',
+      scrollPaddingInline: 'calc({focusRing.width} + {focusRing.offset})',
+      // Actions are arbitrary consumer nodes. Give the actual focused node a
+      // matching scroll margin, because native focus scrolling targets it
+      // rather than the enclosing Puff surface.
+      '& :focus-visible': {
+        scrollMarginBlock: 'calc({focusRing.width} + {focusRing.offset})',
+        scrollMarginInline: 'calc({focusRing.width} + {focusRing.offset})',
+      },
+      overflowY: 'auto',
+      overscrollBehavior: 'contain',
+      pointerEvents: 'auto',
     },
     root: {
       pointerEvents: 'auto',
       width: 'fit-content',
+      // The viewport owns overflow. A notification must retain its intrinsic
+      // block size so a focusable action cannot be compressed out of its card.
+      flexShrink: 0,
       borderRadius: '{radii.3xl}',
       boxShadow: '{shadows.xl}',
       display: 'flex',
@@ -249,6 +288,7 @@ export const puffRecipe = defineSlotRecipe({
       borderRadius: '{radii.3xl}',
       boxShadow: '{shadows.xl}',
       width: 'fit-content',
+      flexShrink: 0,
       wordBreak: 'break-word',
     },
     title: {
@@ -263,7 +303,7 @@ export const puffRecipe = defineSlotRecipe({
       opacity: '0.85',
     },
     spacer: {
-      marginLeft: 'auto',
+      marginInlineStart: 'auto',
     },
   },
   variants: {
@@ -305,14 +345,14 @@ export const puffRecipe = defineSlotRecipe({
       md: {
         root: {
           maxWidth: '{sizes.ratio.md}',
-          minWidth: '{sizes.ratio.sm}',
+          minWidth: 'min({sizes.ratio.sm}, 100%)',
           p: '{spacing.md}',
           gap: '{spacing.sm}',
           minHeight: '{sizes.root.2}',
         },
         simple: {
           maxWidth: '{sizes.ratio.md}',
-          minWidth: '{sizes.ratio.sm}',
+          minWidth: 'min({sizes.ratio.sm}, 100%)',
           px: '{spacing.md}',
           py: '{spacing.sm}',
           gap: '{spacing.sm}',
@@ -330,14 +370,14 @@ export const puffRecipe = defineSlotRecipe({
       lg: {
         root: {
           maxWidth: '{sizes.ratio.lg}',
-          minWidth: '{sizes.ratio.md}',
+          minWidth: 'min({sizes.ratio.md}, 100%)',
           p: '{spacing.base}',
           gap: '{spacing.sm}',
           minHeight: '{sizes.root.2}',
         },
         simple: {
           maxWidth: '{sizes.ratio.lg}',
-          minWidth: '{sizes.ratio.md}',
+          minWidth: 'min({sizes.ratio.md}, 100%)',
           px: '{spacing.base}',
           py: '{spacing.md}',
           gap: '{spacing.sm}',
@@ -365,80 +405,55 @@ export const puffRecipe = defineSlotRecipe({
     point: {
       'top-left': {
         container: {
-          flexDirection: 'column',
-          alignItems: 'flex-start',
-          top: '{spacing.base}',
-          left: '{spacing.base}',
-          right: 'auto',
-          bottom: 'auto',
-          transform: 'none',
+          insetBlockStart: '[max({spacing.base}, env(safe-area-inset-top, 0px))]',
+          left: '[max({spacing.base}, env(safe-area-inset-left, 0px))]',
         },
+        viewport: { flexDirection: 'column', alignItems: 'flex-start' },
       },
       'top-center': {
         container: {
-          flexDirection: 'column',
-          alignItems: 'center',
-          top: '{spacing.base}',
+          insetBlockStart: '[max({spacing.base}, env(safe-area-inset-top, 0px))]',
           left: '50%',
-          right: 'auto',
-          bottom: 'auto',
           transform: 'translateX(-50%)',
         },
+        viewport: { flexDirection: 'column', alignItems: 'center' },
       },
       'top-right': {
         container: {
-          flexDirection: 'column',
-          alignItems: 'flex-end',
-          top: '{spacing.base}',
-          right: '{spacing.base}',
-          left: 'auto',
-          bottom: 'auto',
-          transform: 'none',
+          insetBlockStart: '[max({spacing.base}, env(safe-area-inset-top, 0px))]',
+          right: '[max({spacing.base}, env(safe-area-inset-right, 0px))]',
         },
+        viewport: { flexDirection: 'column', alignItems: 'flex-end' },
       },
       'bottom-left': {
         container: {
-          flexDirection: 'column-reverse',
-          alignItems: 'flex-start',
-          bottom: '{spacing.base}',
-          left: '{spacing.base}',
-          right: 'auto',
-          top: 'auto',
-          transform: 'none',
+          insetBlockEnd: '[max({spacing.base}, env(safe-area-inset-bottom, 0px))]',
+          left: '[max({spacing.base}, env(safe-area-inset-left, 0px))]',
         },
+        viewport: { flexDirection: 'column-reverse', alignItems: 'flex-start' },
       },
       'bottom-center': {
         container: {
-          flexDirection: 'column-reverse',
-          alignItems: 'center',
-          bottom: '{spacing.base}',
+          insetBlockEnd: '[max({spacing.base}, env(safe-area-inset-bottom, 0px))]',
           left: '50%',
-          right: 'auto',
-          top: 'auto',
           transform: 'translateX(-50%)',
         },
+        viewport: { flexDirection: 'column-reverse', alignItems: 'center' },
       },
       'bottom-right': {
         container: {
-          flexDirection: 'column-reverse',
-          alignItems: 'flex-end',
-          bottom: '{spacing.base}',
-          right: '{spacing.base}',
-          left: 'auto',
-          top: 'auto',
-          transform: 'none',
+          insetBlockEnd: '[max({spacing.base}, env(safe-area-inset-bottom, 0px))]',
+          right: '[max({spacing.base}, env(safe-area-inset-right, 0px))]',
         },
+        viewport: { flexDirection: 'column-reverse', alignItems: 'flex-end' },
       },
       center: {
         container: {
-          top: '50%',
+          insetBlockStart: '50%',
           left: '50%',
-          right: 'auto',
-          bottom: 'auto',
           transform: 'translate(-50%, -50%)',
-          flexDirection: 'column',
-          alignItems: 'center',
         },
+        viewport: { flexDirection: 'column', alignItems: 'center' },
       },
     },
   },

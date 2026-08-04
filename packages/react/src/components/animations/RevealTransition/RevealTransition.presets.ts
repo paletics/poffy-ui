@@ -1,13 +1,5 @@
 import { motionOffsets, motionScales, springs, transitions } from '../presets';
 
-/**
- * Reveal Transition Presets
- *
- * ### AI Context & Architecture
- * Defines variants for entrance animations triggered by viewport intersection.
- * Supports various slide, fade, and zoom effects.
- * Optimized for scrollytelling and visual pacing.
- */
 export const revealVariants = {
   /**
    * Fade Up: Standard upward float and fade-in.

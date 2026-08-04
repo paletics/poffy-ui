@@ -1,17 +1,25 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from 'storybook/test';
 import { Button } from '@/components/inputs/Button';
+import { css } from '@/styled-system/css';
 import { ListboxSelect } from './ListboxSelect';
 import { Stack } from '../../layout/Stack';
 
-/**
- * Storybook documentation and visual review surface for ListboxSelect.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+const constrainedWidthsClass = css({
+  display: 'grid',
+  gridTemplateColumns: 'auto 1fr',
+  alignItems: 'center',
+  gap: 'sm',
+  width: 'fit-content',
+});
+
+const width40Class = css({ width: '[40px]' });
+const width64Class = css({ width: '[64px]' });
+const width65Class = css({ width: '[65px]' });
+const width112Class = css({ width: '[112px]' });
+const width113Class = css({ width: '[113px]' });
+
+
 const meta: Meta<typeof ListboxSelect> = {
   title: 'Inputs/ListboxSelect',
   component: ListboxSelect,
@@ -23,7 +31,7 @@ const meta: Meta<typeof ListboxSelect> = {
     },
     appearance: {
       control: 'select',
-      options: ['outline', 'soft', 'neo'],
+      options: ['outline', 'soft', 'flushed', 'neo'],
     },
     disabled: {
       control: 'boolean',
@@ -89,6 +97,37 @@ Placeholder.parameters = {
   },
 };
 
+/** Browser contract fixture for the hidden native validation owner. */
+export const RequiredValidation = () => (
+  <form>
+    <ListboxSelect
+      defaultValue=""
+      name="plan"
+      required
+      aria-label="Required plan"
+      onInvalid={(event) => {
+        const count = Number(event.currentTarget.dataset.invalidCount ?? '0');
+        event.currentTarget.dataset.invalidCount = String(count + 1);
+      }}
+    >
+      <option value="" disabled>
+        Select a plan
+      </option>
+      <option value="pro">Professional</option>
+    </ListboxSelect>
+    <Button type="submit">Submit required form</Button>
+  </form>
+);
+
+RequiredValidation.parameters = {
+  docs: {
+    description: {
+      story:
+        'Browser contract fixture: the hidden native select remains the required validation, ref, and form-value owner while invalid focus is redirected to the visible combobox.',
+    },
+  },
+};
+
 export const Sizes = () => (
   <Stack gap="md">
     <ListboxSelect size="sm">
@@ -107,7 +146,7 @@ Sizes.parameters = {
   docs: {
     description: {
       story:
-        'All three sizes (`sm`, `md`, `lg`) stacked. Verify that padding and font size scale proportionally via Silver Ratio tokens.',
+        'All three sizes (`sm`, `md`, `lg`) stacked. Verify that padding uses Silver Ratio tokens and font size follows the readable role scale.',
     },
   },
 };
@@ -120,6 +159,9 @@ export const Variants = () => (
     <ListboxSelect appearance="soft">
       <option>Soft</option>
     </ListboxSelect>
+    <ListboxSelect appearance="flushed">
+      <option>Flushed</option>
+    </ListboxSelect>
     <ListboxSelect appearance="neo">
       <option>Neo</option>
     </ListboxSelect>
@@ -130,7 +172,7 @@ Variants.parameters = {
   docs: {
     description: {
       story:
-        'Three visual variants: `outline` (bordered), `filled` (solid bg), `flushed` (bottom border only). Verify visual differentiation between variants.',
+        'Four visual appearances: `outline`, `soft`, `flushed`, and `neo`.',
     },
   },
 };
@@ -151,6 +193,50 @@ States.parameters = {
     description: {
       story:
         'Disabled and error states. Disabled must suppress popup interactions. Error state applies the same danger treatment used across the custom input family.',
+    },
+  },
+};
+
+export const ConstrainedWidths = () => (
+  <div className={constrainedWidthsClass}>
+    <span>40px</span>
+    <div className={width40Class} aria-label="40 pixel listbox fixture">
+      <ListboxSelect aria-label="40 pixel listbox">
+        <option>Supercalifragilisticexpialidocious</option>
+      </ListboxSelect>
+    </div>
+    <span>64px RTL</span>
+    <div className={width64Class} dir="rtl" aria-label="64 pixel RTL listbox fixture">
+      <ListboxSelect appearance="neo" aria-label="64 pixel RTL listbox">
+        <option>InternationalizationWithoutBreaks</option>
+      </ListboxSelect>
+    </div>
+    <span>65px</span>
+    <div className={width65Class} aria-label="65 pixel listbox fixture">
+      <ListboxSelect aria-label="65 pixel listbox">
+        <option>BoundaryDecorationVisible</option>
+      </ListboxSelect>
+    </div>
+    <span>112px</span>
+    <div className={width112Class} aria-label="112 pixel listbox fixture">
+      <ListboxSelect size="lg" aria-label="112 pixel listbox">
+        <option>LongLocalizedSelectedValueWithoutBreaks</option>
+      </ListboxSelect>
+    </div>
+    <span>113px</span>
+    <div className={width113Class} aria-label="113 pixel listbox fixture">
+      <ListboxSelect size="lg" aria-label="113 pixel listbox">
+        <option>NormalPaddingBoundary</option>
+      </ListboxSelect>
+    </div>
+  </div>
+);
+
+ConstrainedWidths.parameters = {
+  docs: {
+    description: {
+      story:
+        'Exercises the two responsive decoration thresholds with long selected values in LTR and RTL containers.',
     },
   },
 };

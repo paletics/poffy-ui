@@ -14,6 +14,57 @@ interface CalendarMonthYearSelectsProps {
   minDate?: Date;
 }
 
+const MAX_YEAR_OPTIONS = 201;
+const YEAR_WINDOW_RADIUS = Math.floor(MAX_YEAR_OPTIONS / 2);
+
+const getValidYear = (date: Date | undefined) =>
+  date && Number.isFinite(date.getTime()) ? date.getFullYear() : undefined;
+
+const createYearOption = (year: number) => {
+  const value = year.toString();
+  return { value, label: value };
+};
+
+/**
+ * Returns a bounded, contiguous year option window centered on the visible year.
+ *
+ * At most 201 options are emitted. Valid min/max dates constrain the window, while inconsistent
+ * bounds or an invalid visible year return a conservative single option or no options rather than
+ * constructing an unbounded native select.
+ */
+export const getCalendarYearOptions = (visibleYear: number, minDate?: Date, maxDate?: Date) => {
+  const minYear = getValidYear(minDate);
+  const maxYear = getValidYear(maxDate);
+
+  if (
+    !Number.isInteger(visibleYear) ||
+    (minYear !== undefined && maxYear !== undefined && minYear > maxYear)
+  ) {
+    return Number.isInteger(visibleYear) ? [createYearOption(visibleYear)] : [];
+  }
+
+  let startYear = visibleYear - YEAR_WINDOW_RADIUS;
+  let endYear = visibleYear + YEAR_WINDOW_RADIUS;
+
+  if (minYear !== undefined) startYear = Math.max(startYear, minYear);
+  if (maxYear !== undefined) endYear = Math.min(endYear, maxYear);
+
+  if (endYear < startYear) return [createYearOption(visibleYear)];
+
+  if (endYear - startYear + 1 < MAX_YEAR_OPTIONS) {
+    if (minYear !== undefined && startYear === minYear) {
+      endYear = Math.min(maxYear ?? Number.POSITIVE_INFINITY, startYear + MAX_YEAR_OPTIONS - 1);
+    }
+    if (maxYear !== undefined && endYear === maxYear) {
+      startYear = Math.max(minYear ?? Number.NEGATIVE_INFINITY, endYear - MAX_YEAR_OPTIONS + 1);
+    }
+  }
+
+  return Array.from({ length: endYear - startYear + 1 }, (_, index) => {
+    return createYearOption(startYear + index);
+  });
+};
+
 const clampToCalendarMonthBounds = (date: Date, minDate?: Date, maxDate?: Date) => {
   let nextDate = date;
   if (minDate) {
@@ -28,39 +79,11 @@ const clampToCalendarMonthBounds = (date: Date, minDate?: Date, maxDate?: Date) 
 };
 
 /**
- * Renders the month and year selectors used by `CalendarHeader`.
+ * Renders bounded native month and year selectors for Calendar's visible month.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Native `Select` components and `Intl.DateTimeFormat`
- * - **Props**: Current month, bounds, locale labels, and month-change callback
- *
- * ### Design Tokens
- * - **spacing**: inherited from the header select container recipe class
- * - **color**: inherited from `Select` field variants
- *
- * ### Variant Logic
- * - **minDate / maxDate**: Disable months outside the allowed range and clamp year/month changes.
- * - **disabled**: Disables both native select fields.
- *
- * ### Accessibility
- * - **Role**: native select controls
- * - **Keyboard**: Browser-native select keyboard interaction
- * - **Required**: `labels.selectMonth` and `labels.selectYear` provide accessible names.
- *
- * ### AI Usage
- * - **DO**: Keep this internal to `CalendarHeader` so date bounds stay consistent.
- * - **DON'T**: Use as a standalone month picker; it only changes the visible calendar month.
- *
- * @example Internal month/year controls
- * ```tsx
- * <CalendarMonthYearSelects currentMonthDate={date} labels={labels} />
- * ```
- *
- * @example Bounded controls
- * ```tsx
- * <CalendarMonthYearSelects currentMonthDate={date} minDate={min} maxDate={max} />
- * ```
+ * Months outside min/max bounds are disabled. Every selected value is clamped to the nearest valid
+ * month before it reaches Calendar navigation, so changing the year cannot temporarily escape the
+ * configured range.
  */
 export const CalendarMonthYearSelects = ({
   currentMonthDate,
@@ -92,14 +115,8 @@ export const CalendarMonthYearSelects = ({
   }, [year, locale, minDate, maxDate]);
 
   const years = useMemo(() => {
-    const currentYear = new Date().getFullYear();
-    const startYear = minDate ? minDate.getFullYear() : currentYear - 100;
-    const endYear = maxDate ? maxDate.getFullYear() : currentYear + 100;
-    return Array.from({ length: endYear - startYear + 1 }, (_, index) => {
-      const value = (startYear + index).toString();
-      return { value, label: value };
-    });
-  }, [minDate, maxDate]);
+    return getCalendarYearOptions(year, minDate, maxDate);
+  }, [year, minDate, maxDate]);
 
   return (
     <>

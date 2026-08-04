@@ -11,13 +11,6 @@ import {
   textVariants,
 } from '@/components/animations/TextRevealTransition/TextRevealTransition.presets';
 
-/**
- * A kinetic typography component that splits text into characters or words and orchestrates staggered reveal animations when the element enters the viewport. Used for hero headings, landing page focal points, and high-impact short text.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (whileInView, stagger), TextRevealTransition presets, Panda CSS recipe, Radix Slot
- */
 const meta: Meta<typeof TextRevealTransition> = {
   title: 'Animations/TextRevealTransition',
   component: TextRevealTransition,
@@ -46,11 +39,11 @@ export default meta;
 type Story = StoryObj<typeof TextRevealTransition>;
 
 const textStyle = css({
-  fontSize: '3xl',
+  fontSize: { base: 'xl', md: '3xl' },
   fontWeight: 'bold',
-  letterSpacing: 'tight',
   color: 'slate.800',
   textAlign: 'center',
+  overflowWrap: 'anywhere',
 });
 
 const cursorClass = css({
@@ -58,14 +51,14 @@ const cursorClass = css({
   width: '[2px]',
   height: '[1.1em]',
   bg: 'currentColor',
-  ml: '1',
+  ml: '2xs',
   verticalAlign: 'text-bottom',
   animation: '_cursor-blink 1s step-end infinite',
 });
 
 const renderTextGalleryItem = (type: TextRevealTransitionType) => (
-  <Box key={type} borderBottom="[1px solid]" borderColor="slate.100" pb="6">
-    <Text mb="4" fontSize="xs" color="slate.400" fontFamily="mono">
+  <Box key={type} borderBottomWidth="thin" borderStyle="solid" borderColor="layout.divider" pb="lg">
+    <Text mb="base" fontSize="xs" color="slate.400" fontFamily="mono">
       {type}
     </Text>
     <TextRevealTransition
@@ -85,12 +78,16 @@ export const Default: Story = {
   },
 
   render: () => (
-    <Grid gap="2xl" p="8" maxWidth="[800px]">
-      <Flex alignItems="center">
+    <Grid gap="2xl" p={{ base: 'base', md: 'xl' }} maxWidth="[min(800px, calc(100vw - 2rem))]">
+      <Flex alignItems="center" maxWidth="100%">
         <TextRevealTransition
           animationType="typewriter"
           staggerDelay={0.08}
-          className={css({ fontSize: '3xl', fontFamily: 'mono' })}
+          className={css({
+            fontSize: { base: 'xl', md: '3xl' },
+            fontFamily: 'mono',
+            overflowWrap: 'anywhere',
+          })}
         >
           Sample text using the typewriter preset for beautiful typography.
         </TextRevealTransition>
@@ -148,7 +145,7 @@ export const WordPop: Story = {
 
 export const Gallery: Story = {
   render: () => (
-    <Grid gap="2xl" p="8" maxWidth="[800px]">
+    <Grid gap="2xl" p={{ base: 'base', md: 'xl' }} maxWidth="[min(800px, calc(100vw - 2rem))]">
       {renderTextGalleryItem('typewriter')}
       {renderTextGalleryItem('fade-in')}
       {renderTextGalleryItem('fade-up')}

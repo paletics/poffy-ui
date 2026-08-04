@@ -4,13 +4,6 @@ import { DragMotion } from './DragMotion';
 import { css } from '@/styled-system/css';
 import { useRef } from 'react';
 
-/**
- * Adds 2D drag-and-drop capabilities with physics-based inertia and optional boundary constraints to any child element. Used to build interactive sliders, carousels, and sortable surfaces.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (gesture recognizers), Radix Slot
- */
 const meta: Meta<typeof DragMotion> = {
   title: 'Animations/DragMotion',
   component: DragMotion,
@@ -48,7 +41,13 @@ const renderDragTarget = (children: React.ReactNode, color: DragTargetColor = 'b
 
 export const Default: Story = {
   render: () => (
-    <Flex p="[100px]" h="[400px]" bg="slate.50" align="center" justify="center">
+    <Flex
+      p={{ base: '6', md: '[100px]' }}
+      h="[400px]"
+      bg="slate.50"
+      align="center"
+      justify="center"
+    >
       <DragMotion>{renderDragTarget('Free Move')}</DragMotion>
     </Flex>
   ),
@@ -66,12 +65,13 @@ export const Constrained: Story = {
       <div
         ref={containerRef}
         className={css({
-          w: '[500px]',
+          w: '[min(500px, calc(100vw - 4rem))]',
           h: '[300px]',
-          border: '2px dashed',
-          borderColor: 'slate.300',
+          borderWidth: 'default',
+          borderStyle: 'dashed',
+          borderColor: 'layout.divider',
           position: 'relative',
-          m: '[50px]',
+          m: { base: 'none', md: '[50px]' },
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -87,7 +87,15 @@ export const Constrained: Story = {
 
 export const AxisLocked: Story = {
   render: () => (
-    <div className={css({ p: '[100px]', display: 'flex', gap: '[50px]' })}>
+    <div
+      className={css({
+        p: { base: 'lg', md: '[100px]' },
+        display: 'flex',
+        gap: { base: 'base', md: '[50px]' },
+        flexWrap: 'wrap',
+        justifyContent: 'center',
+      })}
+    >
       <DragMotion drag="x">{renderDragTarget('X Only', 'green')}</DragMotion>
       <DragMotion drag="y">{renderDragTarget('Y Only', 'orange')}</DragMotion>
     </div>

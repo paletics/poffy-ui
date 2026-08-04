@@ -18,6 +18,7 @@ export const fontSizes = {
   xl: { value: baseTokens.fontSizes.xl },
   '2xl': { value: baseTokens.fontSizes['2xl'] },
   '3xl': { value: baseTokens.fontSizes['3xl'] },
+  '4xl': { value: baseTokens.fontSizes['4xl'] },
 } satisfies NonNullable<Tokens['fontSizes']>;
 
 /**

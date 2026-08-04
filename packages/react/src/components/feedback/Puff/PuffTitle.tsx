@@ -4,11 +4,6 @@ import { cx } from '@/styled-system/css';
 import { usePuffStyleContext } from './Puff';
 import { PuffTitleProps } from './Puff.types';
 
-/**
- * ### AI Context & Architecture
- * Component for displaying the title area of a puff.
- * It consumes the internal PuffContext to apply consistent styling via Panda CSS recipes.
- */
 export const PuffTitle = ({ icon, title, action, className, ...props }: PuffTitleProps) => {
   const context = usePuffStyleContext();
   const classes = context?.classes;
@@ -22,7 +17,7 @@ export const PuffTitle = ({ icon, title, action, className, ...props }: PuffTitl
       {action && (
         <>
           <span className={classes?.spacer}></span>
-          {action}
+          <div aria-live="off">{action}</div>
         </>
       )}
     </div>

@@ -24,8 +24,12 @@ export const useTreeViewContext = () => {
 // Internal per-item context shared by item parts such as Trigger, Content, and Checkbox.
 const TreeViewItemContext = createContext<{
   id: string;
+  instanceId: string;
+  isAmbiguous: boolean;
   childrenIds?: string[];
   hasChildren?: boolean;
+  setFocusable: (isFocusable: boolean) => void;
+  setSelectable: (childrenIds: string[] | null, isSelectionDisabled?: boolean) => void;
 } | null>(null);
 
 /**

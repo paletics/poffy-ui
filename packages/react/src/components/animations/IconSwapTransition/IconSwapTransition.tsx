@@ -2,44 +2,20 @@
 
 import { Slot } from '@radix-ui/react-slot';
 import { AnimatePresence } from 'motion/react';
-import { useOptionalAnimation } from '@/providers/AnimationProvider';
-import { forwardRef, ReactNode, useMemo } from 'react';
-import { getMotionComponent } from '../utils';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
+import { forwardRef, Fragment, isValidElement, type ReactNode, useMemo } from 'react';
+import { getMotionComponent, resolvePresetKey } from '../utils';
+import { useHydratedAnimationPolicy } from '../useHydratedAnimationPolicy';
 import { iconSwapVariants } from './IconSwapTransition.presets';
 import { IconSwapAnimationType, IconSwapTransitionProps } from './IconSwapTransition.types';
+import { IconSwapTransitionPresence } from './IconSwapTransitionPresence';
 
-/**
- * A keyed transition wrapper for replacing compact icon or status content.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Framer Motion (`AnimatePresence`), Radix Slot
- * ### Design Tokens
- * - transition: Uses Silver Ratio springs and durations from `iconSwapVariants`.
- * ### Variant Logic
- * - `fade`: low-emphasis replacement.
- * - `pop`: default feedback for success/error icon swaps.
- * - `rotate`: directional icon replacement such as disclosure or refresh states.
- * - `slide`: compact vertical status replacement.
- * @example
- * ```tsx
- * import { IconSwapTransition } from '@poffy-ui/react';
- *
- * <IconSwapTransition transitionKey={copied ? 'copied' : 'copy'}>
- *   {copied ? <CheckIcon /> : <CopyIcon />}
- * </IconSwapTransition>
- * ```
- * ### Notes
- * The `transitionKey` must change when the visual child changes. Without a stable
- * key boundary, React reuses the previous child and no exit animation can run.
- * ### Accessibility
- * - Respects `prefers-reduced-motion`.
- * - Does not announce status changes by itself; pair with `aria-label`, `aria-live`, or
- *   visible text on the owning component when the state change is meaningful.
- * ### AI Usage
- * - **DO**: Use in CopyButton, CloseButton variants, Stepper completion indicators, and other
- *   small icon/status replacements.
- * - **DON'T**: Omit `transitionKey` when the child visual meaning changes.
- */
-export const IconSwapTransition = forwardRef<HTMLSpanElement, IconSwapTransitionProps>(
+const IconSwapTransitionImpl = forwardRef<HTMLSpanElement, IconSwapTransitionProps>(
   (
     {
       asChild,
@@ -53,30 +29,58 @@ export const IconSwapTransition = forwardRef<HTMLSpanElement, IconSwapTransition
     },
     ref,
   ) => {
-    const { isAnimating } = useOptionalAnimation();
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'span'), [asChild]);
-    const variants = iconSwapVariants[animationType as IconSwapAnimationType];
+    const { resolvedMotionStyle, shouldAnimate } = useHydratedAnimationPolicy();
+    const canUseAsChild = Boolean(
+      asChild && isValidElement(children) && children.type !== Fragment,
+    );
+    const Component = useMemo(
+      () => getMotionComponent(canUseAsChild ? Slot : 'span'),
+      [canUseAsChild],
+    );
+    const animationKey = resolvePresetKey<typeof iconSwapVariants, IconSwapAnimationType>(
+      iconSwapVariants,
+      animationType,
+      'pop',
+    );
+    const variants = iconSwapVariants[animationKey];
+    const shouldPlayEntrance = shouldAnimate && initial;
+    const motionKey = `${typeof transitionKey}:${String(transitionKey)}:${
+      shouldPlayEntrance ? 'entrance' : 'static'
+    }`;
 
     return (
-      <AnimatePresence mode="wait" initial={initial}>
-        {/* eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support. */}
-        <Component
-          key={String(transitionKey)}
+      <AnimatePresence mode="wait" initial={false}>
+        <IconSwapTransitionPresence
+          key={motionKey}
+          Component={Component}
           ref={ref}
           className={className}
-          style={style}
-          initial={isAnimating ? 'initial' : false}
-          animate={isAnimating ? 'animate' : undefined}
-          exit={isAnimating ? 'exit' : undefined}
-          variants={isAnimating ? variants : undefined}
-          transition={variants.transition}
-          {...rest}
+          isAsChild={canUseAsChild}
+          safeRest={sanitizeControlledMotionProps(rest)}
+          shouldAnimate={shouldAnimate}
+          staticStyle={sanitizeStaticStyle(style)}
+          transition={applyMotionStyle(variants.transition, resolvedMotionStyle)}
+          variants={applyMotionStyle(variants, resolvedMotionStyle)}
         >
           {children as ReactNode}
-        </Component>
+        </IconSwapTransitionPresence>
       </AnimatePresence>
     );
   },
 );
 
-IconSwapTransition.displayName = 'IconSwapTransition';
+IconSwapTransitionImpl.displayName = 'IconSwapTransition';
+
+/**
+ * Animates a compact icon or status replacement when `transitionKey` changes.
+ *
+ * Presence uses wait sequencing, so the exiting child is isolated before the
+ * new child enters. The transition itself owns neither status state nor the
+ * accessible name of the surrounding control. Reduced-motion policy renders a
+ * static swap. `asChild` delegates to one non-Fragment child.
+ */
+
+export const IconSwapTransition = defineMotionSlotComponent<
+  HTMLSpanElement,
+  IconSwapTransitionProps
+>(IconSwapTransitionImpl);

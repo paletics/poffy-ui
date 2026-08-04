@@ -1,11 +1,11 @@
-﻿import { Box, Stack } from '@/components/layout';
+import { Box, Stack } from '@/components/layout';
 import { IconButton } from '@/components/inputs/IconButton';
 import {
   InputGroup,
-  InputLeftAddon,
-  InputLeftElement,
-  InputRightAddon,
-  InputRightElement,
+  InputStartAddon,
+  InputStartElement,
+  InputEndAddon,
+  InputEndElement,
 } from '@/components/inputs/InputGroup';
 import {
   CheckIcon,
@@ -17,16 +17,8 @@ import {
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { expect, userEvent, within } from 'storybook/test';
-import { css } from '@/styled-system/css';
 
-/**
- * Storybook documentation and visual review surface for InputGroup.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta = {
   title: 'Inputs/InputGroup',
   component: InputGroup,
@@ -45,8 +37,6 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-const interactiveElementClass = css({ pointerEvents: 'auto' });
-
 export const Default: Story = {
   parameters: {
     docs: {
@@ -57,21 +47,21 @@ export const Default: Story = {
     },
   },
   render: () => (
-    <Stack gap="md" width="[320px]">
+    <Stack gap="md" width="[min(320px, calc(100vw - 4rem))]">
       <InputGroup>
-        <InputLeftAddon>https://</InputLeftAddon>
+        <InputStartAddon>https://</InputStartAddon>
         <InputGroup.Input placeholder="example.com" />
       </InputGroup>
 
       <InputGroup>
         <InputGroup.Input placeholder="Amount" type="number" />
-        <InputRightAddon>.00</InputRightAddon>
+        <InputEndAddon>.00</InputEndAddon>
       </InputGroup>
 
       <InputGroup>
-        <InputLeftAddon>https://</InputLeftAddon>
+        <InputStartAddon>https://</InputStartAddon>
         <InputGroup.Input placeholder="example" />
-        <InputRightAddon>.com</InputRightAddon>
+        <InputEndAddon>.com</InputEndAddon>
       </InputGroup>
     </Stack>
   ),
@@ -92,19 +82,19 @@ export const WithElements: Story = {
     },
   },
   render: () => (
-    <Stack gap="md" width="[320px]">
+    <Stack gap="md" width="[min(320px, calc(100vw - 4rem))]">
       <InputGroup>
-        <InputLeftElement>
+        <InputStartElement>
           <MailIcon />
-        </InputLeftElement>
+        </InputStartElement>
         <InputGroup.Input placeholder="Email address" type="email" />
       </InputGroup>
 
       <InputGroup>
         <InputGroup.Input type="password" placeholder="Enter password" />
-        <InputRightElement>
+        <InputEndElement>
           <CheckIcon />
-        </InputRightElement>
+        </InputEndElement>
       </InputGroup>
     </Stack>
   ),
@@ -120,18 +110,27 @@ export const Sizes: Story = {
     },
   },
   render: () => (
-    <Stack gap="md" width="[320px]">
+    <Stack gap="md" width="[min(320px, calc(100vw - 4rem))]">
       <InputGroup size="sm">
-        <InputLeftAddon>sm</InputLeftAddon>
+        <InputStartAddon>sm</InputStartAddon>
         <InputGroup.Input placeholder="Small field" />
+        <InputEndElement>
+          <SearchIcon />
+        </InputEndElement>
       </InputGroup>
       <InputGroup size="md">
-        <InputLeftAddon>md</InputLeftAddon>
+        <InputStartAddon>md</InputStartAddon>
         <InputGroup.Input placeholder="Medium field" />
+        <InputEndElement>
+          <SearchIcon />
+        </InputEndElement>
       </InputGroup>
       <InputGroup size="lg">
-        <InputLeftAddon>lg</InputLeftAddon>
+        <InputStartAddon>lg</InputStartAddon>
         <InputGroup.Input placeholder="Large field" />
+        <InputEndElement>
+          <SearchIcon />
+        </InputEndElement>
       </InputGroup>
     </Stack>
   ),
@@ -147,21 +146,21 @@ export const MixedLayout: Story = {
     },
   },
   render: () => (
-    <Stack gap="md" width="[400px]">
+    <Stack gap="md" width="[min(400px, calc(100vw - 4rem))]">
       <InputGroup>
-        <InputLeftAddon>https://</InputLeftAddon>
-        <InputLeftElement>
+        <InputStartAddon>https://</InputStartAddon>
+        <InputStartElement>
           <SearchIcon />
-        </InputLeftElement>
+        </InputStartElement>
         <InputGroup.Input placeholder="Search domain..." />
       </InputGroup>
 
       <InputGroup>
-        <InputLeftElement>
+        <InputStartElement>
           <MailIcon />
-        </InputLeftElement>
+        </InputStartElement>
         <InputGroup.Input placeholder="Send amount" type="number" />
-        <InputRightAddon>USD</InputRightAddon>
+        <InputEndAddon>USD</InputEndAddon>
       </InputGroup>
     </Stack>
   ),
@@ -179,7 +178,7 @@ export const PasswordReveal: Story = {
     docs: {
       description: {
         story:
-          'Constructing interactive elements using `InputRightElement`. Here, a clickable button controls the internal masked state (`type="password"` vs `text`).',
+          'Constructing interactive elements using `InputEndElement`. Here, a clickable button controls the internal masked state (`type="password"` vs `text`).',
       },
     },
   },
@@ -187,10 +186,14 @@ export const PasswordReveal: Story = {
     const [show, setShow] = useState(false);
 
     return (
-      <Box width="[320px]">
+      <Box width="[min(320px, calc(100vw - 4rem))]">
         <InputGroup>
-          <InputGroup.Input type={show ? 'text' : 'password'} placeholder="Enter your password" />
-          <InputRightElement className={interactiveElementClass}>
+          <InputGroup.Input
+            type={show ? 'text' : 'password'}
+            aria-label="Password"
+            placeholder="Enter your password"
+          />
+          <InputEndElement interactive>
             <IconButton
               size="xs"
               appearance="ghost"
@@ -198,7 +201,7 @@ export const PasswordReveal: Story = {
               aria-label={show ? 'Hide password' : 'Show password'}
               icon={show ? <EyeOffIcon /> : <EyeIcon />}
             />
-          </InputRightElement>
+          </InputEndElement>
         </InputGroup>
       </Box>
     );
@@ -218,4 +221,73 @@ export const PasswordReveal: Story = {
     await userEvent.click(button);
     await expect(input).toHaveAttribute('type', 'password');
   },
+};
+
+/** Verifies that a supported addon action keeps its external focus ring visible. */
+export const AddonFocusSafety: Story = {
+  render: () => (
+    <Box width="[min(320px, calc(100vw - 4rem))]">
+      <InputGroup>
+        <InputGroup.Input placeholder="Filter results" />
+        <InputEndAddon>
+          <IconButton aria-label="Clear filter" appearance="ghost" icon={<CheckIcon />} />
+        </InputEndAddon>
+      </InputGroup>
+    </Box>
+  ),
+};
+
+export const PracticalMinimum: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Recommended readable widths: 10rem for a standard field with one inline element, and 16rem for a composition with addons on both sides. Narrower fixtures verify containment and action access only.',
+      },
+    },
+  },
+  render: () => (
+    <Stack gap="lg">
+      <Box width="[10rem]" maxWidth="100%">
+        <InputGroup>
+          <InputStartElement>
+            <SearchIcon />
+          </InputStartElement>
+          <InputGroup.Input aria-label="Practical domain" defaultValue="example" />
+        </InputGroup>
+      </Box>
+      <Box width="[16rem]" maxWidth="100%" data-testid="practical-input-group-owner">
+        <InputGroup>
+          <InputStartAddon>https://</InputStartAddon>
+          <InputGroup.Input aria-label="Practical website" defaultValue="example" />
+          <InputEndAddon>.com</InputEndAddon>
+        </InputGroup>
+      </Box>
+    </Stack>
+  ),
+};
+
+/** Keeps a functional inline action available when decorative slots collapse. */
+export const ExtremeNarrowInteractiveElement: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'A 32px containment stress fixture below the practical text-input width. It verifies that the interactive end action remains reachable; readable input content is intentionally outside this fixture’s contract.',
+      },
+    },
+  },
+  render: () => (
+    <Box width="[2rem]">
+      <InputGroup>
+        <InputStartElement>
+          <SearchIcon />
+        </InputStartElement>
+        <InputGroup.Input aria-label="Narrow search" />
+        <InputEndElement interactive>
+          <IconButton aria-label="Clear narrow search" appearance="ghost" icon={<CheckIcon />} />
+        </InputEndElement>
+      </InputGroup>
+    </Box>
+  ),
 };

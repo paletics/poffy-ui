@@ -1,26 +1,15 @@
 'use client';
 
-import { cx } from '@/styled-system/css';
-import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
+import { createFeedbackDescription } from '@/components/feedback/shared/createFeedbackParts';
 import { useEmptyStateClasses } from './EmptyStateContext';
-import type { EmptyStateDescriptionProps } from './EmptyState.types';
 
 /**
- * Description text for EmptyState.
+ * Semantic explanatory-text slot for an `EmptyState` root.
+ *
+ * The default host is `p`; `asChild` accepts one native paragraph with phrasing content. Invalid
+ * hosts or block content fall back to textual content in the default paragraph.
  */
-export const EmptyStateDescription = forwardRef<HTMLParagraphElement, EmptyStateDescriptionProps>(
-  (props, ref) => {
-    const { asChild, children, className, ...rest } = props;
-    const Component = asChild ? Slot : 'p';
-    const classes = useEmptyStateClasses();
-
-    return (
-      <Component ref={ref} className={cx(classes.description, className)} {...rest}>
-        {children}
-      </Component>
-    );
-  },
-);
-
-EmptyStateDescription.displayName = 'EmptyStateDescription';
+export const EmptyStateDescription = createFeedbackDescription({
+  displayName: 'EmptyStateDescription',
+  useClasses: useEmptyStateClasses,
+});

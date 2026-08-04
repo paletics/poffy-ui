@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import type { inputGroup } from '@/styled-system/recipes';
 import type { InputGroupSize } from './InputGroup.types';
 
 /**
@@ -8,10 +9,11 @@ import type { InputGroupSize } from './InputGroup.types';
  */
 interface InputGroupContextValue {
   size: InputGroupSize;
-  hasLeftAddon: boolean;
-  hasRightAddon: boolean;
-  hasLeftElement: boolean;
-  hasRightElement: boolean;
+  classes: ReturnType<typeof inputGroup>;
+  hasStartAddon: boolean;
+  hasEndAddon: boolean;
+  hasStartElement: boolean;
+  hasEndElement: boolean;
 }
 
 /**
@@ -20,9 +22,7 @@ interface InputGroupContextValue {
 export const InputGroupContext = createContext<InputGroupContextValue | null>(null);
 
 /**
- * Returns the nearest InputGroup context, or null if not inside an InputGroup.
- */
-/**
  * Returns InputGroup context when a control is rendered inside an InputGroup.
+ * Returns `null` outside an InputGroup so standalone parts can use their default styling.
  */
 export const useInputGroup = (): InputGroupContextValue | null => useContext(InputGroupContext);

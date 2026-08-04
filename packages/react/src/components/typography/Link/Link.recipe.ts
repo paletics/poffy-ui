@@ -8,10 +8,19 @@ export const linkRecipe = defineRecipe({
   description: 'Styled anchor component with color and decoration variants',
   base: {
     cursor: 'pointer',
+    overflowWrap: 'anywhere',
     textDecoration: 'none',
     transitionProperty: 'color, opacity',
     transitionDuration: '{durations.fast}',
     transitionTimingFunction: '{easings.default}',
+    _motionSubtle: {
+      transitionDuration: '{durations.ultraFast}',
+      transitionTimingFunction: '{easings.soft}',
+    },
+    _motionPop: {
+      transitionDuration: '{durations.standard}',
+      transitionTimingFunction: '{easings.bounce}',
+    },
     _focusVisible: {
       outline: '2px solid',
       outlineColor: '{colors.brand.main}',

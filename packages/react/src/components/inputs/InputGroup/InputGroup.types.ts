@@ -1,45 +1,80 @@
 import { PrimitiveProps } from '@poffy-ui/types';
+import type { InputProps } from '@/components/inputs/Input';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * ### AI Context & Architecture
- * - Tier: Molecules
- */
+/** Shared size applied to the grouped field and slots. */
 export type InputGroupSize = 'sm' | 'md' | 'lg';
 
-/**
- * Own props for InputGroup.
- *
- * ### Notes
- * InputGroup is structural: render `InputGroup` as the root, exactly one input
- * control inside, and optional left/right addons or elements. Addons are part of
- * the layout; interactive elements inside them must still be keyboard reachable
- * and labeled.
- *
- * Do: use addons for static prefixes/suffixes such as currency or units.
- * Don't: put multiple primary inputs in one InputGroup.
- *
- * @example
- * ```tsx
- * import { Input, InputGroup, InputLeftAddon } from '@poffy-ui/react/inputs';
- *
- * <InputGroup>
- *   <InputLeftAddon>https://</InputLeftAddon>
- *   <Input aria-label="Domain" />
- * </InputGroup>
- * ```
- *
- * Related: InputProps for the contained field API.
- */
+/** Props for the structural InputGroup root. */
 export interface InputGroupOwnProps {
-  /** Shared size for grouped input parts. */
+  /**
+   * Shared size for grouped input parts.
+   *
+   * @defaultValue `'md'`
+   */
   size?: InputGroupSize;
 }
 
 /** Props for InputGroup root. */
-export type InputGroupProps = PrimitiveProps<'div', InputGroupOwnProps>;
+type InputGroupNativeProps = PrimitiveProps<'div', InputGroupOwnProps>;
+/** Props for InputGroup's owned div host. */
+export type InputGroupDefaultProps = DefaultHostProps<InputGroupNativeProps>;
+/**
+ * Props for a delegated InputGroup host.
+ *
+ * Runtime accepts `article`, `div`, `section`, or a custom component that
+ * forwards the ref and DOM props; other native hosts fall back to a div.
+ */
+export type InputGroupAsChildProps = RetargetedAsChildHostProps<InputGroupNativeProps, Element>;
+/** Props accepted by InputGroup's owned or delegated root. */
+export type InputGroupProps = InputGroupDefaultProps | InputGroupAsChildProps;
+/** Ref-forwarding public component signature for InputGroupRoot. */
+export type InputGroupComponent = PolymorphicAsChildComponent<
+  InputGroupDefaultProps,
+  InputGroupAsChildProps,
+  HTMLDivElement,
+  Element
+>;
+
+/** Props for the input slot. Size is owned by the surrounding InputGroup. */
+export type InputGroupInputProps = Omit<InputProps, 'size'>;
 
 /** Props for InputGroup addon slots. */
-export type InputAddonProps = PrimitiveProps<'div'>;
+type InputAddonNativeProps = PrimitiveProps<'div'>;
+/** Props for an addon rendered in its own div host. */
+export type InputAddonDefaultProps = DefaultHostProps<InputAddonNativeProps>;
+/** Props for an addon delegated to one non-void child host. */
+export type InputAddonAsChildProps = RetargetedAsChildHostProps<InputAddonNativeProps, Element>;
+/** Props accepted by InputGroup.StartAddon and InputGroup.EndAddon. */
+export type InputAddonProps = InputAddonDefaultProps | InputAddonAsChildProps;
+/** Ref-forwarding public component signature for an InputGroup addon. */
+export type InputAddonComponent = PolymorphicAsChildComponent<
+  InputAddonDefaultProps,
+  InputAddonAsChildProps,
+  HTMLDivElement,
+  Element
+>;
 
-/** Props for InputGroup element slots. */
-export type InputElementProps = PrimitiveProps<'div'>;
+/** Props for compact InputGroup element slots. */
+interface InputElementOwnProps {
+  /** Enables pointer interaction; interactive content must supply its own accessible name. */
+  interactive?: boolean;
+}
+type InputElementNativeProps = PrimitiveProps<'div', InputElementOwnProps>;
+/** Props for an element rendered in its own div host. */
+export type InputElementDefaultProps = DefaultHostProps<InputElementNativeProps>;
+/** Props for an element delegated to one non-void child host. */
+export type InputElementAsChildProps = RetargetedAsChildHostProps<InputElementNativeProps, Element>;
+/** Props accepted by InputGroup.StartElement and InputGroup.EndElement. */
+export type InputElementProps = InputElementDefaultProps | InputElementAsChildProps;
+/** Ref-forwarding public component signature for an InputGroup element. */
+export type InputElementComponent = PolymorphicAsChildComponent<
+  InputElementDefaultProps,
+  InputElementAsChildProps,
+  HTMLDivElement,
+  Element
+>;

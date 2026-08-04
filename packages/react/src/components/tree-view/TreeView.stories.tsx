@@ -1,16 +1,10 @@
 ﻿import { Box, Flex } from '@/components/layout';
 import { FileIcon, FolderIcon } from '@/components/media/Icon/icons';
+import { AnimationProvider } from '@/providers/AnimationProvider';
 import type { Meta, StoryObj } from '@storybook/react';
 import { TreeView } from './index';
 
-/**
- * Storybook documentation and visual review surface for TreeView.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta: Meta<typeof TreeView> = {
   title: 'Display/TreeView',
   component: TreeView,
@@ -64,6 +58,49 @@ const myHierarchyData = [
   { id: '3', name: 'package.json', icon: <FileIcon /> },
 ];
 
+const deepHierarchyData = [
+  {
+    id: 'deep-1',
+    name: 'Level 1',
+    icon: <FolderIcon />,
+    children: [
+      {
+        id: 'deep-2',
+        name: 'Level 2',
+        icon: <FolderIcon />,
+        children: [
+          {
+            id: 'deep-3',
+            name: 'Level 3',
+            icon: <FolderIcon />,
+            children: [
+              {
+                id: 'deep-4',
+                name: 'Level 4',
+                icon: <FolderIcon />,
+                children: [
+                  {
+                    id: 'deep-5',
+                    name: 'Level 5',
+                    icon: <FolderIcon />,
+                    children: [
+                      {
+                        id: 'deep-leaf',
+                        name: 'Deep leaf',
+                        icon: <FileIcon />,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  },
+];
+
 export const Default: Story = {
   render: (args) => (
     <Box width="[300px]">
@@ -86,7 +123,7 @@ export const ManualPartsConstruction: Story = {
   render: () => (
     <Box width="[300px]">
       <TreeView.Root defaultExpandedIds={['node-1']}>
-        <TreeView.Item id="node-1">
+        <TreeView.Item id="node-1" hasChildren>
           <TreeView.Trigger>
             <FolderIcon />
             <TreeView.Label>Folder</TreeView.Label>
@@ -109,7 +146,7 @@ export const WithCheckboxes: Story = {
   render: () => (
     <Box width="[300px]">
       <TreeView.Root defaultExpandedIds={['node-1']}>
-        <TreeView.Item id="node-1" childrenIds={['node-1-1', 'node-1-2']}>
+        <TreeView.Item id="node-1" hasChildren childrenIds={['node-1-1', 'node-1-2']}>
           <Flex align="center" gap="xs">
             <TreeView.Checkbox aria-label="Select Documents" />
             <TreeView.Trigger>
@@ -140,5 +177,47 @@ export const WithCheckboxes: Story = {
         </TreeView.Item>
       </TreeView.Root>
     </Box>
+  ),
+};
+
+export const LongLabel: Story = {
+  render: () => (
+    <Box width="[12rem]">
+      <TreeView.Root defaultExpandedIds={['long-folder']}>
+        <TreeView.Item id="long-folder" hasChildren>
+          <TreeView.Trigger>
+            <FolderIcon />
+            <TreeView.Label>
+              A deliberately long folder name that must truncate without overflowing its tree row
+            </TreeView.Label>
+          </TreeView.Trigger>
+          <TreeView.Content>
+            <TreeView.Item id="long-file" hasChildren={false}>
+              <TreeView.Trigger>
+                <FileIcon />
+                <TreeView.Label>
+                  A deliberately long child filename that must truncate within a narrow viewport.tsx
+                </TreeView.Label>
+              </TreeView.Trigger>
+            </TreeView.Item>
+          </TreeView.Content>
+        </TreeView.Item>
+      </TreeView.Root>
+    </Box>
+  ),
+};
+
+export const DeepConstrainedReducedMotion: Story = {
+  render: () => (
+    <AnimationProvider global={false} defaultAnimationEnabled={false}>
+      <Box width="[6rem]" aria-label="Deep constrained tree container" dir="rtl">
+        <TreeView
+          aria-label="Deep constrained tree"
+          data={deepHierarchyData}
+          defaultExpandedIds={['deep-1', 'deep-2', 'deep-3', 'deep-4', 'deep-5']}
+          dir="rtl"
+        />
+      </Box>
+    </AnimationProvider>
   ),
 };

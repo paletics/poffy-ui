@@ -8,6 +8,10 @@ import { createContext, useContext } from 'react';
  */
 interface FormControlContextValue {
   /**
+   * Whether the associated field is a native labelable control or a composite group.
+   */
+  labelTarget?: 'control' | 'group';
+  /**
    * Whether the form control is in an invalid state.
    */
   isInvalid?: boolean;
@@ -30,15 +34,17 @@ interface FormControlContextValue {
   /**
    * ID of the associated helper text.
    */
-  helperTextId?: string;
+  helperTextIds?: string[];
   /**
    * ID of the associated error message.
    */
-  errorMessageId?: string;
+  errorMessageIds?: string[];
   /**
    * Base ID shared by associated accessibility attributes.
    */
   id?: string;
+  registerHelperText?: (id: string) => () => void;
+  registerErrorMessage?: (id: string) => () => void;
 }
 
 const FormControlContext = createContext<FormControlContextValue | undefined>(undefined);

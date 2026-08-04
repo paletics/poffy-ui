@@ -2,17 +2,12 @@ import type { Meta, StoryObj } from '@storybook/react';
 import { Box } from '@/components/layout/Box';
 import { Center } from '@/components/layout/Center';
 import { Flex } from '@/components/layout/Flex';
+import { Button } from '@/components/inputs/Button';
 import { ScrollArea } from '@/components/layout/ScrollArea';
 import { Text } from '@/components/typography/Text';
 import { css } from '@/styled-system/css';
 
-/**
- * A cross-platform scrollable container that replaces native OS scrollbars with consistently styled custom scrollbars, supporting vertical, horizontal, or both-axis scrolling.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (Recipe: scrollArea - SVA), custom useScrollArea hook
- */
+
 const meta: Meta<typeof ScrollArea> = {
   title: 'Layout/ScrollArea',
   component: ScrollArea,
@@ -39,9 +34,12 @@ const longText = Array.from(
 
 const verticalAreaClass = css({ height: '[200px]', width: '[300px]' });
 const horizontalAreaClass = css({ height: '[100px]', width: '[300px]' });
+const narrowVerticalAreaClass = css({ height: '[120px]', width: '[40px]' });
+const narrowHorizontalAreaClass = css({ height: '[40px]', width: '[120px]' });
 
 export const Default: Story = {
   args: {
+    'aria-label': 'Scrollable items',
     className: verticalAreaClass,
   },
   render: (args) => (
@@ -162,4 +160,57 @@ export const LargeScrollbar: Story = {
     size: 'lg',
     className: verticalAreaClass,
   },
+};
+
+export const NoOverflowInteraction: Story = {
+  render: () => (
+    <ScrollArea
+      aria-label="Non-overflowing actions"
+      className={horizontalAreaClass}
+      orientation="vertical"
+    >
+      <Box p="md">
+        <Button isGrow>Right edge action</Button>
+      </Box>
+    </ScrollArea>
+  ),
+};
+
+export const EdgeAligned: Story = {
+  render: () => (
+    <Flex gap="lg" wrap="wrap">
+      <ScrollArea
+        data-testid="edge-scroll-ltr"
+        aria-label="Narrow LTR scroll area"
+        className={narrowVerticalAreaClass}
+      >
+        <Box height="[400px]" width="100%" bg="layout.background" />
+      </ScrollArea>
+      <ScrollArea
+        data-testid="edge-scroll-rtl"
+        aria-label="Narrow RTL scroll area"
+        className={narrowVerticalAreaClass}
+        dir="rtl"
+      >
+        <Box height="[400px]" width="100%" bg="layout.background" />
+      </ScrollArea>
+      <ScrollArea
+        data-testid="edge-scroll-horizontal"
+        aria-label="Narrow horizontal scroll area"
+        className={narrowHorizontalAreaClass}
+        orientation="horizontal"
+      >
+        <Box height="100%" width="[400px]" bg="layout.background" />
+      </ScrollArea>
+      <ScrollArea
+        data-testid="edge-scroll-horizontal-rtl"
+        aria-label="Narrow horizontal RTL scroll area"
+        className={narrowHorizontalAreaClass}
+        orientation="horizontal"
+        dir="rtl"
+      >
+        <Box height="100%" width="[400px]" bg="layout.background" />
+      </ScrollArea>
+    </Flex>
+  ),
 };

@@ -57,6 +57,10 @@ export function App() {
 
 Note: `@poffy-ui/react/styles.css` includes the base token CSS from `@poffy-ui/system` plus component styles.
 
+When rendering components or floating portals into a `ShadowRoot`, install the
+same stylesheet inside that shadow tree as an adopted stylesheet or `<style>`
+element. CSS loaded in the owner document does not cross the shadow boundary.
+
 ## Development
 
 Requirements:
@@ -76,6 +80,7 @@ pnpm storybook
 More details:
 
 - docs index: `docs/README.md`
+- 0.2 migration: `docs/0.2-migration.md`
 - setup: `docs/setup.md`
 - architecture: `docs/architecture.md`
 - contribution: `CONTRIBUTING.md`

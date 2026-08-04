@@ -10,10 +10,15 @@ import { usePagination } from './PaginationContext';
  */
 export const PaginationEllipsis = forwardRef<HTMLLIElement, PaginationEllipsisProps>(
   (props, ref) => {
-    const { className, ...rest } = props;
-    const { classes } = usePagination();
+    const { className, 'aria-label': ariaLabel, ...rest } = props;
+    const { classes, labels } = usePagination();
     return (
-      <li ref={ref} className={cx(classes.item, className)} aria-label="more pages" {...rest}>
+      <li
+        ref={ref}
+        className={cx(classes.item, className)}
+        aria-label={ariaLabel ?? labels.morePages}
+        {...rest}
+      >
         <span aria-hidden="true" className={classes.ellipsis}>
           ...
         </span>

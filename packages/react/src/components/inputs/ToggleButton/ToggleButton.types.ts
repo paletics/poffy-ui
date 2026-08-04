@@ -1,6 +1,12 @@
 import type { ToggleButtonVariantProps } from '@/styled-system/recipes';
-import { PrimitiveProps } from '@poffy-ui/types';
-import { ReactNode } from 'react';
+import type { PrimitiveProps } from '@poffy-ui/types';
+import type { ReactNode } from 'react';
+import type { DelegatedButtonHostProps } from '@/components/shared/buttonDelegation';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
 /**
  * Semantic accent color for ToggleButton.
@@ -17,75 +23,26 @@ export type ToggleButtonAppearance = 'soft' | 'outline' | 'ghost' | 'minimal';
  */
 export type ToggleButtonShape = 'rounded' | 'pill' | 'square';
 
-/**
- * Variants for the ToggleButton component based on Panda CSS recipe.
- */
+/** Visual options for `ToggleButton`. */
 export interface ToggleButtonVariants extends Omit<
   ToggleButtonVariantProps,
-  'intent' | 'appearance'
+  'intent' | 'variant' | 'pressed'
 > {
   intent?: ToggleButtonIntent;
   appearance?: ToggleButtonAppearance;
   shape?: ToggleButtonShape;
 }
 
-/**
- * Properties for the ToggleButton component.
- * Represents a button that can be toggled between two states (pressed or not).
- *
- * ### Notes
- * `pressed` is controlled and should be paired with `onPressedChange`; use
- * `defaultPressed` for uncontrolled initial state. Icon-only toggle buttons
- * must provide `aria-label`. The component maps state to `aria-pressed`.
- *
- * Do: use ToggleButton for independent on/off preferences.
- * Don't: use it for mutually exclusive choices; use RadioGroup instead.
- *
- * @example
- * ```tsx
- * import { ToggleButton } from '@poffy-ui/react/inputs';
- *
- * <ToggleButton pressed={favorite} onPressedChange={setFavorite}>
- *   Favorite
- * </ToggleButton>
- * ```
- *
- * Related: RadioGroupProps for exclusive option sets.
- * Related: ButtonProps for non-toggle actions.
- */
-export interface ToggleButtonProps
-  extends Omit<PrimitiveProps<'button'>, 'children'>, Omit<ToggleButtonVariants, 'pressed'> {
-  /**
-   * The content to display inside the button.
-   */
+/** Visual and content props shared by controlled and uncontrolled toggle buttons. */
+export interface ToggleButtonOwnProps extends Omit<ToggleButtonVariants, 'pressed'> {
+  /** Content that names the toggle; icon-only uses must provide `aria-label`. */
   children: ReactNode;
 
-  /**
-   * Whether the button is currently in a pressed state (controlled).
-   */
-  pressed?: boolean;
+  /** Decorative icon placed before the content. */
+  startIcon?: ReactNode;
 
-  /**
-   * The initial pressed state for uncontrolled usage.
-   * @defaultValue `false`
-   */
-  defaultPressed?: boolean;
-
-  /**
-   * Callback fired when the pressed state changes.
-   * @param pressed The new pressed state.
-   */
-  onPressedChange?: (pressed: boolean) => void;
-
-  /**
-   * Optional icon to display before the children.
-   */
-  leftIcon?: ReactNode;
-
-  /**
-   * Optional icon to display after the children.
-   */
-  rightIcon?: ReactNode;
+  /** Decorative icon placed after the content. */
+  endIcon?: ReactNode;
 
   /**
    * Whether the button is disabled.
@@ -93,3 +50,56 @@ export interface ToggleButtonProps
    */
   disabled?: boolean;
 }
+
+type ToggleButtonStateProps =
+  | {
+      pressed: boolean;
+      defaultPressed?: never;
+      onPressedChange: (pressed: boolean) => void;
+    }
+  | {
+      pressed?: never;
+      defaultPressed?: boolean;
+      onPressedChange?: (pressed: boolean) => void;
+    };
+
+type ToggleButtonNativeBaseProps = Omit<PrimitiveProps<'button', ToggleButtonOwnProps>, 'type'>;
+
+/** Native-host props for a toggle with either controlled or uncontrolled state ownership. */
+export type ToggleButtonDefaultProps = ToggleButtonStateProps extends infer StateProps
+  ? StateProps extends ToggleButtonStateProps
+    ? DefaultHostProps<ToggleButtonNativeBaseProps & StateProps>
+    : never
+  : never;
+
+type ToggleButtonDelegatedBaseProps =
+  DelegatedButtonHostProps<ToggleButtonNativeBaseProps>;
+
+/**
+ * Props for a toggle delegated with `asChild`.
+ *
+ * The child must be an action-only host. A native button receives `disabled` and
+ * `type="button"`; a passive host receives button role and keyboard semantics.
+ * Link-like or incompatible hosts fall back to the owned native button.
+ */
+export type ToggleButtonAsChildProps = ToggleButtonStateProps extends infer StateProps
+  ? StateProps extends ToggleButtonStateProps
+    ? RetargetedAsChildHostProps<ToggleButtonDelegatedBaseProps & StateProps, HTMLElement>
+    : never
+  : never;
+
+/**
+ * Props accepted by ToggleButton in its owned or delegated form.
+ *
+ * Controlled usage requires both `pressed` and `onPressedChange`; otherwise
+ * `defaultPressed` seeds local state and the callback is optional.
+ */
+export type ToggleButtonProps = ToggleButtonDefaultProps | ToggleButtonAsChildProps;
+
+/** Ref-forwarding public component signature for ToggleButton. */
+export type ToggleButtonComponent = PolymorphicAsChildComponent<
+  ToggleButtonDefaultProps,
+  ToggleButtonAsChildProps,
+  HTMLButtonElement,
+  HTMLElement
+>;

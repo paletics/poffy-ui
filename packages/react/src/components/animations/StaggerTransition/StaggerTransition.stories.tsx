@@ -4,13 +4,6 @@ import { Stack } from '@/components/layout/Stack';
 import { StaggerTransition } from '@/components/animations/StaggerTransition/StaggerTransition';
 import { css } from '@/styled-system/css';
 
-/**
- * Orchestrates staggered entrance animations for groups of non-semantic elements such as grids and card arrays, using React Context to propagate timing and item animation style to child `StaggerTransition.Item` nodes. Used for Masonry grids, card layouts, and generic flow layouts.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (stagger propagation, variants), StaggerTransition presets, React Context, Radix Slot
- */
 const meta: Meta<typeof StaggerTransition> = {
   title: 'Animations/StaggerTransition',
   component: StaggerTransition,
@@ -24,10 +17,11 @@ const renderItem = (index: number) => (
   <StaggerTransition.Item
     key={index}
     className={css({
-      p: '[16px]',
+      p: 'base',
       bg: 'white',
-      border: '1px solid',
-      borderColor: 'slate.200',
+      borderWidth: 'thin',
+      borderStyle: 'solid',
+      borderColor: 'layout.divider',
       borderRadius: 'md',
       boxShadow: 'sm',
     })}
@@ -41,11 +35,11 @@ export const Default: Story = {
     <StaggerTransition
       asChild
       className={css({
-        p: '[32px]',
+        p: 'xl',
         bg: 'slate.50',
       })}
     >
-      <Stack gap="[8px]">{[...Array(5)].map((_, i) => renderItem(i))}</Stack>
+      <Stack gap="sm">{[...Array(5)].map((_, i) => renderItem(i))}</Stack>
     </StaggerTransition>
   ),
 };
@@ -67,8 +61,8 @@ export const GridPop: Story = {
       className={css({
         display: 'grid',
         gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '[16px]',
-        p: '[32px]',
+        gap: 'base',
+        p: 'xl',
       })}
     >
       <Grid>
@@ -104,11 +98,11 @@ export const SlideHorizontal: Story = {
       {...args}
       asChild
       className={css({
-        p: '[32px]',
+        p: 'xl',
         maxWidth: '[400px]',
       })}
     >
-      <Stack gap="[8px]">
+      <Stack gap="sm">
         {[...Array(4)].map((_, i) => (
           <StaggerTransition.Item
             key={i}

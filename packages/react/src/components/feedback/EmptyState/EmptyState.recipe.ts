@@ -20,9 +20,11 @@ export const emptyStateRecipe = defineSlotRecipe({
       borderRadius: '{radii.md}',
       borderWidth: '1px',
       borderStyle: 'dashed',
-      borderColor: 'layout.divider',
+      borderColor: '{colors.layout.divider}',
       backgroundColor: 'var(--empty-state-surface)',
       width: '100%',
+      maxWidth: '100%',
+      minWidth: 0,
     },
     icon: {
       color: 'var(--empty-state-main)',
@@ -38,22 +40,29 @@ export const emptyStateRecipe = defineSlotRecipe({
       },
     },
     title: {
+      minWidth: 0,
+      maxWidth: '100%',
       fontWeight: 'bold',
       fontSize: 'lg',
       marginBottom: '{spacing.2xs}',
       lineHeight: 'tight',
+      overflowWrap: 'anywhere',
     },
     description: {
-      color: 'text.secondary',
+      minWidth: 0,
+      maxWidth: 'min({sizes.sm}, 100%)',
+      color: '{colors.text.secondary}',
       fontSize: 'sm',
-      maxWidth: '{sizes.sm}',
       marginBottom: '{spacing.lg}',
+      overflowWrap: 'anywhere',
     },
     actions: {
       display: 'flex',
+      maxWidth: '100%',
       gap: '{spacing.md}',
       alignItems: 'center',
       justifyContent: 'center',
+      flexWrap: 'wrap',
     },
   },
   variants: {
@@ -66,7 +75,7 @@ export const emptyStateRecipe = defineSlotRecipe({
           marginBottom: '{spacing.sm}',
         },
         title: { fontSize: 'md' },
-        description: { fontSize: 'xs' },
+        description: { fontSize: 'sm' },
       },
       md: {
         root: { padding: '{spacing.xl}' },
@@ -85,17 +94,17 @@ export const emptyStateRecipe = defineSlotRecipe({
         description: { fontSize: 'md' },
       },
     },
-    variant: {
-      dashed: {
+    appearance: {
+      outline: {
         root: { borderStyle: 'dashed', backgroundColor: 'transparent' },
       },
       solid: {
         root: { borderStyle: 'solid', backgroundColor: 'var(--empty-state-surface)' },
       },
       elevated: {
-        root: { borderStyle: 'none', boxShadow: '{shadows.md}', bg: 'layout.surface' },
+        root: { borderStyle: 'none', boxShadow: '{shadows.md}', bg: '{colors.layout.surface}' },
       },
-      flat: {
+      soft: {
         root: { borderStyle: 'none', bg: 'var(--empty-state-surface)' },
       },
     },
@@ -140,7 +149,7 @@ export const emptyStateRecipe = defineSlotRecipe({
   },
   defaultVariants: {
     size: 'md',
-    variant: 'flat',
+    appearance: 'soft',
     intent: 'primary',
   },
 });

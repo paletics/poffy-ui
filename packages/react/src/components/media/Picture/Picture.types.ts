@@ -12,37 +12,12 @@ import { NativeProps } from '@poffy-ui/types';
 export type PictureRecipeVariants = RecipeVariantProps<typeof picture>;
 
 /**
- * PictureOwnProps
- *
- * Properties specific to the Picture component, including:
- * - `PictureRecipeVariants`: Variants defined in the Panda CSS recipe (e.g., `fit`).
- *
- * Related: `PictureRecipeVariants`
+ * Visual recipe props applied to the native `picture` element.
  */
 export type PictureOwnProps = PictureRecipeVariants;
 
 /**
- * PictureProps
- *
- * The public props for the Picture component.
- *
- * @example
- * ```tsx
- * import { Picture } from '@poffy-ui/react/media';
- *
- * <Picture fit="cover">
- *   <source srcSet="photo.webp" type="image/webp" />
- *   <img src="photo.jpg" alt="A landscape" />
- * </Picture>
- * ```
- *
- * ### Notes
- * Do: make the fallback `<img>` the final child and give it appropriate `alt` text.
- * Don't: put multiple `<img>` children inside Picture; browsers use the last
- * image fallback semantics.
- *
- * ### AI Usage
- * - Use Picture for format switching, density switching, or art direction.
- * - Use Image from `@poffy-ui/react/media` for a single source with fallback handling.
+ * Props for responsive-image art direction. Provide zero or more direct `source` children followed by
+ * one final `img`; source selection does not retry a URL after a network failure.
  */
 export type PictureProps = NativeProps<'picture', PictureOwnProps>;

@@ -1,101 +1,62 @@
 'use client';
 
-import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
-import type { KeyboardEvent, MouseEvent } from 'react';
-import type { PressablePrimitiveProps } from './PressablePrimitive.types';
-
-const isNativeKeyboardClickable = (element: EventTarget | null) => {
-  if (!(element instanceof HTMLElement)) return false;
-
-  if (element.tagName === 'BUTTON') return true;
-  if (element.tagName === 'A' && element.hasAttribute('href')) return true;
-
-  return false;
-};
+import { ButtonPrimitive } from '@/components/inputs/ButtonPrimitive';
+import { shouldProvideButtonPrimitiveSemantics } from '@/components/inputs/ButtonPrimitive/ButtonPrimitive.utils';
+import { createElement, forwardRef } from 'react';
+import type {
+  ElementType,
+  KeyboardEvent,
+  KeyboardEventHandler,
+  MouseEvent,
+  MouseEventHandler,
+} from 'react';
+import type {
+  PressablePrimitiveComponent,
+  PressablePrimitiveProps,
+} from './PressablePrimitive.types';
 
 /**
- * Shared pressable primitive for interaction controls.
- * Adds normalized disabled/keyboard behavior when using `asChild`.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: native `<button>` or Radix Slot via `asChild`
- * - **Props**: `PrimitiveProps<'button', PressablePrimitiveBaseProps>`
- *
- * ### Design Tokens
- * - No visual tokens are applied; consumers own all styling.
- *
- * ### Accessibility
- * - **Role**: button semantics from the rendered element.
- * - **Keyboard**: Enter / Space activate non-native slotted controls through `onPress`.
- * - **Required**: Use a native button or link child when possible.
- *
- * ### AI Usage
- * - **DO**: Use as the behavior base for custom pressable controls.
- * - **DON'T**: Use for toggle state by itself; compose explicit ARIA state in the consumer.
- *
- * @example Press handler
- * ```tsx
- * import { PressablePrimitive } from '@poffy-ui/react/inputs';
- *
- * <PressablePrimitive onPress={handlePress}>Open</PressablePrimitive>
- * ```
+ * A behavior-focused adapter over ButtonPrimitive that adds press callbacks.
  */
-export const PressablePrimitive = forwardRef<HTMLButtonElement, PressablePrimitiveProps>(
-  (props, ref) => {
-    const {
-      asChild,
-      disabled = false,
-      type = 'button',
-      onClick,
-      onKeyDown,
-      onPress,
-      onPressKeyDown,
-      ...rest
-    } = props;
-    const Component = asChild ? Slot : 'button';
+const PressablePrimitiveImpl = forwardRef<HTMLElement, PressablePrimitiveProps>(
+  ({ asChild, children, onClick, onKeyDown, onPress, onPressKeyDown, ...props }, ref) => {
+    const emulatesButtonHost = Boolean(asChild && shouldProvideButtonPrimitiveSemantics(children));
 
-    const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
-      if (disabled) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
-      onPress?.(e);
-      onClick?.(e);
+    const handleClick = (event: MouseEvent<HTMLElement>) => {
+      (onClick as MouseEventHandler<HTMLElement> | undefined)?.(event);
+      if (event.defaultPrevented) return;
+
+      (onPress as MouseEventHandler<HTMLElement> | undefined)?.(event);
+      if (emulatesButtonHost) event.preventDefault();
     };
 
-    const handleKeyDown = (e: KeyboardEvent<HTMLButtonElement>) => {
-      if (disabled) {
-        e.preventDefault();
-        return;
-      }
-      if (
-        asChild &&
-        (e.key === 'Enter' || e.key === ' ') &&
-        !e.repeat &&
-        !isNativeKeyboardClickable(e.currentTarget)
-      ) {
-        e.preventDefault();
-        onPress?.(e as unknown as MouseEvent<HTMLButtonElement>);
-      }
-      onPressKeyDown?.(e);
-      onKeyDown?.(e);
+    const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
+      (onPressKeyDown as KeyboardEventHandler<HTMLElement> | undefined)?.(event);
+      (onKeyDown as KeyboardEventHandler<HTMLElement> | undefined)?.(event);
     };
 
-    return (
-      <Component
-        ref={ref}
-        type={asChild ? undefined : type}
-        disabled={asChild ? undefined : disabled}
-        aria-disabled={disabled ? true : undefined}
-        onClick={handleClick}
-        onKeyDown={handleKeyDown}
-        {...rest}
-      />
+    return createElement(
+      ButtonPrimitive as unknown as ElementType,
+      {
+        ref,
+        asChild,
+        onClick: handleClick,
+        onKeyDown: handleKeyDown,
+        ...props,
+      },
+      children,
     );
   },
 );
 
-PressablePrimitive.displayName = 'PressablePrimitive';
+PressablePrimitiveImpl.displayName = 'PressablePrimitive';
+
+/**
+ * Adds press callbacks to unstyled button behavior.
+ *
+ * `onClick` runs before `onPress` and can prevent it with `event.preventDefault()`.
+ * `onPressKeyDown` runs before `onKeyDown`; passive `asChild` hosts retain the button keyboard
+ * behavior supplied by `ButtonPrimitive`.
+ */
+
+export const PressablePrimitive = PressablePrimitiveImpl as PressablePrimitiveComponent;

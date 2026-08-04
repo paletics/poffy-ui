@@ -6,6 +6,9 @@ export { DropdownSeparator } from './DropdownSeparator';
 export { DropdownTrigger } from './DropdownTrigger';
 
 export type {
+  DropdownItemAsChildProps,
+  DropdownItemComponent,
+  DropdownItemDefaultProps,
   DropdownItemProps,
   DropdownLabelProps,
   DropdownMenuProps,

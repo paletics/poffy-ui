@@ -1,11 +1,18 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { useBrand } from './BrandProvider';
 import { useColorMode } from './ColorModeProvider';
 import { useLocale } from './LocaleProvider';
 import { useDirection } from './DirectionProvider';
-import { applyCustomBrandVars, removeCustomBrandVars } from './brand-css-vars';
+import { useOptionalAnimation } from './AnimationProvider';
+import { getCustomBrandStyle } from './brand-css-vars';
+import {
+  getThemeTokenOverrideStyle,
+  normalizeThemeTokenOverrides,
+  ThemeTokenOverrideProvider,
+  useThemeTokenOverrides,
+} from './theme-token-overrides';
+import { useMotionScopeAttributes } from './useMotionScopeAttributes';
 import { css, cx } from '@/styled-system/css';
 import type { ThemeBoundaryProps } from './ThemeBoundary.types';
 
@@ -16,69 +23,51 @@ const boundaryClass = css({
   transitionDuration: 'standard',
 });
 
+const boundaryMotionClasses = {
+  subtle: css({ transitionDuration: 'ultraFast', transitionTimingFunction: 'soft' }),
+  standard: undefined,
+  pop: css({ transitionDuration: 'standard', transitionTimingFunction: 'bounce' }),
+  none: undefined,
+} as const;
+
 /**
- * A scoped theme container that applies `data-brand` and `data-theme` attributes to its
- * subtree, restricting Panda CSS semantic token resolution to the local DOM boundary.
- *
- * ### AI Context & Architecture
- * - **Tier**: Provider / Infrastructure
- * - **Scope**: Feature Boundary — wraps subsections that need an isolated brand or color mode
- * - **Stack**: Panda CSS (semantic tokens), `useBrand`, `useColorMode`, `useLocale`, `useDirection`
- * - **Props**: `ThemeBoundaryProps`
- *
- * ### Design Tokens
- * - **color**: `layout.background`, `text.primary` — semantic tokens only, no raw hex
- * - **transition**: `transitionDuration.standard` on `background`
- *
- * ### Accessibility
- * - **Role**: generic (`div`) — purely a layout / scoping wrapper, no ARIA semantics
- *
- * ### AI Usage
- * - **DO**: Use when a page subsection must render under a different brand or color mode
- *   than the root `ThemeProvider`.
- * - **DON'T**: Do not use as a substitute for `ThemeProvider` at the app root.
- * - **DON'T**: Do not nest `ThemeBoundary` inside itself unnecessarily — each instance
- *   re-reads context, adding render overhead.
- *
- * @example Scoped brand override
- * ```tsx
- * import { ThemeBoundary } from '@poffy-ui/react';
- *
- * <ThemeBoundary className="embedded-poffy-scope">
- *   <Card />
- * </ThemeBoundary>
- * ```
+ * Mirrors the nearest theme, locale, direction, motion, and token-override state onto a local DOM
+ * boundary. Use inside ThemeProvider for an embedded or scoped subtree; it does not replace the
+ * application-root provider stack.
  */
-export const ThemeBoundary = ({ children, className }: ThemeBoundaryProps) => {
+export const ThemeBoundary = ({ children, className, tokenOverrides }: ThemeBoundaryProps) => {
   const { brand, customBrandColors } = useBrand();
   const { resolvedColorMode } = useColorMode();
   const { locale } = useLocale();
   const { dir } = useDirection();
-  const ref = useRef<HTMLDivElement>(null);
-
-  // Apply / remove custom brand CSS variables directly on the boundary element.
-  // This mirrors what BrandProvider does on document.documentElement in global mode,
-  // but scoped to this div so global=false + custom brand works correctly.
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (brand === 'custom' && customBrandColors) {
-      applyCustomBrandVars(el, customBrandColors);
-    } else {
-      removeCustomBrandVars(el);
-    }
-  }, [brand, customBrandColors]);
+  const { isAnimating, resolvedMotionStyle } = useOptionalAnimation();
+  const motionScopeAttributes = useMotionScopeAttributes(isAnimating, resolvedMotionStyle);
+  // Runtime CSS variables are rendered directly so scoped custom brands match on server and client.
+  const inheritedTokenOverrides = useThemeTokenOverrides();
+  const resolvedTokenOverrides = {
+    ...inheritedTokenOverrides,
+    ...normalizeThemeTokenOverrides(tokenOverrides),
+  };
+  const customBrandStyle = brand === 'custom' ? getCustomBrandStyle(customBrandColors) : undefined;
+  const style = {
+    ...getThemeTokenOverrideStyle(resolvedTokenOverrides),
+    ...customBrandStyle,
+  };
 
   return (
-    <div
-      ref={ref}
-      data-brand={brand}
-      data-theme={resolvedColorMode}
-      lang={locale}
-      dir={dir}
-      className={cx(boundaryClass, className)}
-    >
-      {children}
-    </div>
+    <ThemeTokenOverrideProvider overrides={resolvedTokenOverrides}>
+      <div
+        data-brand={brand}
+        data-theme={resolvedColorMode}
+        {...motionScopeAttributes}
+        data-theme-boundary
+        lang={locale}
+        dir={dir}
+        className={cx(boundaryClass, boundaryMotionClasses[resolvedMotionStyle], className)}
+        style={style}
+      >
+        {children}
+      </div>
+    </ThemeTokenOverrideProvider>
   );
 };

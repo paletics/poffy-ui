@@ -12,17 +12,11 @@ import {
   ModalFooter,
   ModalHeader,
   ModalTitle,
+  MessageModal,
 } from './index';
 import type { ModalProps } from './Modal.types';
 
-/**
- * Storybook documentation and visual review surface for Modal.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, overlay primitives
- */
+
 const meta: Meta<typeof Modal> = {
   title: 'Overlay/Modal',
   component: Modal,
@@ -63,7 +57,7 @@ const customCloseClass = css({
 });
 
 const ModalWithState = (args: ModalProps) => {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(args.defaultOpen ?? false);
   return (
     <>
       <Button onClick={() => setOpen(true)}>Open {String(args.size ?? 'default')} Modal</Button>
@@ -123,6 +117,27 @@ export const Interaction: Story = {
   },
 };
 
+export const AccessibilityOpen: Story = {
+  args: {
+    appearance: 'soft',
+    defaultOpen: true,
+  },
+  render: (args) => <ModalWithState {...args} />,
+};
+
+export const Message: Story = {
+  render: () => (
+    <MessageModal
+      defaultOpen
+      title="Archive project"
+      okHandle={() => undefined}
+      onCancel={() => undefined}
+    >
+      The project will be archived. You can restore it later from the archived projects list.
+    </MessageModal>
+  ),
+};
+
 export const Sizes: Story = {
   render: () => (
     <div className={buttonRowClass}>
@@ -133,6 +148,10 @@ export const Sizes: Story = {
       <ModalWithState size="full" />
     </div>
   ),
+};
+
+export const FullViewport: Story = {
+  render: () => <ModalWithState size="full" />,
 };
 
 export const ScrollOutside: Story = {

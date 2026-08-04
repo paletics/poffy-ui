@@ -2,9 +2,7 @@ import { SliderVariantProps } from '@/styled-system/recipes';
 import { type SemanticIntent } from '@poffy-ui/types';
 import { ComponentProps, ReactNode } from 'react';
 
-/**
- * Variants for the Slider component based on Panda CSS recipe.
- */
+/** Visual recipe options for `Slider`. */
 export type SliderVariants = SliderVariantProps;
 
 /** Semantic accent color for Slider. */
@@ -13,39 +11,37 @@ export type SliderIntent = Extract<
   'primary' | 'secondary' | 'info' | 'success' | 'warning' | 'danger'
 >;
 
-/** Public Slider variant props with shared semantic intent names. */
+/** Slider recipe options with shared semantic intent names. */
 export interface SliderVariantSubset extends Omit<SliderVariantProps, 'intent'> {
   /** Semantic accent color. */
   intent?: SliderIntent;
 }
 
 /**
- * Properties for the Slider component.
- * Supports standard HTML input attributes (range) and recipe variants.
+ * Props for a native range field. Provide `children`, a native label, or an ARIA name.
  *
- * ### Notes
- * Slider renders a styled native `input[type="range"]`. Use `value` with
- * `onChange` for controlled state, or `defaultValue` for uncontrolled initial
- * state. Provide a visible label, `aria-label`, or `aria-labelledby`, and set
- * `min`, `max`, and `step` to match the domain being edited.
- *
- * Do: use `children` for adjacent label content when it describes the range.
- * Don't: use Slider for exact numeric entry where typing is required; use
- * NumberInput instead.
- *
- * @example
- * ```tsx
- * import { Slider } from '@poffy-ui/react/inputs';
- *
- * <Slider aria-label="Volume" min={0} max={100} value={volume} onChange={handleVolume} />
- * ```
- *
- * Related: NumberInputProps for typed numeric entry.
+ * Native range ownership keeps the browser's min/max/step/value semantics. `FormControl` supplies
+ * an omitted id, disabled/read-only state, invalid state, and helper/error associations.
  */
 export interface SliderProps
-  extends Omit<ComponentProps<'input'>, 'size' | 'type'>, SliderVariantSubset {
+  extends
+    Omit<
+      ComponentProps<'input'>,
+      | 'size'
+      | 'type'
+      | 'role'
+      | 'aria-orientation'
+      | 'aria-valuemin'
+      | 'aria-valuemax'
+      | 'aria-valuenow'
+      | 'aria-disabled'
+      | 'aria-readonly'
+      | 'aria-required'
+      | 'required'
+    >,
+    SliderVariantSubset {
   /**
-   * Optional label content to display next to the slider.
+   * Optional visible label content rendered in the component's wrapping native `<label>`.
    */
   children?: ReactNode;
 }

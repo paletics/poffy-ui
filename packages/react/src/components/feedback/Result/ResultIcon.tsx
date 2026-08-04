@@ -1,32 +1,46 @@
 'use client';
 
 import { cx } from '@/styled-system/css';
-import { result } from '@/styled-system/recipes';
 import { forwardRef } from 'react';
-import { useResultContext } from './ResultContext';
-import { ResultIconProps } from './Result.types';
+import { useResultContext } from '@/components/feedback/Result/ResultContext';
+import type { ResultIconProps } from '@/components/feedback/Result/Result.types';
 
 /**
- * ResultIcon - Icon container for Result component
+ * Icon slot for a `Result` root.
  *
- * @example
- * ```tsx
- * import { Result, ResultIcon, ResultTitle } from '@poffy-ui/react/feedback';
- * import { SuccessIcon } from '@poffy-ui/react/media';
- *
- * <Result intent="success">
- *   <ResultIcon><SuccessIcon /></ResultIcon>
- *   <ResultTitle>Success!</ResultTitle>
- * </Result>
- * ```
+ * It is decorative and inert by default. To expose a meaningful icon, explicitly set
+ * `aria-hidden={false}` and supply `aria-label` or `aria-labelledby`; the slot then receives
+ * `role="img"`.
  */
 export const ResultIcon = forwardRef<HTMLDivElement, ResultIconProps>(
-  ({ className, children, ...rest }, ref) => {
-    const { status } = useResultContext();
-    const classes = result({ status });
+  (
+    {
+      className,
+      children,
+      role,
+      'aria-hidden': ariaHidden,
+      'aria-label': ariaLabel,
+      'aria-labelledby': ariaLabelledBy,
+      ...rest
+    },
+    ref,
+  ) => {
+    const { classes } = useResultContext();
+    const hasName = [ariaLabel, ariaLabelledBy].some((value) => Boolean(value?.trim()));
+    const isExplicitlyVisible = ariaHidden === false ? true : ariaHidden === 'false';
+    const isMeaningful = isExplicitlyVisible && hasName;
 
     return (
-      <div ref={ref} className={cx(classes.icon, className)} aria-hidden="true" {...rest}>
+      <div
+        ref={ref}
+        className={cx(classes.icon, className)}
+        {...rest}
+        role={isMeaningful ? 'img' : role}
+        aria-hidden={isMeaningful ? false : true}
+        aria-label={ariaLabel}
+        aria-labelledby={ariaLabelledBy}
+        inert={isMeaningful ? undefined : true}
+      >
         {children}
       </div>
     );

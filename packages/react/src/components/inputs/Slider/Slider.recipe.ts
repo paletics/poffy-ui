@@ -10,42 +10,70 @@ export const sliderRecipe = defineSlotRecipe({
   base: {
     root: {
       width: '100%',
+      minWidth: 0,
       display: 'flex',
+      flexWrap: 'wrap',
       alignItems: 'center',
       gap: '{spacing.sm}',
       position: 'relative',
     },
     control: {
+      '--slider-track-size': '{spacing.sm}',
       appearance: 'none',
-      width: '100%',
-      height: '{spacing.sm}',
-      bg: 'brand.surface',
+      flex: '1 1 {sizes.sm}',
+      width: 'auto',
+      minWidth: 0,
+      minHeight: '{sizes.control.minimumTarget}',
+      height: '{sizes.control.minimumTarget}',
+      bg: 'transparent',
       color: 'var(--poffy-slider-main, {colors.brand.main})',
-      borderRadius: '{radii.full}',
       outline: 'none',
       cursor: 'pointer',
-      borderWidth: '1px',
-      borderColor: 'brand.border',
+      borderWidth: '0',
+      p: '0',
+
+      '&::-webkit-slider-runnable-track': {
+        height: 'var(--slider-track-size)',
+        bg: 'brand.surface',
+        borderRadius: '{radii.full}',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'brand.border',
+      },
+
+      '&::-moz-range-track': {
+        height: 'var(--slider-track-size)',
+        bg: 'brand.surface',
+        borderRadius: '{radii.full}',
+        borderWidth: '1px',
+        borderStyle: 'solid',
+        borderColor: 'brand.border',
+      },
 
       '&::-webkit-slider-thumb': {
         appearance: 'none',
-        width: '{sizes.root.1}',
-        height: '{sizes.root.1}',
+        width: '{sizes.control.minimumTarget}',
+        height: '{sizes.control.minimumTarget}',
+        marginBlockStart: 'calc((var(--slider-track-size) - {sizes.control.minimumTarget}) / 2)',
         borderRadius: '{radii.full}',
         bg: 'currentColor',
         cursor: 'pointer',
         transition: 'background .15s ease-in-out',
+        _motionSubtle: { transition: 'background {durations.ultraFast} {easings.soft}' },
+        _motionPop: { transition: 'background {durations.standard} {easings.bounce}' },
         boxShadow: '{shadows.sm}',
       },
 
       '&::-moz-range-thumb': {
-        width: '{sizes.root.1}',
-        height: '{sizes.root.1}',
+        width: '{sizes.control.minimumTarget}',
+        height: '{sizes.control.minimumTarget}',
         border: 0,
         borderRadius: '{radii.full}',
         bg: 'currentColor',
         cursor: 'pointer',
         transition: 'background .15s ease-in-out',
+        _motionSubtle: { transition: 'background {durations.ultraFast} {easings.soft}' },
+        _motionPop: { transition: 'background {durations.standard} {easings.bounce}' },
         boxShadow: '{shadows.sm}',
       },
 
@@ -67,6 +95,9 @@ export const sliderRecipe = defineSlotRecipe({
       },
     },
     label: {
+      minWidth: 0,
+      maxWidth: '100%',
+      overflowWrap: 'anywhere',
       fontSize: 'sm',
       color: 'text.primary',
     },
@@ -78,13 +109,13 @@ export const sliderRecipe = defineSlotRecipe({
   variants: {
     size: {
       sm: {
-        control: { height: '{spacing.xs}' },
+        control: { '--slider-track-size': '{spacing.xs}' },
       },
       md: {
-        control: { height: '{spacing.sm}' },
+        control: { '--slider-track-size': '{spacing.sm}' },
       },
       lg: {
-        control: { height: '{spacing.md}' },
+        control: { '--slider-track-size': '{spacing.md}' },
       },
     },
     intent: {

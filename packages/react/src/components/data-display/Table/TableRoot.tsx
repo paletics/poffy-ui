@@ -6,48 +6,41 @@ import { table } from '@/styled-system/recipes';
 import { ElementType, forwardRef, useMemo } from 'react';
 import { TableContext } from './TableContext';
 import { TableProps } from './Table.types';
+import { getTableFallbackChildren, isTableAsChildHost } from './Table.utils';
+
+const tableRootChildTags = ['caption', 'colgroup', 'thead', 'tbody', 'tfoot'] as const;
 
 /**
- * The root `<table>` container for the Table compound component.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: table), React Context, Radix Slot
- * ### Design Tokens
- * - spacing/typography: silver-ratio tokens
- * ### Variant Logic
- * - variant: striped=alternating rows, bordered=cell borders, compact=reduced padding.
- * ### Notes
- * Establishes variant context consumed by all Table sub-components.
- * ### Accessibility
- * - Always pair with `<Table.Caption>` for screen reader context.
- * @example
- * ```tsx
- * import { Table } from '@poffy-ui/react/data-display';
+ * Renders the root native `table` and shares layout variants with its parts.
  *
- * <Table.Root variant="striped" size="md">
- *   <Table.Caption>Q1 Sales Data</Table.Caption>
- *   <Table.Head>
- *     <Table.Row><th scope="col">Region</th><th scope="col">Sales</th></Table.Row>
- *   </Table.Head>
- *   <Table.Body>
- *     <Table.Row>
- *       <Table.Cell>Tokyo</Table.Cell>
- *       <Table.Cell>$2,100,000</Table.Cell>
- *     </Table.Row>
- *   </Table.Body>
- * </Table.Root>
- * ```
+ * `asChild` delegates only to a `table`; otherwise unsupported delegated
+ * content is reduced to valid table child groups before rendering the default
+ * host. Use `Table.ScrollContainer` rather than styling this root as a scroller.
  */
 export const TableRoot = forwardRef<HTMLTableElement, TableProps>((props, ref) => {
-  const { asChild, children, className, variant, size, layout, ...rest } = props;
-  const Component = asChild ? Slot : ('table' as ElementType);
-  const classes = table({ variant, size, layout });
+  const { asChild, children, className, variant, size, layout, stickyHeader, headerTone, ...rest } =
+    props;
+  const canUseAsChild = Boolean(asChild && isTableAsChildHost(children, ['table']));
+  const renderedChildren = canUseAsChild
+    ? children
+    : asChild
+      ? getTableFallbackChildren(children, tableRootChildTags)
+      : children;
+  const Component = (canUseAsChild ? Slot : 'table') as ElementType;
+  const classes = useMemo(
+    () => table({ variant, size, layout, stickyHeader, headerTone }),
+    [variant, size, layout, stickyHeader, headerTone],
+  );
 
-  const contextValue = useMemo(() => ({ variant, size, layout }), [variant, size, layout]);
+  const contextValue = useMemo(
+    () => ({ variant, size, layout, stickyHeader, headerTone, classes }),
+    [variant, size, layout, stickyHeader, headerTone, classes],
+  );
 
   return (
     <TableContext.Provider value={contextValue}>
       <Component ref={ref} className={cx(classes.root, className)} {...rest}>
-        {children}
+        {renderedChildren}
       </Component>
     </TableContext.Provider>
   );

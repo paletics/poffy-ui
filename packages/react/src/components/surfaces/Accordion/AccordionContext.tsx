@@ -2,6 +2,7 @@
 
 import { accordion } from '@/styled-system/recipes';
 import { createContext, useContext } from 'react';
+import type { AccordionHeadingLevel } from './Accordion.types';
 
 /**
  * Context value interface for the Accordion component.
@@ -15,6 +16,11 @@ interface AccordionContextValue {
   multiple: boolean;
   /** Generated Panda CSS recipe classes for all slots. */
   classes: ReturnType<typeof accordion>;
+  /** Heading level shared by trigger wrappers. */
+  headingLevel: AccordionHeadingLevel;
+  ambiguousValues: ReadonlySet<string>;
+  failClosedAll: boolean;
+  registerItem: (instanceId: string, value: string) => () => void;
 }
 
 /**

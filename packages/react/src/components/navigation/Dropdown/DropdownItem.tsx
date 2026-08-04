@@ -2,148 +2,206 @@
 
 import { ActionMotion } from '@/components/animations/ActionMotion';
 import { cx } from '@/styled-system/css';
+import {
+  createDisabledActivationHandlers,
+  guardDisabledActivationHandlers,
+  useButtonKeyboardActivation,
+} from '@poffy-ui/behavior/activation';
+import { getTreeElementById, useMergeRefs } from '@poffy-ui/behavior/hooks';
 import { Slot } from '@radix-ui/react-slot';
-import { forwardRef, useId, useLayoutEffect, useState } from 'react';
-import type { HTMLProps, MouseEvent, RefObject } from 'react';
+import {
+  cloneElement,
+  forwardRef,
+  isValidElement,
+  useId,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
+import type { FocusEvent, HTMLProps, KeyboardEvent, MouseEvent, ReactNode } from 'react';
+import { useDropdownCollectionItem } from './DropdownCollection';
 import type { DropdownItemProps } from './Dropdown.types';
+import type { DropdownItemComponent } from './Dropdown.types';
 import { useDropdownContext } from './DropdownContext';
+import { isDropdownItemAsChildHost } from './Dropdown.asChild';
+import { getSafeDropdownItemContent } from './getSafeDropdownItemContent';
+import {
+  hasAsChildLinkDestination,
+  isButtonCompatibleAsChildHost,
+} from '@/components/shared/asChild';
+import { omitNativeButtonOnlyProps } from '@/components/shared/buttonDelegation';
 
-/**
- * An actionable item within a DropdownMenu. Supports keyboard navigation, typeahead,
- * and disabled state. Calls `onSelect` on activation and closes the menu automatically.
- *
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: ActionMotion (press), Radix Slot (asChild),
- *   Floating UI (list navigation, typeahead via `getItemProps`).
- * ### Design Tokens
- * - spacing: silver-ratio tokens, colors: brand.surface (hover/focus)
- * ### Variant Logic
- *   - Standard: Actionable menu item — high contrast hover state signals interactivity.
- *   - Disabled: `aria-disabled` + reduced opacity; excluded from keyboard navigation.
- * ### Notes
- * Uses `useLayoutEffect` to register itself in the Floating UI `listRef` after
- * mount. Handles its own index discovery; do not manually assign indices.
- * ### Accessibility
- * - Renders with `role="menuitem"` and correct `tabIndex` for roving tabindex.
- * - Disabled items remain in the DOM with `aria-disabled="true"` but are skipped
- *   during keyboard navigation via `disabledIndices`.
- * ### AI Usage
- * - **DO**: Place inside `DropdownMenu` only.
- * - **DO**: For navigation links, use `asChild` with a router `Link` component.
- * - **DON'T**: Use for selectable listbox options; use select or listbox
- *   primitives for persistent selection state.
- *
- * @example Action items
- * ```tsx
- * import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from '@poffy-ui/react/navigation';
- *
- * <Dropdown>
- *   <DropdownTrigger>Actions</DropdownTrigger>
- *   <DropdownMenu>
- * <DropdownItem onSelect={() => handleEdit()}>Edit</DropdownItem>
- * <DropdownItem disabled>Delete (unavailable)</DropdownItem>
- *   </DropdownMenu>
- * </Dropdown>
- * ```
- *
- * @example Router link item
- * ```tsx
- * import { Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from '@poffy-ui/react/navigation';
- *
- * <Dropdown>
- *   <DropdownTrigger>Account</DropdownTrigger>
- *   <DropdownMenu>
- *     <DropdownItem asChild>
- *       <NextLink href="/settings">Settings</NextLink>
- *     </DropdownItem>
- *   </DropdownMenu>
- * </Dropdown>
- * ```
- */
-export const DropdownItem = forwardRef<HTMLElement, DropdownItemProps>(
-  ({ asChild, className, disabled = false, onSelect, onClick, children, ...props }, propRef) => {
-    const {
-      getItemProps,
-      listRef,
-      listItemsRef,
-      activeIndex,
-      onOpenChange,
-      setDisabledIndex,
-      classes,
-    } = useDropdownContext();
 
-    const itemId = useId();
-    const [index, setIndex] = useState(-1);
+const DropdownItemImpl = forwardRef<HTMLElement, DropdownItemProps>((rawProps, propRef) => {
+  const {
+    asChild,
+    className,
+    disabled = false,
+    textValue,
+    onSelect,
+    closeOnSelect = true,
+    onAuxClick,
+    onAuxClickCapture,
+    onClick,
+    onClickCapture,
+    onKeyDown,
+    onKeyDownCapture,
+    onKeyUp,
+    onKeyUpCapture,
+    onBlur,
+    onFocusCapture,
+    onPointerDown,
+    onPointerDownCapture,
+    onPointerUp,
+    onPointerUpCapture,
+    children,
+    'aria-disabled': ariaDisabled,
+    id: _id,
+    role: _role,
+    tabIndex: _tabIndex,
+    type: _type,
+    ...props
+  } = rawProps as DropdownItemProps & {
+    'aria-disabled'?: boolean | 'true' | 'false';
+    id?: unknown;
+    role?: unknown;
+    tabIndex?: unknown;
+    type?: unknown;
+  };
+  const { getItemProps, activeIndex, onOpenChange, classes } = useDropdownContext();
+  const isDisabled = [disabled, ariaDisabled === true, ariaDisabled === 'true'].some(Boolean);
 
-    const handleRef = (node: HTMLElement | null) => {
-      if (node) {
-        node.id = itemId;
-        if (!listRef.current.includes(node)) {
-          listRef.current.push(node);
-          listItemsRef.current.push(node.textContent ?? '');
-        }
+  const itemId = useId();
+  const [itemNode, setItemNode] = useState<HTMLElement | null>(null);
+  const mergedRef = useMergeRefs(setItemNode, propRef);
+  const index = useDropdownCollectionItem({
+    id: itemId,
+    node: itemNode,
+    disabled: isDisabled,
+    textValue,
+  });
+
+  const isActive = !isDisabled && activeIndex === index && index >= 0;
+  const wasFocusedRef = useRef(false);
+
+  useLayoutEffect(() => {
+    if (isDisabled && wasFocusedRef.current) {
+      const menu = itemNode?.closest<HTMLElement>('[role="menu"]');
+      const nextEnabledItem = menu?.querySelector<HTMLElement>(
+        '[role="menuitem"]:not([aria-disabled="true"]):not([disabled])',
+      );
+      if (nextEnabledItem) {
+        nextEnabledItem.focus();
       } else {
-        const indexToClear = listRef.current.findIndex((el) => el?.id === itemId);
-        if (indexToClear !== -1) {
-          listRef.current.splice(indexToClear, 1);
-          listItemsRef.current.splice(indexToClear, 1);
+        const triggerId = menu?.getAttribute('aria-labelledby');
+        if (triggerId && itemNode) {
+          getTreeElementById<HTMLElement>(itemNode, triggerId)?.focus();
         }
       }
+    }
+    if (isDisabled) wasFocusedRef.current = false;
+  }, [isDisabled, itemNode]);
 
-      if (typeof propRef === 'function') {
-        propRef(node);
-      } else if (propRef) {
-        (propRef as RefObject<HTMLElement | null>).current = node;
-      }
-    };
+  const handleClick = (e: MouseEvent<HTMLElement>) => {
+    if (isDisabled) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+    onClick?.(e as unknown as MouseEvent<HTMLButtonElement>);
+    if (e.defaultPrevented) return;
+    onSelect?.();
+    if (closeOnSelect) onOpenChange(false);
+  };
 
-    useLayoutEffect(() => {
-      const foundIndex = listRef.current.findIndex((el) => el?.id === itemId);
-      setIndex(foundIndex);
-    }, [itemId, listRef]);
+  const asChildCandidate = asChild && isDropdownItemAsChildHost(children) ? children : null;
+  const shouldFallbackDisabledCustomLink = Boolean(
+    isDisabled &&
+    asChildCandidate &&
+    typeof asChildCandidate.type !== 'string' &&
+    hasAsChildLinkDestination(asChildCandidate),
+  );
+  const asChildElement = shouldFallbackDisabledCustomLink ? null : asChildCandidate;
+  const canUseAsChild = Boolean(asChildElement);
+  const isButtonCompatibleHost = isButtonCompatibleAsChildHost(asChildElement);
+  const keyboardActivation = useButtonKeyboardActivation<HTMLElement>({
+    enabled: canUseAsChild && !isDisabled,
+    onBlur: (event) => onBlur?.(event as unknown as FocusEvent<HTMLButtonElement>),
+    onKeyDown: (event) => onKeyDown?.(event as unknown as KeyboardEvent<HTMLButtonElement>),
+    onKeyUp: (event) => onKeyUp?.(event as unknown as KeyboardEvent<HTMLButtonElement>),
+  });
+  const Component = canUseAsChild ? Slot : 'button';
+  const hostProps = asChild ? omitNativeButtonOnlyProps(props) : props;
+  const fallbackChildren = getSafeDropdownItemContent(children);
+  const guardedChildren = guardDisabledActivationHandlers(
+    canUseAsChild ? children : fallbackChildren,
+    Boolean(canUseAsChild && isDisabled),
+  );
+  const activationHandlers = createDisabledActivationHandlers(
+    Boolean(canUseAsChild && isDisabled),
+    {
+      onAuxClick,
+      onAuxClickCapture,
+      onClick: handleClick,
+      onClickCapture,
+      onKeyDown: keyboardActivation.onKeyDown,
+      onKeyDownCapture,
+      onKeyUp: keyboardActivation.onKeyUp,
+      onKeyUpCapture,
+      onPointerDown,
+      onPointerDownCapture,
+      onPointerUp,
+      onPointerUpCapture,
+    },
+  );
+  const renderedChildren =
+    canUseAsChild &&
+    isValidElement<Record<string, unknown> & { children?: ReactNode }>(guardedChildren)
+      ? cloneElement(guardedChildren, {
+          children: getSafeDropdownItemContent(guardedChildren.props.children),
+          id: itemId,
+          role: 'menuitem',
+          tabIndex: isActive ? 0 : -1,
+          'aria-disabled': isDisabled ? true : undefined,
+          ...(asChildElement?.type === 'li' ? { contentEditable: undefined } : {}),
+          ...(asChildElement?.type === 'a' && isDisabled ? { href: undefined } : {}),
+          ...(isButtonCompatibleHost ? { disabled: isDisabled, type: 'button' } : {}),
+        })
+      : getSafeDropdownItemContent(guardedChildren);
 
-    useLayoutEffect(() => {
-      if (index < 0) return;
-      setDisabledIndex(index, disabled);
-      return () => setDisabledIndex(index, false);
-    }, [index, disabled, setDisabledIndex]);
+  return (
+    <ActionMotion asChild animationType="press" disabled={isDisabled}>
+      <Component
+        ref={mergedRef}
+        className={cx(classes.item, className)}
+        {...getItemProps({
+          ...(hostProps as HTMLProps<HTMLElement>),
+          ...activationHandlers,
+        })}
+        id={itemId}
+        type={canUseAsChild ? undefined : 'button'}
+        role="menuitem"
+        disabled={canUseAsChild ? undefined : isDisabled}
+        tabIndex={isActive ? 0 : -1}
+        aria-disabled={isDisabled ? true : ariaDisabled}
+        onFocusCapture={(event) => {
+          wasFocusedRef.current = true;
+          onFocusCapture?.(event as unknown as FocusEvent<HTMLButtonElement>);
+        }}
+        onBlur={(event) => {
+          wasFocusedRef.current = false;
+          keyboardActivation.onBlur(event);
+        }}
+      >
+        {renderedChildren}
+      </Component>
+    </ActionMotion>
+  );
+});
 
-    useLayoutEffect(() => {
-      if (index >= 0) {
-        listItemsRef.current[index] = listRef.current[index]?.textContent?.trim() ?? '';
-      }
-    }, [index, children, listItemsRef, listRef]);
+DropdownItemImpl.displayName = 'Dropdown.Item';
 
-    const isActive = activeIndex === index && index >= 0;
+/** Performs one selectable dropdown action and participates in the menu's keyboard navigation. */
 
-    const handleClick = (e: MouseEvent<HTMLElement>) => {
-      onClick?.(e as unknown as MouseEvent<HTMLButtonElement>);
-      if (!disabled) {
-        onSelect?.();
-        onOpenChange(false);
-      }
-    };
 
-    const Component = asChild ? Slot : 'button';
-
-    return (
-      <ActionMotion asChild animationType="press" disabled={disabled}>
-        <Component
-          id={itemId}
-          ref={handleRef}
-          type={asChild ? undefined : 'button'}
-          role="menuitem"
-          disabled={asChild ? undefined : disabled}
-          aria-disabled={disabled ? true : undefined}
-          tabIndex={isActive ? 0 : -1}
-          className={cx(classes.item, className)}
-          {...getItemProps({ ...(props as HTMLProps<HTMLElement>), onClick: handleClick })}
-        >
-          {children}
-        </Component>
-      </ActionMotion>
-    );
-  },
-);
-
-DropdownItem.displayName = 'Dropdown.Item';
+export const DropdownItem = DropdownItemImpl as DropdownItemComponent;

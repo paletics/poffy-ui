@@ -1,4 +1,7 @@
-import { testVisualStories } from '@/components/e2e/visualSpecUtils';
+import {
+  testStoriesDoNotOverflowOnMobile,
+  testVisualStories,
+} from '@/components/e2e/visualSpecUtils';
 
 testVisualStories({
   accessibilityStory: 'default',
@@ -11,4 +14,10 @@ testVisualStories({
     { name: 'Staggered', story: 'staggered' },
     { name: 'LargeNumber', story: 'large-number' },
   ],
+});
+
+testStoriesDoNotOverflowOnMobile({
+  componentId: 'animations-numbertransition',
+  title: 'NumberTransition',
+  stories: [{ name: 'LargeNumber', story: 'large-number' }],
 });

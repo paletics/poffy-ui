@@ -1,5 +1,10 @@
-import { getWheelPickerSelectedOption } from '@poffy-ui/behavior/wheel-picker';
-import type { KeyboardEvent, UIEvent } from 'react';
+import { css } from '@/styled-system/css';
+import { getTreeElementById } from '@poffy-ui/behavior/hooks';
+import {
+  getWheelPickerSelectedOption,
+  isWheelPickerColumnValueComplete,
+} from '@poffy-ui/behavior/wheel-picker';
+import { useCallback, type UIEvent } from 'react';
 import type {
   WheelPickerColumn as WheelPickerColumnType,
   WheelPickerValue,
@@ -16,17 +21,22 @@ interface WheelPickerClasses {
 }
 
 interface WheelPickerColumnProps {
+  ariaDescribedBy?: string;
+  ariaErrorMessage?: string;
   classes: WheelPickerClasses;
   column: WheelPickerColumnType;
   columnListId: string;
   commitValue: (columnId: string, nextOptionValue: string) => void;
   disabled: boolean;
   error: boolean;
-  handleKeyDown: (event: KeyboardEvent<HTMLDivElement>, columnId: string) => void;
+  form?: string;
+  handleKeyDown: (input: { defaultPrevented?: boolean; key: string }, columnId: string) => boolean;
   handleScroll: (event: UIEvent<HTMLDivElement>, columnId: string) => void;
   readOnly: boolean;
+  revealColumn: (columnElement: HTMLElement) => void;
+  required: boolean;
   selectedValue: WheelPickerValue;
-  setOptionRef: (key: string, node: HTMLDivElement | null) => void;
+  setOptionRef: (columnId: string, optionValue: string, node: HTMLDivElement | null) => void;
   setViewportRef: (columnId: string, node: HTMLDivElement | null) => void;
 }
 
@@ -35,45 +45,92 @@ interface WheelPickerColumnProps {
  */
 export const WheelPickerColumn = ({
   classes,
+  ariaDescribedBy,
+  ariaErrorMessage,
   column,
   columnListId,
   commitValue,
   disabled,
   error,
+  form,
   handleKeyDown,
   handleScroll,
   readOnly,
+  revealColumn,
+  required,
   selectedValue,
   setOptionRef,
   setViewportRef,
 }: WheelPickerColumnProps) => {
   const selectedOption = getWheelPickerSelectedOption(column.options, selectedValue[column.id]);
+  const selectedOptionIndex = selectedOption ? column.options.indexOf(selectedOption) : -1;
+  const isValueComplete = isWheelPickerColumnValueComplete(column, selectedValue);
+  const listboxId = `${columnListId}-listbox`;
+  const viewportRef = useCallback(
+    (node: HTMLDivElement | null) => setViewportRef(column.id, node),
+    [column.id, setViewportRef],
+  );
 
   return (
-    <div className={classes.column}>
+    <div className={classes.column} data-wheel-picker-column-container="">
       <span id={`${columnListId}-label`} className={classes.columnLabel}>
         {column.label}
       </span>
+      {required && !isValueComplete && (
+        <input
+          aria-hidden="true"
+          className={css({ srOnly: true })}
+          data-wheel-picker-validation-proxy={column.id}
+          disabled={disabled ? true : readOnly}
+          form={form}
+          onChange={() => undefined}
+          onInvalid={(event) => {
+            const validationProxy = event.currentTarget;
+            queueMicrotask(() =>
+              getTreeElementById<HTMLElement>(validationProxy, listboxId)?.focus(),
+            );
+          }}
+          required
+          tabIndex={-1}
+          type="text"
+          value=""
+        />
+      )}
       <div className={classes.viewportShell}>
         <div className={classes.selectionIndicator} aria-hidden="true" />
         <div
+          id={listboxId}
           className={classes.viewport}
-          ref={(node) => {
-            setViewportRef(column.id, node);
-          }}
+          ref={viewportRef}
           role="listbox"
+          data-wheel-picker-column={column.id}
           tabIndex={disabled ? -1 : 0}
           aria-labelledby={`${columnListId}-label`}
           aria-activedescendant={
-            selectedOption ? `${columnListId}-option-${selectedOption.value}` : undefined
+            selectedOptionIndex >= 0 ? `${columnListId}-option-${selectedOptionIndex}` : undefined
           }
           aria-disabled={disabled ? true : undefined}
           aria-readonly={readOnly ? true : undefined}
           aria-invalid={error ? true : undefined}
-          onKeyDown={(event) => handleKeyDown(event, column.id)}
+          aria-required={required ? true : undefined}
+          aria-describedby={ariaDescribedBy}
+          aria-errormessage={ariaErrorMessage}
+          onKeyDown={(event) => {
+            if (
+              handleKeyDown({ defaultPrevented: event.defaultPrevented, key: event.key }, column.id)
+            ) {
+              event.preventDefault();
+            }
+          }}
+          onFocus={(event) => {
+            const columnElement = event.currentTarget.closest<HTMLElement>(
+              '[data-wheel-picker-column-container]',
+            );
+            if (columnElement) revealColumn(columnElement);
+          }}
           onScroll={(event) => handleScroll(event, column.id)}
         >
-          {column.options.map((option) => {
+          {column.options.map((option, optionIndex) => {
             const isSelected = option.value === selectedValue[column.id];
 
             return (
@@ -81,10 +138,10 @@ export const WheelPickerColumn = ({
                 key={option.value}
                 className={classes.option}
                 columnId={column.id}
-                columnListId={columnListId}
                 commitValue={commitValue}
                 isSelected={isSelected}
                 option={option}
+                optionId={`${columnListId}-option-${optionIndex}`}
                 setOptionRef={setOptionRef}
               />
             );

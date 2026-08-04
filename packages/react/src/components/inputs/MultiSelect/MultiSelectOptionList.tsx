@@ -2,7 +2,8 @@
 
 import { CheckIcon } from '@/components/media/Icon';
 import { ListboxPopoverContent } from '@/components/overlay/ListboxPopover';
-import { forwardRef } from 'react';
+import { getTreeElementById } from '@poffy-ui/behavior/hooks';
+import { forwardRef, useEffect, useRef } from 'react';
 import type { MultiSelectClasses, MultiSelectOption } from './MultiSelect.types';
 
 /**
@@ -19,29 +20,7 @@ interface MultiSelectOptionListProps {
   classes: MultiSelectClasses;
 }
 
-/**
- * Dropdown listbox for MultiSelect — renders filtered options with
- * highlighted and selected state indicators.
- *
- * ### AI Context & Architecture
- * - Extracted from MultiSelect to keep that file under 200 lines.
- * Renders pure UI driven entirely by parent state; no internal state.
- *
- * ### Accessibility
- * - **Role**: `listbox` containing `option` rows.
- * - **States**: Each option sets `aria-selected`; disabled options set `aria-disabled`.
- * - **Required**: Keep `labelledBy` pointed at the combobox input id.
- *
- * ### AI Usage
- * - Internal use only; prefer `MultiSelect` for public composition.
- *
- * @example Internal option list
- * ```tsx
- * import { MultiSelectOptionList } from './MultiSelectOptionList';
- *
- * <MultiSelectOptionList {...listProps} />
- * ```
- */
+
 export const MultiSelectOptionList = forwardRef<HTMLUListElement, MultiSelectOptionListProps>(
   (
     {
@@ -56,46 +35,95 @@ export const MultiSelectOptionList = forwardRef<HTMLUListElement, MultiSelectOpt
     },
     ref,
   ) => (
-    <ListboxPopoverContent
-      id={listId}
-      role="listbox"
-      aria-labelledby={labelledBy}
-      aria-describedby={undefined}
-      className={classes.content}
-    >
-      <ul ref={ref} role="presentation">
-        {options.map((option, index) => {
-          const isSelected = selectedValues.includes(option.value);
-          return (
-            <li
-              id={`${optionIdPrefix}-${index}`}
-              key={option.value}
-              className={classes.item}
-              data-highlighted={index === highlightedIndex ? '' : undefined}
-              data-selected={isSelected ? '' : undefined}
-              role="option"
-              aria-selected={isSelected}
-              aria-disabled={option.disabled ? 'true' : undefined}
-              onClick={() => !option.disabled && onSelect(option.value)}
-              onKeyDown={(e) => {
-                if ((e.key === 'Enter' || e.key === ' ') && !option.disabled) {
-                  e.preventDefault();
-                  onSelect(option.value);
-                }
-              }}
-            >
-              <span className={classes.itemText}>{option.label}</span>
-              {isSelected && (
-                <span className={classes.itemIndicator}>
-                  <CheckIcon />
-                </span>
-              )}
-            </li>
-          );
-        })}
-      </ul>
-    </ListboxPopoverContent>
+    <MultiSelectOptionListContent
+      classes={classes}
+      highlightedIndex={highlightedIndex}
+      labelledBy={labelledBy}
+      listId={listId}
+      optionIdPrefix={optionIdPrefix}
+      ref={ref}
+      options={options}
+      selectedValues={selectedValues}
+      onSelect={onSelect}
+    />
   ),
 );
 
+type MultiSelectOptionListContentProps = Omit<MultiSelectOptionListProps, 'ref'>;
+
+const MultiSelectOptionListContent = forwardRef<
+  HTMLUListElement,
+  MultiSelectOptionListContentProps
+>(
+  (
+    {
+      listId,
+      labelledBy,
+      optionIdPrefix,
+      options,
+      selectedValues,
+      highlightedIndex,
+      onSelect,
+      classes,
+    },
+    ref,
+  ) => {
+    const listRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (highlightedIndex < 0) return;
+      const option = listRef.current
+        ? getTreeElementById(listRef.current, `${optionIdPrefix}-${highlightedIndex}`)
+        : null;
+      if (option && listRef.current?.contains(option)) {
+        option.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+      }
+    }, [highlightedIndex, optionIdPrefix, options]);
+
+    return (
+      <ListboxPopoverContent
+        ref={listRef}
+        id={listId}
+        aria-multiselectable
+        aria-labelledby={labelledBy}
+        aria-describedby={undefined}
+        className={classes.content}
+      >
+        <ul ref={ref} role="presentation">
+          {options.map((option, index) => {
+            const isSelected = selectedValues.includes(option.value);
+            return (
+              <li
+                id={`${optionIdPrefix}-${index}`}
+                key={option.value}
+                className={classes.item}
+                data-highlighted={index === highlightedIndex ? '' : undefined}
+                data-selected={isSelected ? '' : undefined}
+                role="option"
+                aria-selected={isSelected}
+                aria-disabled={option.disabled ? 'true' : undefined}
+                onClick={() => !option.disabled && onSelect(option.value)}
+                onKeyDown={(e) => {
+                  if ((e.key === 'Enter' || e.key === ' ') && !option.disabled) {
+                    e.preventDefault();
+                    onSelect(option.value);
+                  }
+                }}
+              >
+                <span className={classes.itemText}>{option.label}</span>
+                {isSelected && (
+                  <span className={classes.itemIndicator}>
+                    <CheckIcon />
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ul>
+      </ListboxPopoverContent>
+    );
+  },
+);
+
 MultiSelectOptionList.displayName = 'MultiSelectOptionList';
+MultiSelectOptionListContent.displayName = 'MultiSelectOptionListContent';

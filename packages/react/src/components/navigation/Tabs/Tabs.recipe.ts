@@ -17,6 +17,8 @@ export const tabsRecipe = defineSlotRecipe({
       flexDirection: 'column',
       gap: '{spacing.sm}',
       width: '{sizes.full}',
+      minWidth: 0,
+      maxWidth: '{sizes.full}',
     },
     list: {
       display: 'flex',
@@ -25,12 +27,18 @@ export const tabsRecipe = defineSlotRecipe({
       borderBottom: '1px solid',
       borderColor: 'layout.divider',
       position: 'relative',
+      minWidth: 0,
+      maxWidth: '{sizes.full}',
+      overflowX: 'auto',
+      overscrollBehaviorX: 'contain',
     },
     trigger: {
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
+      minBlockSize: '{sizes.control.minimumTarget}',
       whiteSpace: 'nowrap',
+      flexShrink: 0,
       px: '{spacing.base}',
       py: '{spacing.sm}',
       cursor: 'pointer',
@@ -40,10 +48,20 @@ export const tabsRecipe = defineSlotRecipe({
       transitionProperty: 'color',
       transitionDuration: '{durations.fast}',
       transitionTimingFunction: '{easings.soft}',
+      _motionSubtle: { transitionDuration: '{durations.ultraFast}' },
+      _motionPop: {
+        transitionDuration: '{durations.standard}',
+        transitionTimingFunction: '{easings.bounce}',
+      },
       position: 'relative',
       zIndex: 0,
       _hover: {
         color: 'text.primary',
+      },
+      _focusVisible: {
+        outline: '2px solid',
+        outlineColor: 'brand.main',
+        outlineOffset: '-2px',
       },
       _selected: {
         color: 'brand.main',
@@ -68,8 +86,7 @@ export const tabsRecipe = defineSlotRecipe({
     indicator: {
       position: 'absolute',
       zIndex: -1,
-      left: '0',
-      right: '0',
+      insetInline: '0',
       bg: 'brand.main',
       pointerEvents: 'none',
     },
@@ -77,13 +94,51 @@ export const tabsRecipe = defineSlotRecipe({
   variants: {
     size: {
       sm: {
-        trigger: { px: '{spacing.md}', py: '{spacing.xs}', fontSize: '2xs' },
+        trigger: { px: '{spacing.md}', py: '{spacing.xs}', fontSize: 'sm' },
       },
       md: {
         trigger: { px: '{spacing.base}', py: '{spacing.sm}', fontSize: 'md' },
       },
       lg: {
         trigger: { px: '{spacing.xl}', py: '{spacing.md}', fontSize: 'lg' },
+      },
+    },
+    orientation: {
+      horizontal: {},
+      vertical: {
+        root: {
+          flexDirection: 'row',
+          alignItems: 'stretch',
+        },
+        list: {
+          flexDirection: 'column',
+          alignItems: 'stretch',
+          flexGrow: 0,
+          flexShrink: 1,
+          flexBasis: '{sizes.ratio.sm}',
+          minInlineSize: '{sizes.control.minimumTarget}',
+          maxInlineSize: 'min({sizes.ratio.sm}, 60%)',
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          borderBottom: '0',
+          borderInlineEnd: '1px solid',
+          borderInlineEndColor: 'layout.divider',
+        },
+        trigger: {
+          width: '{sizes.full}',
+          minInlineSize: 0,
+          maxInlineSize: '{sizes.full}',
+          flexShrink: 1,
+          justifyContent: 'flex-start',
+          textAlign: 'start',
+          whiteSpace: 'normal',
+          overflowWrap: 'anywhere',
+        },
+        content: {
+          flex: '1',
+          minWidth: 0,
+          mt: 0,
+        },
       },
     },
     variant: {
@@ -138,8 +193,50 @@ export const tabsRecipe = defineSlotRecipe({
       },
     },
   },
+  compoundVariants: [
+    {
+      orientation: 'vertical',
+      variant: 'line',
+      css: {
+        list: {
+          borderBottom: 0,
+        },
+        indicator: {
+          insetInlineStart: 'auto',
+          insetInlineEnd: '-1px',
+          top: 0,
+          bottom: 0,
+          width: '2px',
+          height: 'auto',
+        },
+      },
+    },
+    {
+      orientation: 'vertical',
+      variant: 'enclosed',
+      css: {
+        trigger: {
+          borderRadius: '{radii.md}',
+          borderStartEndRadius: 0,
+          borderEndEndRadius: 0,
+          _selected: {
+            borderBottomColor: 'layout.divider',
+            borderInlineEndColor: 'layout.surface',
+          },
+        },
+        indicator: {
+          borderRadius: '{radii.md}',
+          borderStartEndRadius: 0,
+          borderEndEndRadius: 0,
+          borderBottomColor: 'layout.divider',
+          borderInlineEndColor: 'layout.surface',
+        },
+      },
+    },
+  ],
   defaultVariants: {
     size: 'md',
     variant: 'line',
+    orientation: 'horizontal',
   },
 });

@@ -4,13 +4,6 @@ import { useState } from 'react';
 import { Button } from '@/components/inputs/Button';
 import { ReorderTransition } from './ReorderTransition';
 
-/**
- * Orchestrates runtime add, remove, and reorder animations for a dynamic list of items by combining `AnimatePresence` for enter/exit with layout FLIP for positional reordering. Used for tag removal, sort, filter results, and drag-to-reorder interfaces.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (AnimatePresence, layout FLIP), ReorderTransition presets, Radix Slot
- */
 const meta: Meta<typeof ReorderTransition> = {
   title: 'Animations/ReorderTransition',
   component: ReorderTransition,
@@ -42,8 +35,8 @@ const FRUITS: Item[] = [
 let nextId = 4;
 
 const itemClass = css({
-  py: '2.5',
-  px: '4',
+  py: 'md',
+  px: 'base',
   bg: 'slate.100',
   borderRadius: 'md',
   cursor: 'pointer',
@@ -59,7 +52,7 @@ const itemButtonClass = cx(itemClass, css({ justifyContent: 'flex-start' }));
 const storyStackClass = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '3',
+  gap: 'md',
 });
 
 const actionButtonClass = css({
@@ -69,7 +62,7 @@ const actionButtonClass = css({
 const containerClass = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '2',
+  gap: 'sm',
   minWidth: '[240px]',
 });
 
@@ -77,8 +70,8 @@ const semanticListClass = cx(
   containerClass,
   css({
     listStyle: 'none',
-    p: '0',
-    m: '0',
+    p: 'none',
+    m: 'none',
   }),
 );
 

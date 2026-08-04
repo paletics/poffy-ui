@@ -1,32 +1,22 @@
 import { AlertVariantProps } from '@/styled-system/recipes';
-import { ComponentProps, ReactNode } from 'react';
+import { ComponentProps, type ComponentPropsWithoutRef, type ReactElement, ReactNode } from 'react';
 import { PrimitiveProps } from '@poffy-ui/types';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Semantic status used to choose the Alert icon and accent.
- *
- * ### Notes
- * `error` maps to a danger/error visual treatment. Use `warning`
- * for recoverable caution and `error` for failed or blocked actions.
- */
+/** Semantic urgency used for Alert visual treatment and default announcement priority. */
 export type AlertStatus = 'info' | 'success' | 'warning' | 'error';
 
 /**
  * Public surface treatment for Alert.
  */
-export type AlertAppearance = 'subtle' | 'solid' | 'left-accent' | 'outline';
+export type AlertAppearance = 'subtle' | 'solid' | 'start-accent' | 'outline';
 
-/**
- * Extracted variant types from the Panda CSS alert recipe.
- *
- * ### Notes
- * Prefer `AlertProps` for component usage. Use this interface for
- * wrapper components that expose compatible status and appearance controls.
- *
- * ### AI Usage
- * - Use when extending or reading alert styling variants.
- */
-export interface AlertVariants extends Omit<AlertVariantProps, 'status' | 'variant'> {
+/** Status and surface choices for Alert wrappers. */
+export interface AlertVariants extends Omit<AlertVariantProps, 'status' | 'variant' | 'closable'> {
   /**
    * Semantic status used for icon selection and visual urgency.
    *
@@ -42,45 +32,59 @@ export interface AlertVariants extends Omit<AlertVariantProps, 'status' | 'varia
 }
 
 /**
- * Base props for the Alert component.
- * ### Formula
- * - Silver Ratio (1:1.414) applied to internal spacing and icon sizing.
- *
- * @example
- * ```tsx
- * import { Alert } from '@poffy-ui/react/feedback';
- *
- * <Alert status="warning" variant="left-accent">
- *   <Alert.Icon />
- *   <Alert.Title>Payment method expiring</Alert.Title>
- *   <Alert.Description>Update billing before the next renewal.</Alert.Description>
- * </Alert>
- * ```
- *
- * ### Notes
- * Do: use Alert for timely feedback that should be announced.
- * Don't: mount many alerts at once; `role="alert"` can overwhelm assistive technology.
- *
- * ### AI Usage
- * - Core props for the Alert root element.
- * - Use `status` for semantic urgency and `variant` for visual treatment.
+ * Props for timely, status-aware feedback. Select `status` for semantic urgency and `variant` for
+ * visual treatment; avoid simultaneously mounting multiple assertive error alerts.
  */
 export interface AlertBaseProps extends AlertVariants {
   /** Content of the alert. */
   children?: ReactNode;
   /**
-   * Callback fired when the close button is clicked.
-   *
-   * ### Notes
-   * Renders a CloseButton automatically when provided.
+   * Called when the generated close button is activated. It does not remove the alert itself.
    */
   onClose?: () => void;
+  /**
+   * Accessible name for the generated close button.
+   * Uses the active locale's dismiss-alert message when omitted.
+   */
+  closeLabel?: string;
+  /**
+   * Announcement priority for the alert when it is inserted into the page.
+   *
+   * By default, errors use `assertive` semantics while info, success, and
+   * warning alerts use `polite` semantics. Use `'off'` for static content that
+   * should not be announced.
+   * @defaultValue `'auto'`
+   */
+  live?: 'assertive' | 'polite' | 'off' | 'auto';
 }
 
 /**
  * Full props for the Alert component merging HTML div attributes.
+ * `asChild` accepts native `article`, `div`, and `section` hosts only; other
+ * children safely render within Alert's default div root.
  */
-export type AlertProps = PrimitiveProps<'div', AlertBaseProps>;
+type AlertNativeProps = PrimitiveProps<'div', AlertBaseProps>;
+/** Props for Alert rendered with its default host. */
+export type AlertDefaultProps = DefaultHostProps<AlertNativeProps>;
+type AlertAsChildElement =
+  | ReactElement<ComponentPropsWithoutRef<'article'>, 'article'>
+  | ReactElement<ComponentPropsWithoutRef<'div'>, 'div'>
+  | ReactElement<ComponentPropsWithoutRef<'section'>, 'section'>;
+/** Props for Alert delegated to an asChild host. */
+export type AlertAsChildProps = RetargetedAsChildHostProps<
+  AlertNativeProps,
+  HTMLElement,
+  AlertAsChildElement
+>;
+/** Public props for Alert. */
+export type AlertProps = AlertDefaultProps | AlertAsChildProps;
+/** Polymorphic component call signatures for Alert. */
+export type AlertComponent = PolymorphicAsChildComponent<
+  AlertDefaultProps,
+  AlertAsChildProps,
+  HTMLDivElement,
+  HTMLElement
+>;
 
 /**
  * Props for the AlertTitle element (heading text of the alert).

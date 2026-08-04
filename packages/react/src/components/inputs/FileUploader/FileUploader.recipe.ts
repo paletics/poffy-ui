@@ -29,6 +29,15 @@ export const fileUploaderRecipe = defineSlotRecipe({
       flexDirection: 'column',
       gap: '{spacing.sm}',
       width: '100%',
+      maxWidth: '100%',
+      minWidth: 0,
+      containerType: 'inline-size',
+      containerName: 'file-uploader',
+      // Keep the established default width in shrink-to-fit layouts while the
+      // root supplies inline-size queries to its slots.
+      // Keep the established shrink-to-fit width while giving inline-size
+      // containment a non-zero fallback before the container is measured.
+      containIntrinsicInlineSize: 'calc({sizes.ratio.md} + {spacing.xl})',
     },
     dropZone: {
       display: 'flex',
@@ -45,7 +54,20 @@ export const fileUploaderRecipe = defineSlotRecipe({
       color: '{colors.text.secondary}',
       cursor: 'pointer',
       transition: 'all 0.2s',
+      _motionSubtle: { transition: 'all {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'all {durations.standard} {easings.bounce}' },
       textAlign: 'center',
+      boxSizing: 'border-box',
+      maxWidth: '100%',
+      minWidth: 0,
+      overflowWrap: 'anywhere',
+      '@container file-uploader (max-width: 8rem)': {
+        gap: '{spacing.2xs}',
+        p: '{spacing.md}',
+      },
+      '@container file-uploader (max-width: 4rem)': {
+        p: '{spacing.xs}',
+      },
       _hover: {
         borderColor: 'var(--file-uploader-main)',
         bg: 'var(--file-uploader-tint)',
@@ -53,6 +75,11 @@ export const fileUploaderRecipe = defineSlotRecipe({
       _active: {
         borderColor: 'var(--file-uploader-main)',
         bg: 'var(--file-uploader-tint)',
+      },
+      _focusVisible: {
+        outline: '2px solid',
+        outlineColor: 'var(--file-uploader-main)',
+        outlineOffset: '2px',
       },
       '&[data-drag]': {
         borderColor: 'var(--file-uploader-main)',
@@ -66,6 +93,8 @@ export const fileUploaderRecipe = defineSlotRecipe({
       display: 'flex',
       flexDirection: 'column',
       gap: '{spacing.xs}',
+      maxWidth: '100%',
+      minWidth: 0,
     },
     fileItem: {
       display: 'flex',
@@ -76,6 +105,16 @@ export const fileUploaderRecipe = defineSlotRecipe({
       borderWidth: '1px',
       borderColor: '{colors.brand.border}',
       bg: 'var(--file-uploader-surface)',
+      boxSizing: 'border-box',
+      maxWidth: '100%',
+      minWidth: 0,
+      '@container file-uploader (max-width: 8rem)': {
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) auto',
+      },
+      '@container file-uploader (max-width: 4rem)': {
+        gridTemplateColumns: 'minmax(0, 1fr)',
+      },
     },
     preview: {
       width: '{sizes.silver.3}',
@@ -83,18 +122,30 @@ export const fileUploaderRecipe = defineSlotRecipe({
       objectFit: 'cover',
       borderRadius: '{radii.sm}',
       bg: '{colors.brand.tint}',
+      flexShrink: 0,
+      '@container file-uploader (max-width: 8rem)': {
+        display: 'none',
+      },
     },
     previewPlaceholder: {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
+      flexShrink: 0,
+      '@container file-uploader (max-width: 8rem)': {
+        display: 'none',
+      },
     },
     uploadIcon: {
       width: '2rem',
       height: '2rem',
+      '@container file-uploader (max-width: 4rem)': {
+        display: 'none',
+      },
     },
     fileInfo: {
       flex: '1',
+      minWidth: 0,
       overflow: 'hidden',
     },
     fileName: {
@@ -113,6 +164,10 @@ export const fileUploaderRecipe = defineSlotRecipe({
       cursor: 'pointer',
       p: '{spacing.2xs}',
       borderRadius: '{radii.sm}',
+      flexShrink: 0,
+      '@container file-uploader (max-width: 4rem)': {
+        justifySelf: 'end',
+      },
       _hover: {
         color: '{colors.variants.danger.main}',
         bg: '{colors.variants.danger.surface}',

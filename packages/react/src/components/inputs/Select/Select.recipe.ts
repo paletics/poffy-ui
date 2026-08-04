@@ -20,19 +20,36 @@ export const selectRecipe = defineSlotRecipe({
   description: 'Native select styling for field, trigger, and indicator affordances',
   slots: ['root', 'field', 'icon'],
   base: {
-    root: inputShellRootStyles,
+    root: {
+      ...inputShellRootStyles,
+      boxSizing: 'border-box',
+      minWidth: 0,
+      minInlineSize: 0,
+      maxWidth: '100%',
+      maxInlineSize: '100%',
+      containerType: 'inline-size',
+      containerName: 'select-control',
+      containIntrinsicInlineSize: '{sizes.ratio.md}',
+    },
     field: {
       ...inputBaseStyles,
       display: 'block',
       cursor: 'pointer',
-      paddingRight: inputEndDecoratorPadding.md,
+      paddingInlineEnd: inputEndDecoratorPadding.md,
+      '&:not([multiple])': {
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      },
     },
     icon: {
       ...inputEndDecoratorStyles,
-      right: inputEndDecoratorOffsets.md,
-      top: '50%',
+      insetInlineEnd: inputEndDecoratorOffsets.md,
+      insetBlockStart: '50%',
       transform: 'translateY(-50%)',
       transition: 'transform 160ms ease',
+      _motionSubtle: { transition: 'transform {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'transform {durations.standard} {easings.bounce}' },
       pointerEvents: 'none',
       fontSize: inputEndDecoratorIconSizes.md,
       '& svg': {
@@ -72,7 +89,7 @@ export const selectRecipe = defineSlotRecipe({
       flushed: {
         field: {
           ...inputVisualVariants.flushed,
-          paddingRight: inputEndDecoratorPadding.md,
+          paddingInlineEnd: inputEndDecoratorPadding.md,
         },
       },
     },
@@ -80,23 +97,86 @@ export const selectRecipe = defineSlotRecipe({
       sm: {
         field: {
           ...inputSizeVariants.sm,
-          paddingRight: inputEndDecoratorPadding.sm,
+          paddingInlineEnd: inputEndDecoratorPadding.sm,
+          '&[multiple]': {
+            height: 'auto',
+            minBlockSize: inputSizeVariants.sm.height,
+            paddingInlineEnd: '{spacing.md}',
+          },
+          '@container select-control (max-width: 7rem)': {
+            paddingInlineStart: '{spacing.2xs}',
+            paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.2xs})',
+            '&[multiple]': {
+              paddingInlineEnd: '{spacing.2xs}',
+            },
+          },
+          '@container select-control (max-width: 4rem)': {
+            paddingInlineEnd: '{spacing.2xs}',
+          },
         },
-        icon: { fontSize: inputEndDecoratorIconSizes.sm, right: inputEndDecoratorOffsets.sm },
+        icon: {
+          fontSize: inputEndDecoratorIconSizes.sm,
+          insetInlineEnd: inputEndDecoratorOffsets.sm,
+          '@container select-control (max-width: 4rem)': {
+            display: 'none',
+          },
+        },
       },
       md: {
         field: {
           ...inputSizeVariants.md,
-          paddingRight: inputEndDecoratorPadding.md,
+          paddingInlineEnd: inputEndDecoratorPadding.md,
+          '&[multiple]': {
+            height: 'auto',
+            minBlockSize: inputSizeVariants.md.height,
+            paddingInlineEnd: '{spacing.base}',
+          },
+          '@container select-control (max-width: 7rem)': {
+            paddingInlineStart: '{spacing.2xs}',
+            paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.2xs})',
+            '&[multiple]': {
+              paddingInlineEnd: '{spacing.2xs}',
+            },
+          },
+          '@container select-control (max-width: 4rem)': {
+            paddingInlineEnd: '{spacing.2xs}',
+          },
         },
-        icon: { fontSize: inputEndDecoratorIconSizes.md, right: inputEndDecoratorOffsets.md },
+        icon: {
+          fontSize: inputEndDecoratorIconSizes.md,
+          insetInlineEnd: inputEndDecoratorOffsets.md,
+          '@container select-control (max-width: 4rem)': {
+            display: 'none',
+          },
+        },
       },
       lg: {
         field: {
           ...inputSizeVariants.lg,
-          paddingRight: inputEndDecoratorPadding.lg,
+          paddingInlineEnd: inputEndDecoratorPadding.lg,
+          '&[multiple]': {
+            height: 'auto',
+            minBlockSize: inputSizeVariants.lg.height,
+            paddingInlineEnd: '{spacing.lg}',
+          },
+          '@container select-control (max-width: 7rem)': {
+            paddingInlineStart: '{spacing.2xs}',
+            paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.2xs})',
+            '&[multiple]': {
+              paddingInlineEnd: '{spacing.2xs}',
+            },
+          },
+          '@container select-control (max-width: 4rem)': {
+            paddingInlineEnd: '{spacing.2xs}',
+          },
         },
-        icon: { fontSize: inputEndDecoratorIconSizes.lg, right: inputEndDecoratorOffsets.lg },
+        icon: {
+          fontSize: inputEndDecoratorIconSizes.lg,
+          insetInlineEnd: inputEndDecoratorOffsets.lg,
+          '@container select-control (max-width: 4rem)': {
+            display: 'none',
+          },
+        },
       },
     },
     error: {

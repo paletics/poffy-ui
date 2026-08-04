@@ -3,14 +3,6 @@ import { Avatar } from '@/components/data-display/Avatar';
 import { AvatarGroup } from '@/components/data-display/AvatarGroup';
 import { Box } from '@/components/layout/Box';
 
-/**
- * Renders a horizontal stack of Avatar components with optional overflow count and click handler.
- * Use to represent multiple users in a compact, overlapping layout.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (avatarGroup recipe), React Context
- */
 const meta: Meta<typeof AvatarGroup> = {
   title: 'Display/AvatarGroup',
   component: AvatarGroup,
@@ -87,6 +79,59 @@ export const WithTotalOverride: Story = {
     size: 'lg',
     children: null,
     onExcessClick: () => undefined,
+  },
+};
+
+export const Scrollable: Story = {
+  render: (args) => (
+    <Box width="[12rem]">
+      <AvatarGroup {...args} data-testid="scrollable-avatar-group">
+        {Array.from({ length: 10 }, (_, index) => (
+          <Avatar key={index} name={`User ${index + 1}`} />
+        ))}
+      </AvatarGroup>
+    </Box>
+  ),
+  args: {
+    size: 'md',
+    children: null,
+  },
+};
+
+export const ScrollableRtl: Story = {
+  render: (args) => (
+    <Box width="[12rem]" dir="rtl">
+      <AvatarGroup {...args} data-testid="scrollable-avatar-group-rtl">
+        {Array.from({ length: 10 }, (_, index) => (
+          <Avatar key={index} name={`RTL User ${index + 1}`} />
+        ))}
+      </AvatarGroup>
+    </Box>
+  ),
+  args: {
+    size: 'md',
+    children: null,
+  },
+};
+
+export const FocusableAvatars: Story = {
+  render: (args) => (
+    <AvatarGroup {...args} data-testid="focusable-avatar-group">
+      <Avatar asChild name="Aoi Tanaka">
+        <a href="https://example.com/aoi" aria-label="Aoi Tanaka profile" />
+      </Avatar>
+      <Avatar asChild name="Mika Sato">
+        <a href="https://example.com/mika" aria-label="Mika Sato profile" />
+      </Avatar>
+      <Avatar asChild name="Ren Ito">
+        <a href="https://example.com/ren" aria-label="Ren Ito profile" />
+      </Avatar>
+    </AvatarGroup>
+  ),
+  args: {
+    size: 'md',
+    spacing: '-sm',
+    children: null,
   },
 };
 

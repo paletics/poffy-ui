@@ -20,6 +20,17 @@ describe('LoopEffect', () => {
     expect(element.tagName).toBe('SPAN');
   });
 
+  it('falls back to a div for invalid asChild children', () => {
+    const { container } = render(
+      <LoopEffect asChild>
+        <>Fragment content</>
+      </LoopEffect>,
+    );
+
+    expect(container.firstElementChild).toBeInstanceOf(HTMLDivElement);
+    expect(container).toHaveTextContent('Fragment content');
+  });
+
   it('applies className correctly', () => {
     render(<LoopEffect className="test-class">Content</LoopEffect>);
     const element = screen.getByText('Content');
@@ -59,6 +70,12 @@ describe('LoopEffect', () => {
   it('renders correctly with none animation type', () => {
     render(<LoopEffect animationType="none">No Animation</LoopEffect>);
     expect(screen.getByText('No Animation')).toBeInTheDocument();
+  });
+
+  it('falls back to float for an invalid runtime animation type', () => {
+    render(<LoopEffect animationType={'unknown' as never}>Fallback effect</LoopEffect>);
+
+    expect(screen.getByText('Fallback effect')).toBeInTheDocument();
   });
 
   it('handles isPaused prop correctly', () => {

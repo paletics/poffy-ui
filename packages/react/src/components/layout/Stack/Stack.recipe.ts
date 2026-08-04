@@ -8,6 +8,7 @@ export const stackRecipe = defineRecipe({
   description: 'Stack layout styling for axis, alignment, wrapping, and gap variants',
   base: {
     display: 'flex',
+    minInlineSize: 0,
   },
   variants: {
     direction: {
@@ -54,6 +55,14 @@ export const stackRecipe = defineRecipe({
         transitionProperty: 'all',
         transitionDuration: '{durations.fast}',
         transitionTimingFunction: '{easings.bounce}',
+        _motionSubtle: {
+          transitionDuration: '{durations.ultraFast}',
+          transitionTimingFunction: '{easings.soft}',
+        },
+        _motionPop: {
+          transitionDuration: '{durations.standard}',
+          transitionTimingFunction: '{easings.bounce}',
+        },
         _motionReduce: {
           transition: 'none',
         },

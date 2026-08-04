@@ -1,4 +1,7 @@
-import { testVisualStories } from '@/components/e2e/visualSpecUtils';
+import {
+  testStoriesDoNotOverflowOnMobile,
+  testVisualStories,
+} from '@/components/e2e/visualSpecUtils';
 
 testVisualStories({
   accessibilityStory: 'default',
@@ -12,4 +15,10 @@ testVisualStories({
     { name: 'Pop', story: 'pop' },
     { name: 'Alignment', story: 'alignment' },
   ],
+});
+
+testStoriesDoNotOverflowOnMobile({
+  componentId: 'layout-stack',
+  title: 'Stack',
+  stories: [{ name: 'Justification', story: 'justification' }],
 });

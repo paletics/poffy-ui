@@ -4,13 +4,6 @@ import { Code } from '@/components/typography';
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 
-/**
- * Icon-only clipboard action that swaps from copy to success feedback after copying.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: IconButton, IconSwapTransition, clipboard behavior
- */
 const meta: Meta<typeof CopyButton> = {
   title: 'Inputs/CopyButton',
   component: CopyButton,
@@ -39,7 +32,7 @@ export const Default: Story = {
   },
   render: (args) => (
     <Flex display="inline-flex" align="center" gap="sm">
-      <Code px="3" py="2" borderWidth="1px" borderColor="layout.divider" bg="layout.surface">
+      <Code px="md" py="sm" borderWidth="thin" borderColor="layout.divider" bg="layout.surface">
         {args.value}
       </Code>
       <CopyButton {...args} />
@@ -58,7 +51,7 @@ export const WithCallback: Story = {
 
     return (
       <Flex display="inline-flex" align="center" gap="sm">
-        <Code px="3" py="2" borderWidth="1px" borderColor="layout.divider" bg="layout.surface">
+        <Code px="md" py="sm" borderWidth="thin" borderColor="layout.divider" bg="layout.surface">
           {`copied ${count} times`}
         </Code>
         <CopyButton value="callback text" onCopy={() => setCount((value) => value + 1)} />

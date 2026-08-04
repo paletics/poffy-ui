@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import type { tag } from '@/styled-system/recipes';
 import { TagProps } from './Tag.types';
 
 /**
@@ -11,6 +12,7 @@ interface TagContextValue {
   appearance?: TagProps['appearance'];
   intent?: TagProps['intent'];
   shape?: TagProps['shape'];
+  classes: ReturnType<typeof tag>;
 }
 
 /**

@@ -1,38 +1,21 @@
 import type { ReactNode } from 'react';
 import type { PoffyColorMode } from './ColorModeProvider.types';
-import type { CustomBrandColors, PoffyBrand } from './BrandProvider.types';
+import type { CustomBrandColors, PoffyBuiltInBrand } from './BrandProvider.types';
 import type { PoffyLocale } from './LocaleProvider.types';
 import type { PoffyDirection } from './DirectionProvider.types';
 import type { AnimationProviderProps } from './AnimationProvider.types';
 import type { MotionProviderProps } from './MotionProvider.types';
+import type { ThemeTokenOverrides } from './theme-token-overrides';
 
-type PickedAnimationProps = Pick<AnimationProviderProps, 'defaultAnimationEnabled'>;
+type PickedAnimationProps = Pick<
+  AnimationProviderProps,
+  'defaultAnimationEnabled' | 'defaultMotionStyle'
+>;
 
-/**
- * Props for the `ThemeProvider` component.
- * All child props are forwarded to the corresponding sub-providers
- * (`ColorModeProvider`, `PoffyBrandProvider`, `LocaleProvider`, `DirectionProvider`, `AnimationProvider`).
- * Place once at the app root.
- *
- * ### Notes
- * `ThemeProvider` owns the default values for the provider stack but
- * each low-level provider remains stateful after initial render. Updating a
- * `default*` prop after mount is not a controlled state update.
- *
- * ### AI Usage
- * - **DO**: Treat `defaultBrand`, `defaultColorMode`, `defaultLocale`, `defaultDir`,
- *   and `defaultAnimationEnabled` as initial values.
- * - **DON'T**: Use `global={false}` at an app root that should control document-level tokens.
- */
-export interface ThemeProviderProps extends PickedAnimationProps {
+
+interface ThemeProviderBaseProps extends PickedAnimationProps {
   /** The content to be wrapped by the theme providers. */
   children: ReactNode;
-  /**
-   * The initial brand applied across the design system (e.g., `'blue'`, `'pome'`).
-   *
-   * @defaultValue `'blue'`
-   */
-  defaultBrand?: PoffyBrand;
   /**
    * The initial color mode for the design system.
    *
@@ -53,20 +36,6 @@ export interface ThemeProviderProps extends PickedAnimationProps {
    */
   defaultDir?: PoffyDirection;
   /**
-   * Color overrides for the `'custom'` brand.
-   * Required when `defaultBrand` is `'custom'`. Ignored for built-in brands.
-   *
-   * @example
-   * ```tsx
-   * import { ThemeProvider } from '@poffy-ui/react';
-   *
-   * <ThemeProvider defaultBrand="custom" customBrand={{ main: '#8B5CF6' }}>
-   *   <App />
-   * </ThemeProvider>
-   * ```
-   */
-  customBrand?: CustomBrandColors;
-  /**
    * Framer Motion feature bundle forwarded to `MotionProvider`.
    *
    * Defaults to async `domMax` loaded off the critical path.
@@ -85,4 +54,43 @@ export interface ThemeProviderProps extends PickedAnimationProps {
    * @defaultValue `true`
    */
   global?: boolean;
+  /** Document forwarded to every global theme provider. */
+  ownerDocument?: Document;
+  /**
+   * Runtime values for `--poffy-*` CSS custom properties.
+   *
+   * This changes token values without generating new Panda tokens. Add custom
+   * token names through the consuming application's Panda `theme.extend`.
+   * Custom brand variables remain controlled by `customBrand`.
+   */
+  tokenOverrides?: ThemeTokenOverrides;
 }
+
+interface BuiltInThemeProviderProps extends ThemeProviderBaseProps {
+  /**
+   * The initial built-in brand.
+   *
+   * @defaultValue `'blue'`
+   */
+  defaultBrand?: PoffyBuiltInBrand;
+  customBrand?: never;
+}
+
+interface CustomThemeProviderProps extends ThemeProviderBaseProps {
+  /** Activates the supplied custom palette on first render. */
+  defaultBrand: 'custom';
+  /**
+   * Color overrides required by the custom brand.
+   *
+   * @example
+   * ```tsx
+   * <ThemeProvider defaultBrand="custom" customBrand={{ main: '#8B5CF6' }}>
+   *   <App />
+   * </ThemeProvider>
+   * ```
+   */
+  customBrand: CustomBrandColors;
+}
+
+/** Props for the root theme provider with a valid built-in or custom brand configuration. */
+export type ThemeProviderProps = BuiltInThemeProviderProps | CustomThemeProviderProps;

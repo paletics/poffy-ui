@@ -14,8 +14,27 @@ const motionDefaultEasing = [0.25, 0.1, 0.25, 1.0] as const;
 
 const toMs = (seconds: number) => `${Math.round(seconds * 1000)}ms`;
 
+const typographyFontSizes = {
+  // Typography deliberately uses a readability scale rather than the
+  // Silver Ratio used by spacing and sizing. Keep compact UI text at 12px
+  // or above and reserve larger steps for clear document hierarchy.
+  '2xs': '0.75rem',
+  xs: '0.8125rem',
+  sm: '0.875rem',
+  md: '1rem',
+  lg: '1.125rem',
+  xl: '1.25rem',
+  '2xl': '1.5rem',
+  '3xl': '1.875rem',
+  '4xl': '2.25rem',
+} as const;
+
 /**
- * Primitive token collection consumed by the system theme preset.
+ * Primitive, condition-independent token collection consumed by the system theme preset.
+ *
+ * These values are the source for spacing, typography, breakpoints, motion, and layering tokens.
+ * Use `semanticTokens` for values whose meaning changes with brand or color mode; this object is
+ * intended as the stable raw scale that those semantic aliases reference.
  */
 export const baseTokens = {
   borderWidths: {
@@ -64,6 +83,9 @@ export const baseTokens = {
   },
   sizes: {
     full: '100%',
+    control: {
+      minimumTarget: '24px',
+    },
     sm: '11rem',
     md: '16rem',
     lg: '22rem',
@@ -88,20 +110,12 @@ export const baseTokens = {
     },
   },
   fontFamilies: {
-    body: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+    body:
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Yu Gothic", YuGothic, Meiryo, "Noto Sans CJK JP", "Noto Sans JP", Arial, sans-serif',
     heading:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Hiragino Kaku Gothic ProN", "Yu Gothic", YuGothic, Meiryo, "Noto Sans CJK JP", "Noto Sans JP", Arial, sans-serif',
   },
-  fontSizes: {
-    '2xs': '0.625rem',
-    xs: '0.707rem',
-    sm: '0.841rem',
-    md: '1rem',
-    lg: '1.189rem',
-    xl: '1.414rem',
-    '2xl': '2rem',
-    '3xl': '2.828rem',
-  },
+  fontSizes: typographyFontSizes,
   fontWeights: {
     normal: 400,
     medium: 500,
@@ -117,16 +131,16 @@ export const baseTokens = {
     loose: 2,
   },
   textStyles: {
-    h1: { fontSize: '2.828rem', fontWeight: 700, lineHeight: 1.2 },
-    h2: { fontSize: '2rem', fontWeight: 700, lineHeight: 1.3 },
-    h3: { fontSize: '1.414rem', fontWeight: 600, lineHeight: 1.4 },
-    h4: { fontSize: '1.189rem', fontWeight: 600, lineHeight: 1.5 },
-    h5: { fontSize: '1rem', fontWeight: 600, lineHeight: 1.6 },
-    h6: { fontSize: '0.841rem', fontWeight: 600, lineHeight: 1.6 },
-    body1: { fontSize: '1rem', fontWeight: 400, lineHeight: 1.5 },
-    body2: { fontSize: '0.841rem', fontWeight: 400, lineHeight: 1.5 },
-    caption: { fontSize: '0.707rem', fontWeight: 400, lineHeight: 1.5 },
-    button: { fontSize: '0.841rem', fontWeight: 600, lineHeight: 1.75, textTransform: 'none' },
+    h1: { fontSize: typographyFontSizes['4xl'], fontWeight: 700, lineHeight: 1.2 },
+    h2: { fontSize: typographyFontSizes['3xl'], fontWeight: 700, lineHeight: 1.3 },
+    h3: { fontSize: typographyFontSizes['2xl'], fontWeight: 600, lineHeight: 1.4 },
+    h4: { fontSize: typographyFontSizes.xl, fontWeight: 600, lineHeight: 1.5 },
+    h5: { fontSize: typographyFontSizes.lg, fontWeight: 600, lineHeight: 1.6 },
+    h6: { fontSize: typographyFontSizes.md, fontWeight: 600, lineHeight: 1.6 },
+    body1: { fontSize: typographyFontSizes.md, fontWeight: 400, lineHeight: 1.5 },
+    body2: { fontSize: typographyFontSizes.sm, fontWeight: 400, lineHeight: 1.5 },
+    caption: { fontSize: typographyFontSizes.xs, fontWeight: 400, lineHeight: 1.5 },
+    button: { fontSize: typographyFontSizes.sm, fontWeight: 600, lineHeight: 1.5, textTransform: 'none' },
   },
   breakpoints: {
     xs: '0',

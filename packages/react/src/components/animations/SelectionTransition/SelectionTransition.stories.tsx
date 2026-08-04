@@ -6,14 +6,6 @@ import { SelectionTransition } from './SelectionTransition';
 import { selectionVariants } from './SelectionTransition.presets';
 import type { SelectionTransitionProps } from './SelectionTransition.types';
 
-/**
- * Animates selected-state indicators for controls and selectable options without owning the
- * control semantics.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (AnimatePresence), SelectionTransition presets, Radix Slot
- */
 const meta: Meta<typeof SelectionTransition> = {
   title: 'Animations/SelectionTransition',
   component: SelectionTransition,

@@ -1,78 +1,142 @@
 import { ChevronDownIcon } from '@/components/media/Icon/icons';
 import { cx } from '@/styled-system/css';
 import { select } from '@/styled-system/recipes';
-import { forwardRef } from 'react';
+import { mergeRefs } from '@poffy-ui/behavior/hooks';
+import { forwardRef, useLayoutEffect, useMemo, useRef } from 'react';
+import { resolveNeoInputVariant } from '@/components/inputs/inputVariant';
+import { useFormControl } from '../FormControl/useFormControl';
+import { hasAriaInvalid, resolveFormControlAria } from '../FormControl/formControlAria';
 import { SelectProps } from './Select.types';
+import { useFormReset } from '@/components/inputs/shared/useFormControlBridge';
 
 /**
- * Native select for form-safe single choice input.
- * Uses the platform picker while matching the shared input shell and variants.
+ * Styled native select for form-safe single or multiple choice.
  *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: native `<select>`, Panda CSS (`select` recipe), decorative chevron icon
- * - **Props**: `SelectProps`
- *
- * ### Design Tokens
- * - **spacing**: field height, padding, and icon offset come from the `select` recipe
- * - **color**: semantic field, disabled, placeholder, and error tokens only
- *
- * ### Variant Logic
- * - **appearance="outline"**: Default form field treatment.
- * - **appearance="soft"**: Lower emphasis field surface, mapped to the filled recipe variant.
- * - **appearance="neo"**: Raised field treatment for high-contrast UI.
- * - **error**: Sets invalid styling and `aria-invalid` on the native select.
- *
- * ### Accessibility
- * - **Role**: native select / combobox semantics from the browser.
- * - **Keyboard**: Browser-native select keyboard behavior.
- * - **Required**: Provide a visible `<label>`, `aria-label`, or `aria-labelledby`.
- *
- * ### AI Usage
- * - **DO**: Use for simple single-choice forms where native mobile pickers are preferred.
- * - **DON'T**: Use for searchable or custom-rendered options; choose `ListboxSelect` or `ComboBox`.
- *
- * @example Native select
- * ```tsx
- * import { Select } from '@poffy-ui/react/inputs';
- *
- * <Select name="status" aria-label="Status" defaultValue="active">
- *   <option value="active">Active</option>
- *   <option value="paused">Paused</option>
- * </Select>
- * ```
+ * Direct `disabled`, `readOnly`, `required`, `id`, and `error` values override the nearest
+ * `FormControl`, including its error/help associations. Read-only selects remain focusable and
+ * submit their existing value, but pointer and non-Tab keyboard changes are prevented and the
+ * prior option selection is restored.
  */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>((props, ref) => {
   const {
     size,
     appearance = 'outline',
-    variant,
-    error = false,
+    variant: _unsupportedVariant,
+    error,
     className,
     children,
     disabled,
+    readOnly,
+    required,
+    onChange,
+    onFocus,
+    onKeyDown,
+    onPointerDown,
+    multiple,
+    id,
+    'aria-describedby': ariaDescribedBy,
+    'aria-errormessage': ariaErrorMessage,
     'aria-invalid': ariaInvalid,
     ...rest
-  } = props;
+  } = props as SelectProps & { variant?: unknown };
 
-  const resolvedVariant =
-    variant ?? (appearance === 'soft' ? 'filled' : appearance === 'neo' ? 'neo' : 'outline');
-  const classes = select({ size, variant: resolvedVariant, error });
+  const formControl = useFormControl();
+  const isInvalid = error ?? formControl.isInvalid;
+  const isDisabled = disabled ?? formControl.isDisabled;
+  const isReadOnly = readOnly ?? formControl.isReadOnly;
+  const isRequired = required ?? formControl.isRequired;
+  const hasExplicitInvalid = hasAriaInvalid(ariaInvalid);
+  const { describedBy, errorMessage } = resolveFormControlAria({
+    ariaDescribedBy,
+    ariaErrorMessage,
+    errorMessageIds: formControl.errorMessageIds,
+    helperTextIds: formControl.helperTextIds,
+    isInvalid: isInvalid || hasExplicitInvalid,
+  });
+
+  const resolvedVariant = resolveNeoInputVariant(appearance);
+  const classes = select({ size, variant: resolvedVariant, error: isInvalid });
+  const selectedIndexesBeforeChange = useRef<number[]>([]);
+  const selectRef = useRef<HTMLSelectElement | null>(null);
+  const formResetRef = useFormReset<HTMLSelectElement>(() => {
+    const selectElement = selectRef.current;
+    if (!selectElement) return;
+    selectedIndexesBeforeChange.current = Array.from(selectElement.options).flatMap(
+      (option, index) => (option.selected ? [index] : []),
+    );
+  });
+  const mergedRef = useMemo(
+    () => mergeRefs<HTMLSelectElement>(selectRef, formResetRef, ref),
+    [formResetRef, ref],
+  );
+
+  useLayoutEffect(() => {
+    if (!selectRef.current) return;
+    selectedIndexesBeforeChange.current = Array.from(selectRef.current.options).flatMap(
+      (option, index) => (option.selected ? [index] : []),
+    );
+  }, [children, props.defaultValue, props.value]);
+
+  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    if (isReadOnly) {
+      Array.from(event.currentTarget.options).forEach((option, index) => {
+        option.selected = selectedIndexesBeforeChange.current.includes(index);
+      });
+      event.preventDefault();
+      return;
+    }
+    selectedIndexesBeforeChange.current = Array.from(event.currentTarget.options).flatMap(
+      (option, index) => (option.selected ? [index] : []),
+    );
+    onChange?.(event);
+  };
+  const captureValue = (event: React.FocusEvent<HTMLSelectElement>) => {
+    selectedIndexesBeforeChange.current = Array.from(event.currentTarget.options).flatMap(
+      (option, index) => (option.selected ? [index] : []),
+    );
+    onFocus?.(event);
+  };
+  const preventReadOnlyKeyChange = (event: React.KeyboardEvent<HTMLSelectElement>) => {
+    onKeyDown?.(event);
+    if (!event.defaultPrevented && isReadOnly && event.key !== 'Tab') event.preventDefault();
+  };
+  const preventReadOnlyPointerChange = (event: React.PointerEvent<HTMLSelectElement>) => {
+    onPointerDown?.(event);
+    if (!event.defaultPrevented && isReadOnly) event.preventDefault();
+  };
 
   return (
-    <div className={cx(classes.root, className)} data-disabled={disabled ? '' : undefined}>
+    <div className={cx(classes.root, className)} data-disabled={isDisabled ? '' : undefined}>
       <select
         {...rest}
-        ref={ref}
+        ref={mergedRef}
+        id={id ?? formControl.id}
         className={classes.field}
-        disabled={disabled}
-        aria-invalid={error ? true : ariaInvalid}
+        disabled={isDisabled}
+        required={isRequired && !isReadOnly}
+        multiple={multiple}
+        aria-disabled={isDisabled ? true : undefined}
+        aria-invalid={isInvalid ? true : ariaInvalid}
+        aria-readonly={isReadOnly || undefined}
+        aria-required={isRequired || undefined}
+        aria-describedby={describedBy}
+        aria-errormessage={errorMessage}
+        onChange={handleChange}
+        onFocus={captureValue}
+        onKeyDown={preventReadOnlyKeyChange}
+        onPointerDown={preventReadOnlyPointerChange}
       >
         {children}
       </select>
-      <span className={classes.icon} data-disabled={disabled ? '' : undefined} aria-hidden="true">
-        <ChevronDownIcon />
-      </span>
+      {!multiple && (
+        <span
+          className={classes.icon}
+          data-disabled={isDisabled ? '' : undefined}
+          aria-hidden="true"
+        >
+          <ChevronDownIcon />
+        </span>
+      )}
     </div>
   );
 });

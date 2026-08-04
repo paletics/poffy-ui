@@ -5,33 +5,35 @@ import { forwardRef, useId } from 'react';
 import type { SidebarGroupProps } from './Sidebar.types';
 import { useSidebar } from './SidebarContext';
 
-/**
- * A container for grouping navigation items within the Sidebar, with an optional label.
- *
- * ### AI Context & Architecture
- * When a label is provided, a unique ID is generated via useId and bound to the group
- * container via aria-labelledby, so screen readers announce the group heading before
- * reading the items inside it.
- */
+/** Groups Sidebar items and labels the group for assistive technology when a label is provided. */
 export const SidebarGroup = forwardRef<HTMLDivElement, SidebarGroupProps>((props, ref) => {
-  const { children, className, label, ...rest } = props;
+  const {
+    children,
+    className,
+    label,
+    asChild: _unsupportedAsChild,
+    ...rest
+  } = props as SidebarGroupProps & {
+    asChild?: boolean;
+  };
   const { classes, collapsed } = useSidebar();
   const labelId = useId();
+  const hasLabel = label !== null && label !== undefined && label !== false;
 
   // When collapsed, the label element has display:none (removed from the a11y tree).
   // Pointing aria-labelledby at a hidden element produces an invalid reference,
   // so we only apply it when the label is actually visible.
-  const labelledBy = label && !collapsed ? labelId : undefined;
+  const labelledBy = hasLabel && !collapsed ? labelId : undefined;
 
   return (
     <div
       ref={ref}
+      {...rest}
       role="group"
       aria-labelledby={labelledBy}
       className={cx(classes.group, className)}
-      {...rest}
     >
-      {label && (
+      {hasLabel && (
         <div id={labelId} className={classes.label}>
           {label}
         </div>

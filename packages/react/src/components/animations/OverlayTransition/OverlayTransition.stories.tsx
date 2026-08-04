@@ -12,13 +12,6 @@ import { OverlayTransition } from '@/components/animations/OverlayTransition/Ove
 import { overlayVariants } from '@/components/animations/OverlayTransition/OverlayTransition.presets';
 import { OverlayTransitionProps } from '@/components/animations/OverlayTransition/OverlayTransition.types';
 
-/**
- * A self-contained animation wrapper for overlay elements that manages its own `AnimatePresence` wiring based on an `isVisible` prop. Used as the animation layer for modals, drawers, popovers, and tooltips.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (AnimatePresence), OverlayTransition presets, Radix Slot
- */
 const meta: Meta<typeof OverlayTransition> = {
   title: 'Animations/OverlayTransition',
   component: OverlayTransition,
@@ -57,11 +50,12 @@ const boxStyle = css({
   fontWeight: 'bold',
   borderRadius: 'xl',
   boxShadow: 'xl',
-  border: '[1px solid]',
-  borderColor: 'slate.100',
+  borderWidth: 'thin',
+  borderStyle: 'solid',
+  borderColor: 'layout.divider',
   fontSize: 'lg',
   textAlign: 'center',
-  p: '6',
+  p: 'lg',
 });
 
 const containerStyle = css({
@@ -78,18 +72,19 @@ const renderOverlayGalleryItem = ({
   isOpen: boolean;
   type: NonNullable<OverlayTransitionProps['animationType']>;
 }) => (
-  <Box key={type} minHeight="[150px]">
-    <Text mb="2" fontSize="xs" color="slate.500">
+  <Box key={type} minHeight="[6rem]">
+    <Text mb="sm" fontSize="xs" color="slate.500">
       {type}
     </Text>
     <OverlayTransition isVisible={isOpen} animationType={type}>
       <Box
         className={css({
           bg: 'blue.50',
-          border: '[1px solid]',
+          borderWidth: 'thin',
+          borderStyle: 'solid',
           borderColor: 'blue.100',
           borderRadius: 'md',
-          p: '4',
+          p: 'base',
           textAlign: 'center',
           fontSize: 'sm',
         })}
@@ -104,13 +99,13 @@ const InteractiveTemplate = (args: OverlayTransitionProps) => {
   const [isOpen, setIsOpen] = useState(false);
   return (
     <Stack className={containerStyle}>
-      <Button mb="8" onClick={() => setIsOpen(!isOpen)}>
+      <Button mb="xl" onClick={() => setIsOpen(!isOpen)}>
         {isOpen ? 'Close' : 'Open'} {args.animationType}
       </Button>
       <OverlayTransition {...args} isVisible={isOpen}>
         <Flex className={boxStyle}>
           <Stack alignItems="center">
-            <StarIcon size="lg" mb="2" />
+            <StarIcon size="lg" mb="sm" />
             {args.animationType?.toUpperCase()}
           </Stack>
         </Flex>
@@ -196,18 +191,17 @@ export const Blur: Story = {
 
 export const Gallery: Story = {
   render: function GalleryStory() {
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(true);
     return (
-      <Stack p="8" alignItems="center">
-        <Button mb="8" onClick={() => setIsOpen(!isOpen)}>
-          Toggle All Animations
-        </Button>
+      <Stack p="xl" alignItems="center">
+        <Button onClick={() => setIsOpen(!isOpen)}>Toggle All Animations</Button>
         <Grid
           className={css({
             display: 'grid',
             gridTemplateColumns: '[repeat(auto-fill, minmax(200px, 1fr))]',
-            gap: '6',
-            mt: '8',
+            width: '100%',
+            gap: 'md',
+            mt: 'lg',
           })}
         >
           {renderOverlayGalleryItem({ isOpen, type: 'fade' })}
@@ -231,7 +225,7 @@ export const AsChild: Story = {
     const [isOpen, setIsOpen] = useState(false);
     return (
       <Stack className={containerStyle}>
-        <Button mb="8" onClick={() => setIsOpen(!isOpen)}>
+        <Button mb="xl" onClick={() => setIsOpen(!isOpen)}>
           Toggle AsChild
         </Button>
         <OverlayTransition {...args} isVisible={isOpen} asChild animationType="fade">

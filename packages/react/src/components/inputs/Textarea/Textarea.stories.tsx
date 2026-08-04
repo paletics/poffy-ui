@@ -3,14 +3,7 @@ import { expect, userEvent, within } from 'storybook/test';
 import { Textarea } from './Textarea';
 import { Stack } from '../../layout/Stack';
 
-/**
- * A multi-line text input for long-form content.
- * Supports `outline`, `filled`, and `flushed` variants with `sm`, `md`, `lg` sizes.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`textarea` recipe)
- */
+
 const meta: Meta<typeof Textarea> = {
   title: 'Inputs/Textarea',
   component: Textarea,
@@ -18,7 +11,7 @@ const meta: Meta<typeof Textarea> = {
   argTypes: {
     appearance: {
       control: 'select',
-      options: ['outline', 'soft'],
+      options: ['outline', 'soft', 'flushed'],
     },
     size: {
       control: 'select',
@@ -66,6 +59,7 @@ export const Variants = () => (
   <Stack gap="md">
     <Textarea appearance="outline" placeholder="Outline (Default)" />
     <Textarea appearance="soft" placeholder="Soft" />
+    <Textarea appearance="flushed" placeholder="Flushed" />
   </Stack>
 );
 
@@ -73,7 +67,7 @@ Variants.parameters = {
   docs: {
     description: {
       story:
-        'Three visual variants side-by-side: `outline` (bordered), `filled` (solid bg), `flushed` (bottom border only). Verify each uses distinct Panda CSS recipe slots.',
+        'Three visual appearances side-by-side: `outline` (bordered), `soft` (soft background), and `flushed` (bottom border only).',
     },
   },
 };
@@ -90,7 +84,7 @@ Sizes.parameters = {
   docs: {
     description: {
       story:
-        'All three sizes (`sm`, `md`, `lg`). Verify padding scales via Silver Ratio tokens and font size adjusts accordingly.',
+        'All three sizes (`sm`, `md`, `lg`). Verify padding scales via Silver Ratio tokens and font size follows the readable role scale.',
     },
   },
 };

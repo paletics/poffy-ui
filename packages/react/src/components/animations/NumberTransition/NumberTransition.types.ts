@@ -1,24 +1,11 @@
-import { Easing } from 'motion/react';
-import { ElementType } from 'react';
-import { PrimitiveProps } from '@poffy-ui/types';
+import type { Easing } from 'motion/react';
+import type { MotionPrimitiveProps } from '@/types/motion';
 
 /**
- * NumberTransition Props
- *
- * ### Notes
- * `NumberTransition` is controlled by the numeric `to` prop. When `to`
- * changes, the component restarts interpolation from the current motion value
- * unless reduced motion is enabled.
- *
- * ### AI Usage
- * - **DO**: Provide `format` for currency, units, compact notation, and locale-aware strings.
- * - **DON'T**: Format by wrapping children; this component renders the animated value itself.
- *
- * ### Generic Parameters
- * - **T**: HTML element type rendered by the polymorphic primitive.
+ * Props for an animated numeric value. Changing `to` begins interpolation from the current value.
  */
-export type NumberTransitionProps<T extends ElementType = 'span'> = PrimitiveProps<
-  T,
+export type NumberTransitionProps = MotionPrimitiveProps<
+  'span',
   {
     /**
      * Start value

@@ -17,12 +17,12 @@ export const iconRecipe = defineRecipe({
   },
   variants: {
     size: {
-      xs: { w: 'var(--poffy-icon-size, 11.3px)', h: 'var(--poffy-icon-size, 11.3px)' },
-      sm: { w: 'var(--poffy-icon-size, 16px)', h: 'var(--poffy-icon-size, 16px)' },
-      md: { w: 'var(--poffy-icon-size, 22.6px)', h: 'var(--poffy-icon-size, 22.6px)' },
-      lg: { w: 'var(--poffy-icon-size, 32px)', h: 'var(--poffy-icon-size, 32px)' },
-      xl: { w: 'var(--poffy-icon-size, 45.2px)', h: 'var(--poffy-icon-size, 45.2px)' },
-      '2xl': { w: 'var(--poffy-icon-size, 64px)', h: 'var(--poffy-icon-size, 64px)' },
+      xs: { w: 'var(--poffy-icon-size, {spacing.md})', h: 'var(--poffy-icon-size, {spacing.md})' },
+      sm: { w: 'var(--poffy-icon-size, {sizes.silver.1})', h: 'var(--poffy-icon-size, {sizes.silver.1})' },
+      md: { w: 'var(--poffy-icon-size, {sizes.root.1})', h: 'var(--poffy-icon-size, {sizes.root.1})' },
+      lg: { w: 'var(--poffy-icon-size, {sizes.silver.2})', h: 'var(--poffy-icon-size, {sizes.silver.2})' },
+      xl: { w: 'var(--poffy-icon-size, {sizes.root.2})', h: 'var(--poffy-icon-size, {sizes.root.2})' },
+      '2xl': { w: 'var(--poffy-icon-size, {sizes.silver.3})', h: 'var(--poffy-icon-size, {sizes.silver.3})' },
     },
     variant: {
       // Stroke-based icon (default). Renders paths using currentColor stroke and no fill.

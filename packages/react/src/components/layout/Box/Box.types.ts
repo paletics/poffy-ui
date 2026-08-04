@@ -1,23 +1,15 @@
 import { JsxStyleProps } from '@/styled-system/types';
 import { PrimitiveProps } from '@poffy-ui/types';
 import { ReactNode } from 'react';
+import type {
+  AsChildHostProps,
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+} from '@/components/shared/polymorphicAsChild.types';
 
 /**
- * Own props for Box, the lowest-level layout primitive.
- *
- * ### Notes
- * Box accepts Panda CSS style props and standard div attributes. It is best for
- * small layout wrappers and escape hatches when no more specific layout component
- * communicates the intent.
- *
- * @example
- * ```tsx
- * import { Box } from '@poffy-ui/react/layout';
- * ```
- *
- * ### AI Usage
- * - Do: prefer semantic elements through `asChild` for landmarks and sections.
- * - Don't: default to Box when Stack, Grid, Container, or Center describes the layout.
+ * Props for the lowest-level layout primitive. Prefer a semantic host through `asChild` for
+ * landmarks, and prefer a more specific layout component when one expresses intent.
  */
 export type BoxBaseProps = JsxStyleProps & {
   /** Content rendered inside the Box. */
@@ -34,4 +26,16 @@ export type BoxBaseProps = JsxStyleProps & {
  * ### Notes
  * Supports `asChild` polymorphism via Radix Slot.
  */
-export type BoxProps = PrimitiveProps<'div', BoxBaseProps>;
+type BoxNativeProps = PrimitiveProps<'div', BoxBaseProps>;
+/** Props for Box rendered with its default host. */
+export type BoxDefaultProps = DefaultHostProps<BoxNativeProps>;
+/** Props for Box delegated to an asChild host. */
+export type BoxAsChildProps = AsChildHostProps<BoxNativeProps>;
+/** Public props for Box. */
+export type BoxProps = BoxDefaultProps | BoxAsChildProps;
+/** Polymorphic component call signatures for Box. */
+export type BoxComponent = PolymorphicAsChildComponent<
+  BoxDefaultProps,
+  BoxAsChildProps,
+  HTMLDivElement
+>;

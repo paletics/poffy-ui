@@ -9,13 +9,6 @@ import { RevealTransition } from '@/components/animations/RevealTransition/Revea
 import { revealVariants } from '@/components/animations/RevealTransition/RevealTransition.presets';
 import type { RevealAnimationType } from '@/components/animations/RevealTransition/RevealTransition.types';
 
-/**
- * Triggers performant entrance animations when an element scrolls into the viewport using Framer Motion's `whileInView` and the native Intersection Observer API. Used to choreograph the reading experience for landing page sections, marketing cards, and content blocks.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (whileInView, Intersection Observer), RevealTransition presets, Radix Slot
- */
 const meta: Meta<typeof RevealTransition> = {
   title: 'Animations/RevealTransition',
   component: RevealTransition,
@@ -61,7 +54,7 @@ const boxStyle = css({
 
 const renderRevealGalleryItem = (type: RevealAnimationType) => (
   <Stack key={type} alignItems="center">
-    <Text mb="4" fontSize="xs" color="slate.500" fontWeight="bold">
+    <Text mb="base" fontSize="xs" color="slate.500" fontWeight="bold">
       {type.toUpperCase()}
     </Text>
     <RevealTransition animationType={type}>
@@ -81,7 +74,7 @@ export const Default: Story = {
       })}
     >
       <RevealTransition {...args} animationType="fade-up">
-        <Box className={cx(boxStyle, css({ bg: 'indigo.500' }))}>Fade Up (Scroll Down)</Box>
+        <Box className={cx(boxStyle, css({ bg: 'indigo.600' }))}>Fade Up (Scroll Down)</Box>
       </RevealTransition>
     </Flex>
   ),
@@ -95,7 +88,12 @@ export const Playground: Story = {
 export const Gallery: Story = {
   render: () => (
     <Grid
-      className={css({ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12', p: '8' })}
+      className={css({
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '2xl',
+        p: 'xl',
+      })}
     >
       {renderRevealGalleryItem('fade-up')}
       {renderRevealGalleryItem('fade-down')}
@@ -109,10 +107,10 @@ export const Gallery: Story = {
 
 export const Thresholds: Story = {
   render: () => (
-    <Stack gap="xl" p="8">
+    <Stack gap="xl" p="xl">
       {[0.1, 0.5, 0.9].map((t) => (
         <Stack key={t} alignItems="center">
-          <Text mb="2" fontSize="xs">
+          <Text mb="sm" fontSize="xs">
             Threshold: {t}
           </Text>
           <RevealTransition threshold={t} animationType="fade-up">

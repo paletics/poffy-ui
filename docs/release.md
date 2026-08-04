@@ -57,11 +57,17 @@ update release tags.
 
 ## Release Flow
 
-1. Create or confirm a changeset.
-2. Run `pnpm changeset:version`.
-3. Commit the version changes to `main`.
-4. Tag the version as `vX.Y.Z`.
-5. Push `main` and the tag.
+1. Create or confirm a changeset and inspect it with `pnpm changeset:status`.
+2. Complete the normal CI checks, including `pnpm build:storybook`.
+3. Run `pnpm changeset:version`.
+4. Confirm the intended tag against the versioned fixed package group, for
+   example `pnpm check:release-tag -- v0.2.0`.
+5. Commit the version changes to `main`.
+6. Tag that commit as `vX.Y.Z`.
+7. Push `main` and the tag.
 
-The `Release` workflow runs the release checks and publishes with OIDC-backed
-Trusted Publishing.
+The `Release` workflow rejects a tag whose version differs from any of the four
+fixed public package versions. It also verifies from the fetched local Git
+history that the tagged commit belongs to `main`; the guard does not contact the
+remote during validation. The workflow then runs the release checks and
+publishes with OIDC-backed Trusted Publishing.

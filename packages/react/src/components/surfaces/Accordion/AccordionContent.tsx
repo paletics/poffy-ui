@@ -1,49 +1,42 @@
 'use client';
 
 import { cx } from '@/styled-system/css';
-import { forwardRef } from 'react';
+import { forwardRef, useEffect, useId } from 'react';
 import type { AccordionContentProps } from './Accordion.types';
 import { useAccordion } from './AccordionContext';
 import { useAccordionItem } from './AccordionItemContext';
 import { CollapseTransition } from '@/components/animations';
+import { ACCORDION_CONTENT_MARKER } from './AccordionTopology';
 
 /**
- * The collapsible container that holds the content for an accordion section.
- * ### AI Context & Architecture
- * - Tier: Molecules, Stack: Panda CSS, CollapseTransition
- * ### Design Tokens
- * - padding: silver ratio tokens via content recipe
- * ### Variant Logic
- * - Uses CollapseTransition for semantic open/close animations.
- * @example
- * ```tsx
- * <AccordionContent>Details revealed upon toggle.</AccordionContent>
- * ```
- * ### Notes
- * Do not attach click handlers meant to toggle the accordion to this panel.
- * ### Accessibility
- * - Implements `role="region"` and `aria-labelledby` automatically.
- * ### AI Usage
- * - Use to wrap the actual details inside an AccordionItem.
- * - Content is automatically unmounted/hidden when the item is closed via CollapseTransition.
+ * Renders one AccordionItem details panel through `CollapseTransition`.
+ *
+ * A valid item makes it a labelled `region` owned by the trigger. Closed
+ * content exits and unmounts; it does not retain application state on its own.
+ * Use `Accordion.Trigger` to change state rather than panel click handlers.
  */
 export const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps>((props, ref) => {
-  const { children, className, initial: _initial, ...rest } = props;
+  const { children, className, initial, ...rest } = props;
   const { value: openValues, classes } = useAccordion();
-  const { value, contentId } = useAccordionItem();
+  const { value, disabled, invalidStructure, panelId, registerContent, triggerId } =
+    useAccordionItem();
+  const generatedId = useId();
+  const ownId = panelId ?? generatedId;
+  useEffect(() => registerContent(ownId), [ownId, registerContent]);
 
-  const isOpen = openValues.includes(value);
+  const isOpen = !disabled && !invalidStructure && openValues.includes(value);
 
   return (
     <CollapseTransition
       ref={ref}
       animationType="height-fade"
       customData={{ duration: 0.28 }}
+      initial={initial}
       {...rest}
       // a11y-critical: always override consumer props to preserve WAI-ARIA linkage.
-      id={`${contentId}-content`}
+      id={ownId}
       role="region"
-      aria-labelledby={`${contentId}-trigger`}
+      aria-labelledby={!disabled && !invalidStructure ? triggerId : undefined}
       isOpen={isOpen}
       className={cx(classes.content, className)}
     >
@@ -53,3 +46,6 @@ export const AccordionContent = forwardRef<HTMLDivElement, AccordionContentProps
 });
 
 AccordionContent.displayName = 'AccordionContent';
+(AccordionContent as typeof AccordionContent & { [ACCORDION_CONTENT_MARKER]?: boolean })[
+  ACCORDION_CONTENT_MARKER
+] = true;

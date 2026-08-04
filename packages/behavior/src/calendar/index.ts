@@ -1,10 +1,13 @@
-export { formatDateISO, isSameDay } from './date';
+/** Builds a fixed six-week calendar grid and weekday labels for a visible month. */
 export { buildCalendarGrid } from './grid';
+
+/** Derives initial visible/focused dates and keyboard focus movement with inclusive bounds. */
 export {
   getInitialCalendarFocusDate,
   getInitialCalendarMonth,
   getNextCalendarFocusDate,
 } from './navigation';
+/** Normalizes and evaluates single, multiple, and range calendar selection by local day. */
 export {
   getCalendarInitialSelection,
   getNextCalendarSelection,
@@ -12,6 +15,7 @@ export {
   isCalendarRangeEnd,
   isCalendarRangeMiddle,
   isCalendarRangeStart,
+  normalizeCalendarSelection,
 } from './selection';
 /** Re-exported calendar grid type. */
 export type { CalendarGrid } from './grid.types';

@@ -1,4 +1,4 @@
-﻿import { render, screen } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
 import { Textarea } from './Textarea';
@@ -69,7 +69,78 @@ describe('Textarea', () => {
     expect(textarea).toBeDisabled();
     expect(textarea).toBeRequired();
     expect(textarea).toHaveAttribute('aria-invalid', 'true');
-    expect(textarea).toHaveAttribute('aria-describedby', 'notes-helper-text notes-error-message');
-    expect(textarea).toHaveAttribute('aria-errormessage', 'notes-error-message');
+    const describedBy = textarea.getAttribute('aria-describedby')?.split(' ') ?? [];
+    expect(describedBy).toHaveLength(2);
+    describedBy.forEach((id) => expect(document.getElementById(id)).toBeInTheDocument());
+    expect(textarea).toHaveAttribute('aria-errormessage', describedBy[1]);
+  });
+
+  it('allows explicit field props and ARIA references to override FormControl state', () => {
+    render(
+      <FormControl id="context-notes" isInvalid isRequired isDisabled isReadOnly>
+        <FormLabel>Notes</FormLabel>
+        <Textarea
+          id="explicit-notes"
+          error={false}
+          disabled={false}
+          readOnly={false}
+          required={false}
+          aria-describedby="custom-help"
+          aria-errormessage="custom-error"
+        />
+        <FormHelperText>Context help.</FormHelperText>
+        <FormErrorMessage>Context error.</FormErrorMessage>
+      </FormControl>,
+    );
+
+    const textarea = screen.getByRole('textbox');
+    expect(textarea).toHaveAttribute('id', 'explicit-notes');
+    expect(textarea).not.toBeDisabled();
+    expect(textarea).not.toHaveAttribute('readonly');
+    expect(textarea).not.toBeRequired();
+    expect(textarea).not.toHaveAttribute('aria-invalid');
+    expect(textarea).toHaveAttribute('aria-describedby', 'custom-help');
+    expect(textarea).toHaveAttribute('aria-errormessage', 'custom-error');
+  });
+
+  it('associates FormControl errors when aria-invalid is explicitly true', () => {
+    render(
+      <FormControl id="notes" isInvalid>
+        <FormLabel>Notes</FormLabel>
+        <Textarea error={false} aria-invalid />
+        <FormErrorMessage>Notes are required.</FormErrorMessage>
+      </FormControl>,
+    );
+
+    const textarea = screen.getByRole('textbox', { name: 'Notes' });
+    const error = screen.getByText('Notes are required.');
+    expect(textarea).toHaveAttribute('aria-invalid', 'true');
+    expect(textarea).toHaveAttribute('aria-errormessage', error.id);
+  });
+
+  it.each(['grammar', 'spelling'] as const)(
+    'associates FormControl errors when aria-invalid is %s',
+    (ariaInvalid) => {
+      render(
+        <FormControl id="notes" isInvalid>
+          <FormLabel>Notes</FormLabel>
+          <Textarea error={false} aria-invalid={ariaInvalid} />
+          <FormErrorMessage>Notes need attention.</FormErrorMessage>
+        </FormControl>,
+      );
+
+      const textarea = screen.getByRole('textbox', { name: 'Notes' });
+      expect(textarea).toHaveAttribute('aria-invalid', ariaInvalid);
+      expect(textarea).toHaveAttribute(
+        'aria-errormessage',
+        screen.getByText('Notes need attention.').id,
+      );
+    },
+  );
+
+  it('forwards rows without imposing a fixed height through its size recipe', () => {
+    render(<Textarea aria-label="Notes" rows={8} />);
+
+    expect(screen.getByRole('textbox', { name: 'Notes' })).toHaveAttribute('rows', '8');
   });
 });

@@ -1,17 +1,13 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { Box } from '@/components/layout/Box';
+import { Button } from '@/components/inputs/Button';
 import { Text } from '@/components/typography/Text';
 import { css } from '@/styled-system/css';
 import { Backdrop } from '@/components/overlay/Backdrop/Backdrop';
+import { useState } from 'react';
+import { createPortal } from 'react-dom';
 
-/**
- * Storybook documentation and visual review surface for Backdrop.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, overlay primitives
- */
+
 const meta: Meta<typeof Backdrop> = {
   title: 'Overlay/Backdrop',
   component: Backdrop,
@@ -31,7 +27,7 @@ const containerClass = css({
   width: '100%',
   position: 'relative',
   overflow: 'hidden',
-  borderWidth: '1px',
+  borderWidth: 'thin',
   borderStyle: 'solid',
   borderColor: 'layout.divider',
 });
@@ -69,4 +65,24 @@ export const CustomStyle: Story = {
       <Backdrop {...args} />
     </Box>
   ),
+};
+
+const IframeScrollLockExample = () => {
+  const [frame, setFrame] = useState<HTMLIFrameElement | null>(null);
+  const [open, setOpen] = useState(false);
+  const target = frame?.contentDocument?.body;
+
+  return (
+    <>
+      <Button onClick={() => setOpen((value) => !value)}>
+        {open ? 'Close iframe backdrop' : 'Open iframe backdrop'}
+      </Button>
+      <iframe ref={setFrame} title="Backdrop owner document" />
+      {open && target ? createPortal(<Backdrop data-testid="iframe-backdrop" />, target) : null}
+    </>
+  );
+};
+
+export const IframeScrollLock: Story = {
+  render: () => <IframeScrollLockExample />,
 };

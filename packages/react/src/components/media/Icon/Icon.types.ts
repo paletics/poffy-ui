@@ -19,34 +19,7 @@ import { PrimitiveProps } from '@poffy-ui/types';
 export type IconOwnProps = IconVariantProps & JsxStyleProps;
 
 /**
- * IconProps
- *
- * The public props for the Icon component.
- * Extends standard SVG attributes and includes `asChild` for polymorphism.
- *
- * @example
- * ```tsx
- * import { Icon } from '@poffy-ui/react/media';
- *
- * <Icon size="md" color="red.500" />
- * ```
- *
- * @example
- * ```tsx
- * import { Icon } from '@poffy-ui/react/media';
- *
- * <Icon asChild>
- *   <CustomSvg />
- * </Icon>
- * ```
- *
- * ### Notes
- * Do: keep default Icon output decorative and label the interactive parent.
- * Don't: rely on `asChild` to inject `aria-hidden`, `focusable`, or `viewBox`;
- * the child SVG owns those attributes.
- *
- * ### AI Usage
- * - Use named icons from `@poffy-ui/react/media` when available.
- * - Use raw `Icon` only for custom SVG paths that follow the 24x24 viewBox contract.
+ * Props for Icon. The default SVG is decorative; `asChild` accepts an SVG-owning child and transfers
+ * responsibility for `viewBox`, focus, and accessible naming to that child.
  */
 export type IconProps = PrimitiveProps<'svg', IconOwnProps>;

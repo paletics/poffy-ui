@@ -205,7 +205,9 @@ Exception: additive `poffy.*` aliases may be introduced independently when they 
 
 ## Silver Ratio Spacing and Sizing
 
-All non-color tokens such as spacing, sizing, and typography follow the Silver Ratio (`1.414`) scale.
+Spacing and sizing follow the Silver Ratio (`1.414`) scale. Typography is deliberately
+independent: it uses a readability scale with a 12px minimum for compact UI text,
+13px for captions, 14px for secondary text, and 16px for body copy.
 
 ```text
 2xs -> xs -> sm -> md -> base -> lg -> xl -> 2xl -> 3xl
@@ -213,7 +215,18 @@ All non-color tokens such as spacing, sizing, and typography follow the Silver R
        1.414 per step
 ```
 
-Typography sizes follow the same multiplier. See `src/theme/tokens.ts` (`baseTokens`) for spacing and `src/theme/typography.ts` for font-size definitions.
+Typography uses these independent role tokens:
+
+| Token | Value | Intended role |
+| ----- | ----- | ------------- |
+| `2xs` | 12px  | Compact, short UI metadata |
+| `xs`  | 13px  | Captions and supporting labels |
+| `sm`  | 14px  | Secondary prose and controls |
+| `md`  | 16px  | Body copy and default UI text |
+| `lg`–`4xl` | 18–36px | Heading and display hierarchy |
+
+See `src/theme/tokens.ts` (`baseTokens`) and `src/theme/typography.ts` for the
+canonical spacing, sizing, and typography definitions.
 
 ## Border Width Tokens
 

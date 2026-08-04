@@ -1,15 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { css } from '@/styled-system/css';
+import { Stack } from '@/components/layout';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './index';
 
-/**
- * A set of vertically stacked collapsible panels for organizing content into expand/collapse sections.
- * Use for FAQs, settings groups, or any layout that benefits from condensing large amounts of vertical content.
- *
- * ### AI Context & Architecture
- * - **Tier**: Organisms
- * - **Stack**: Panda CSS recipe (`accordion` - `defineSlotRecipe`), Radix Slot, `useAccordionState` hook, AccordionContext
- */
+
 const meta: Meta<typeof Accordion> = {
   title: 'Display/Accordion',
   component: Accordion,
@@ -111,5 +105,27 @@ export const ConstrainedWidth: Story = {
         </AccordionItem>
       </Accordion>
     </div>
+  ),
+};
+
+export const FocusableContent: Story = {
+  render: () => (
+    <Stack gap="lg" width="[280px]" maxWidth="100%">
+      {(['soft', 'outline', 'ghost'] as const).map((appearance) => (
+        <Accordion
+          key={appearance}
+          appearance={appearance}
+          defaultValue="focus"
+          data-testid={`focus-accordion-${appearance}`}
+        >
+          <AccordionItem value="focus">
+            <AccordionTrigger>{appearance} focus content</AccordionTrigger>
+            <AccordionContent asChild>
+              <a href={`#accordion-${appearance}`}>Focusable {appearance} destination</a>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      ))}
+    </Stack>
   ),
 };

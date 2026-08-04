@@ -17,11 +17,16 @@ export const tagRecipe = defineSlotRecipe({
       lineHeight: '1.2',
       outline: 0,
       verticalAlign: 'top',
+      boxSizing: 'border-box',
+      minInlineSize: 0,
       maxWidth: '100%',
     },
     label: {
+      minWidth: 0,
       lineHeight: '1.2',
-      overflow: 'visible',
+      overflowWrap: 'break-word',
+      wordBreak: 'normal',
+      whiteSpace: 'normal',
     },
     closeButton: {
       display: 'flex',
@@ -29,12 +34,15 @@ export const tagRecipe = defineSlotRecipe({
       justifyContent: 'center',
       outline: '0',
       opacity: 0.5,
-      width: 'fit-content',
-      height: 'fit-content',
+      flexShrink: 0,
+      minInlineSize: '{sizes.control.minimumTarget}',
+      minBlockSize: '{sizes.control.minimumTarget}',
       borderRadius: '{radii.sm}',
-      marginLeft: '{spacing.xs}',
+      marginInlineStart: '{spacing.xs}',
       cursor: 'pointer',
       transition: 'opacity {durations.fast} ease',
+      _motionSubtle: { transition: 'opacity {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'opacity {durations.standard} {easings.bounce}' },
       _hover: {
         opacity: 0.8,
         bg: '{colors.layout.divider}',
@@ -42,7 +50,7 @@ export const tagRecipe = defineSlotRecipe({
       _focusVisible: {
         outline: '2px solid',
         outlineColor: '{colors.brand.main}',
-        outlineOffset: '2px',
+        outlineOffset: '-2px',
       },
     },
   },
@@ -55,7 +63,7 @@ export const tagRecipe = defineSlotRecipe({
           fontSize: 'xs',
           borderRadius: '{radii.sm}',
         },
-        closeButton: { marginRight: '{spacing.-2xs}', marginStart: '{spacing.2xs}' },
+        closeButton: { marginInlineEnd: '{spacing.-2xs}', marginInlineStart: '{spacing.2xs}' },
       },
       md: {
         root: {
@@ -64,7 +72,7 @@ export const tagRecipe = defineSlotRecipe({
           fontSize: 'sm',
           borderRadius: '{radii.md}',
         },
-        closeButton: { marginRight: '{spacing.-2xs}', marginStart: '{spacing.xs}' },
+        closeButton: { marginInlineEnd: '{spacing.-2xs}', marginInlineStart: '{spacing.xs}' },
       },
       lg: {
         root: {
@@ -73,7 +81,7 @@ export const tagRecipe = defineSlotRecipe({
           fontSize: 'md',
           borderRadius: '{radii.md}',
         },
-        closeButton: { marginRight: '{spacing.-2xs}', marginStart: '{spacing.sm}' },
+        closeButton: { marginInlineEnd: '{spacing.-2xs}', marginInlineStart: '{spacing.sm}' },
       },
     },
     appearance: {

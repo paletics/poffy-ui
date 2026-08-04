@@ -5,6 +5,7 @@ import {
   flip,
   offset,
   shift,
+  size,
   useDismiss,
   useFloating,
   useInteractions,
@@ -49,7 +50,6 @@ const useVirtualAnchor = (
 /**
  * Shared floating-positioning behavior for context menus.
  *
- * ### Notes
  * This hook does not own open state; callers pass the current state, anchor
  * coordinates, and `onClose`. It creates a virtual fixed-position anchor,
  * applies Floating UI menu role/dismiss behavior, and hides the menu until the
@@ -61,6 +61,7 @@ export const useContextMenu = ({
   onClose,
   position,
   target,
+  nodeId,
 }: UseContextMenuParams): UseContextMenuReturn => {
   const virtualElement = useVirtualAnchor(position, target);
 
@@ -71,20 +72,39 @@ export const useContextMenu = ({
     },
     placement: 'bottom-start',
     strategy: 'fixed',
-    middleware: [offset(2), flip(), shift({ padding: 10 })],
+    middleware: [
+      offset(2),
+      flip(),
+      shift({ padding: 10 }),
+      size({
+        padding: 10,
+        apply({ availableHeight, availableWidth, elements }) {
+          elements.floating.style.setProperty(
+            '--floating-available-width',
+            `${Math.max(0, availableWidth)}px`,
+          );
+          elements.floating.style.setProperty(
+            '--floating-available-height',
+            `${Math.max(0, availableHeight)}px`,
+          );
+        },
+      }),
+    ],
     whileElementsMounted: autoUpdate,
     transform: false,
+    nodeId,
   });
 
   const { setPositionReference } = refs;
 
   useEffect(() => {
     if (open) {
-      setPositionReference(virtualElement as Element);
+      setPositionReference(virtualElement ?? target ?? null);
     }
-  }, [open, setPositionReference, virtualElement]);
+  }, [open, setPositionReference, target, virtualElement]);
 
-  const dismiss = useDismiss(context);
+  // Escape is handled by the component so consumer key handlers can cancel it.
+  const dismiss = useDismiss(context, { escapeKey: false });
   const role = useRole(context, { role: 'menu' });
   const { getFloatingProps } = useInteractions([dismiss, role]);
 

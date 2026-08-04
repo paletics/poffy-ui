@@ -4,15 +4,8 @@ import { CircleProgress } from '@/components/feedback/CircleProgress';
 import { Flex } from '@/components/layout/Flex';
 import { Stack } from '@/components/layout/Stack';
 import { Text } from '@/components/typography/Text';
+import { css } from '@/styled-system/css';
 
-/**
- * Single circular SVG indicator that visualises determinate progress as a percentage arc.
- * Use to show task completion or upload/download progress in a compact circular form.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (circleProgress recipe), Radix Slot
- */
 const meta: Meta<typeof CircleProgress> = {
   title: 'Feedback/CircleProgress',
   component: CircleProgress,
@@ -81,7 +74,7 @@ export const Secondary: Story = {
 
 export const Sizes: Story = {
   render: () => (
-    <Flex gap="lg" align="center">
+    <Flex gap="lg" align="center" wrap="wrap" justify="center">
       <CircleProgress size={50} value={30} />
       <CircleProgress size={100} value={50} showValue />
       <CircleProgress size={150} value={70} showValue />
@@ -91,7 +84,7 @@ export const Sizes: Story = {
 
 export const Thickness: Story = {
   render: () => (
-    <Flex gap="lg" align="center">
+    <Flex gap="lg" align="center" wrap="wrap" justify="center">
       <CircleProgress size={100} thickness={5} value={50} showValue />
       <CircleProgress size={100} thickness={15} value={50} showValue />
       <CircleProgress size={100} thickness={25} value={50} showValue />
@@ -105,6 +98,75 @@ export const WithLabel: Story = {
     showValue: true,
     children: 'Done',
   },
+};
+
+export const LongCustomLabel: Story = {
+  args: {
+    value: 82,
+    size: 80,
+    children: 'Processing upload request',
+  },
+};
+
+export const TinyLongCustomLabel: Story = {
+  args: {
+    value: 82,
+    size: 4,
+    children: 'Processing upload request',
+  },
+};
+
+export const PracticalMinimum: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'An unlabelled indicator may shrink with its container. Use at least 48px for a numeric center value and 64px for a short custom center label; smaller labelled circles retain accessible progress semantics but do not guarantee visual label readability.',
+      },
+    },
+  },
+  render: () => (
+    <Flex gap="lg" align="center" wrap="wrap">
+      <CircleProgress value={35} size={32} aria-label="Compact unlabelled progress" />
+      <CircleProgress value={58} size={48} showValue aria-label="Minimum numeric progress" />
+      <CircleProgress value={82} size={64} aria-label="Minimum custom-label progress">
+        Sync
+      </CircleProgress>
+    </Flex>
+  ),
+};
+
+const preferredMaximumLayout = css({
+  display: 'grid',
+  gap: 'lg',
+  justifyItems: 'start',
+  width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
+});
+
+const narrowProgressContainer = css({
+  inlineSize: '160px',
+});
+
+const wideProgressContainer = css({
+  inlineSize: '[min(360px,100%)]',
+  maxWidth: '100%',
+});
+
+export const PreferredMaximum: Story = {
+  render: () => (
+    <div className={preferredMaximumLayout}>
+      <div className={narrowProgressContainer} data-testid="circle-progress-narrow-parent">
+        <CircleProgress value={82} size={300} aria-label="Narrow upload progress">
+          Processing upload request with a deliberately long status label
+        </CircleProgress>
+      </div>
+      <div className={wideProgressContainer} data-testid="circle-progress-wide-parent">
+        <CircleProgress value={82} size={300} aria-label="Wide upload progress" showValue />
+      </div>
+    </div>
+  ),
 };
 
 export const Intents: Story = {
@@ -131,6 +193,15 @@ export const Intents: Story = {
         <CircleProgress intent="danger" value={65} showValue size={80} />,
       )}
       {renderProgressItem('info', <CircleProgress intent="info" value={65} showValue size={80} />)}
+    </Flex>
+  ),
+};
+
+export const Appearances: Story = {
+  render: () => (
+    <Flex gap="lg" align="center" wrap="wrap">
+      <CircleProgress aria-label="Solid progress" appearance="solid" value={65} size={80} />
+      <CircleProgress aria-label="Soft progress" appearance="soft" value={65} size={80} />
     </Flex>
   ),
 };

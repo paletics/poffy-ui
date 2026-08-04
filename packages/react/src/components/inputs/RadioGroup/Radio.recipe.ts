@@ -17,6 +17,9 @@ export const radioRecipe = defineSlotRecipe({
     root: {
       ...selectionBaseStyles,
       gap: 'md',
+      minWidth: 0,
+      maxWidth: '100%',
+      minBlockSize: '{sizes.control.minimumTarget}',
     },
     input: hiddenInputStyles,
     control: {
@@ -30,6 +33,11 @@ export const radioRecipe = defineSlotRecipe({
       color: 'var(--poffy-radio-main, {colors.brand.main})',
       borderRadius: '{radii.full}',
       transitionDuration: '{durations.fast}',
+      _motionSubtle: { transitionDuration: '{durations.ultraFast}' },
+      _motionPop: {
+        transitionDuration: '{durations.standard}',
+        transitionTimingFunction: '{easings.bounce}',
+      },
       ...peerFocusWithRing,
       _peerChecked: {
         borderColor: 'var(--poffy-radio-main, {colors.brand.main})',
@@ -50,6 +58,8 @@ export const radioRecipe = defineSlotRecipe({
         bg: 'currentColor',
         transform: 'scale(0)',
         transition: 'transform 0.2s',
+        _motionSubtle: { transition: 'transform {durations.ultraFast} {easings.soft}' },
+        _motionPop: { transition: 'transform {durations.standard} {easings.bounce}' },
       },
       '.peer:checked ~ &::before': {
         transform: 'scale(1)',
@@ -58,7 +68,11 @@ export const radioRecipe = defineSlotRecipe({
         display: 'none',
       },
     },
-    label: labelStyles,
+    label: {
+      ...labelStyles,
+      minWidth: 0,
+      overflowWrap: 'anywhere',
+    },
   },
   defaultVariants: {
     size: 'md',
@@ -67,6 +81,7 @@ export const radioRecipe = defineSlotRecipe({
   variants: {
     size: {
       sm: {
+        root: { minBlockSize: '{sizes.control.minimumTarget}' },
         control: { w: '{sizes.silver.1}', h: '{sizes.silver.1}' },
         label: { fontSize: 'sm' },
       },

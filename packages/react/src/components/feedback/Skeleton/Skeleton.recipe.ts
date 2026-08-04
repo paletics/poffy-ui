@@ -21,6 +21,8 @@ export const skeletonRecipe = defineRecipe({
     verticalAlign: 'middle',
     position: 'relative',
     overflow: 'hidden',
+    minWidth: 0,
+    maxWidth: '100%',
   },
   defaultVariants: {
     variant: 'secondary',
@@ -67,23 +69,32 @@ export const skeletonRecipe = defineRecipe({
         height: 'var(--skeleton-height, 1.2em)',
         width: 'var(--skeleton-width, 100%)',
         borderRadius: '{radii.sm}',
+        maxWidth: '100%',
       },
       circle: {
-        width: 'var(--skeleton-width, auto)',
-        height: 'var(--skeleton-height, var(--skeleton-width, auto))',
+        width: 'var(--skeleton-width, {sizes.root.2})',
+        height: 'var(--skeleton-height, auto)',
         borderRadius: '{radii.full}',
         flexShrink: 0,
         aspectRatio: '1',
+        maxWidth: '100%',
       },
       rect: {
         width: 'var(--skeleton-width, 100%)',
-        height: 'var(--skeleton-height, 100%)',
+        height: 'var(--skeleton-height, {sizes.silver.3})',
         borderRadius: '{radii.md}',
+        maxWidth: '100%',
       },
     },
     animation: {
       pulse: {
         animation: 'pulse 1.5s ease-in-out infinite',
+        _motionSubtle: {
+          animationDuration: '2.25s',
+        },
+        _motionPop: {
+          animationDuration: '1.2s',
+        },
       },
       shimmer: {
         _after: {
@@ -96,6 +107,12 @@ export const skeletonRecipe = defineRecipe({
           background: 'linear-gradient(90deg, transparent, currentColor, transparent)',
           opacity: 0.2,
           animation: 'shimmer 1.5s infinite linear',
+          _motionSubtle: {
+            animationDuration: '2.25s',
+          },
+          _motionPop: {
+            animationDuration: '1.2s',
+          },
         },
       },
       none: {},

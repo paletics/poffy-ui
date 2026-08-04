@@ -3,15 +3,7 @@ import { expect, within } from 'storybook/test';
 import { Input } from '@/components/inputs/Input';
 import { FormControl, FormLabel, FormHelperText, FormErrorMessage } from './index';
 
-/**
- * A context-providing molecule that auto-wires `id`, `aria-*` attributes,
- * and state flags (`isInvalid`, `isRequired`, `isDisabled`, `isReadOnly`)
- * across `FormLabel`, `FormHelperText`, and `FormErrorMessage`.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`formControl` recipe), Radix Slot, `FormControlContext`
- */
+
 const meta = {
   title: 'Inputs/FormControl',
   component: FormControl,
@@ -90,7 +82,7 @@ export const Invalid: Story = {
     docs: {
       description: {
         story:
-          '`isInvalid=true` causes `FormErrorMessage` to render (it returns `null` when valid). Verify `aria-live="polite"` is present on the error container.',
+          '`isInvalid=true` causes `FormErrorMessage` to render (it returns `null` when valid). The compatible default is `aria-live="polite"`; use `live="off"` when a form-level summary owns announcements and `live="assertive"` only for one urgent error.',
       },
     },
   },

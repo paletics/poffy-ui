@@ -2,13 +2,7 @@
 import { Flex } from './Flex';
 import { Box } from '../Box';
 
-/**
- * A pre-configured flexbox container exposing direction, alignment, justification, wrap, and gap as typed props for fine-grained layout control.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Recipe: flexStyle, splitCssProps), Radix Slot
- */
+
 const meta: Meta<typeof Flex> = {
   title: 'Layout/Flex',
   component: Flex,
@@ -55,13 +49,13 @@ export const Default: Story = {
     gap: 'md',
     children: (
       <>
-        <Box p="4" bg="blue.100">
+        <Box p="base" bg="blue.100">
           Box 1
         </Box>
-        <Box p="4" bg="blue.200">
+        <Box p="base" bg="blue.200">
           Box 2
         </Box>
-        <Box p="4" bg="blue.300">
+        <Box p="base" bg="blue.300">
           Box 3
         </Box>
       </>
@@ -80,13 +74,13 @@ export const Column: Story = {
     gap: 'md',
     children: (
       <>
-        <Box p="4" bg="emerald.100">
+        <Box p="base" bg="emerald.100">
           Box 1
         </Box>
-        <Box p="4" bg="emerald.200">
+        <Box p="base" bg="emerald.200">
           Box 2
         </Box>
-        <Box p="4" bg="emerald.300">
+        <Box p="base" bg="emerald.300">
           Box 3
         </Box>
       </>
@@ -98,21 +92,21 @@ export const JustifySpaceBetween: Story = {
   args: {
     justify: 'space-between',
     w: 'full',
-    p: '4',
+    p: 'base',
     bg: 'slate.100',
     children: (
       <>
-        <Box p="2" bg="rose.100">
+        <Box p="sm" bg="rose.100">
           Left
         </Box>
-        <Box p="2" bg="rose.100">
+        <Box p="sm" bg="rose.100">
           Right
         </Box>
       </>
     ),
   },
   render: (args) => (
-    <Box w="600px">
+    <Box w="[min(600px,calc(100vw - 3rem))]">
       <Flex {...args} />
     </Box>
   ),
@@ -121,14 +115,14 @@ export const JustifySpaceBetween: Story = {
 export const Wrap: Story = {
   args: {
     wrap: 'wrap',
-    gap: '4',
-    w: '300px',
+    gap: 'base',
+    w: '[300px]',
     bg: 'slate.50',
-    p: '4',
+    p: 'base',
     children: (
       <>
         {Array.from({ length: 10 }).map((_, i) => (
-          <Box key={i} p="4" bg="violet.100">
+          <Box key={i} p="base" bg="violet.100">
             Box {i + 1}
           </Box>
         ))}

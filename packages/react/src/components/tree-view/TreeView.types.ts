@@ -1,6 +1,11 @@
-import { ElementType, ReactNode } from 'react';
-import { NavigationAppearance, PrimitiveProps } from '@poffy-ui/types';
+import type { ComponentPropsWithoutRef, ReactElement, ReactNode } from 'react';
+import { NativeProps, NavigationAppearance, PrimitiveProps } from '@poffy-ui/types';
 import { treeView, TreeViewVariantProps } from '@/styled-system/recipes';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
 /**
  * Data structure for the TreeView auto-construction API.
@@ -20,7 +25,10 @@ export interface TreeViewData {
   id: string;
   /** Default visible label for the node. */
   name: string;
-  /** Optional icon rendered before the label. */
+  /**
+   * Optional decorative icon rendered before the label.
+   * Must render non-interactive content; the node name or label supplies the accessible name.
+   */
   icon?: ReactNode;
   /** Nested child nodes. */
   children?: TreeViewData[];
@@ -43,57 +51,7 @@ export interface TreeViewVariantSubset extends Omit<
    * @defaultValue `'soft'`
    */
   appearance?: Extract<NavigationAppearance, 'soft' | 'outline'>;
-  /**
-   * Legacy appearance alias.
-   *
-   * ### Notes
-   * Prefer `appearance` in new code. Use this only when maintaining older call
-   * sites that still pass `default` or `ghost`.
-   *
-   * @defaultValue `undefined`
-   */
-  variant?: 'default' | 'ghost';
 }
-
-/**
- * Properties for the auto-constructing TreeView.
- *
- * @example
- * ```tsx
- * import { TreeView } from '@poffy-ui/react/tree-view';
- * ```
- *
- * ### Notes
- * Use this API when data is already a nested tree. Use the compound
- * components when markup, custom controls, or per-node layout must be hand-authored.
- * The root renders with `role="tree"` and generated items render `role="treeitem"`.
- *
- * Related: `TreeViewData`
- * Related: `TreeViewRootProps`
- */
-export type TreeViewBuilderProps<T extends ElementType = 'ul'> = PrimitiveProps<
-  T,
-  TreeViewVariantSubset
-> & {
-  /** Node data used to construct the tree recursively. */
-  data: TreeViewData[];
-  /** Custom label renderer for each node. */
-  renderLabel?: (node: TreeViewData) => ReactNode;
-  /**
-   * Node IDs expanded on initial uncontrolled render.
-   *
-   * @defaultValue `[]`
-   */
-  defaultExpandedIds?: string[];
-  /**
-   * Node IDs selected on initial uncontrolled render.
-   *
-   * @defaultValue `[]`
-   */
-  defaultSelectedIds?: string[];
-  /** Additional CSS class names merged onto the root tree element. */
-  className?: string;
-};
 
 /**
  * Context value for the TreeView compound components.
@@ -104,15 +62,40 @@ export type TreeViewBuilderProps<T extends ElementType = 'ul'> = PrimitiveProps<
  */
 export interface TreeViewContextValue {
   /** Currently expanded node IDs. */
-  expandedIds: Set<string>;
+  expandedIds: ReadonlySet<string>;
   /** Toggles a node between expanded and collapsed states. */
   toggleNode: (id: string) => void;
   /** Currently selected node IDs. */
-  selectedIds: Set<string>;
+  selectedIds: ReadonlySet<string>;
   /** Updates selected state for a node and optional descendant IDs. */
   toggleSelection: (id: string, isSelected: boolean, childrenIds?: string[]) => void;
   /** Generated Panda CSS recipe classes for TreeView slots. */
   classes: ReturnType<typeof treeView>;
+  /** ID of the trigger participating in roving tabindex. */
+  activeId: string | null;
+  /** Opaque instance ID of the trigger participating in roving tabindex. */
+  activeInstanceId: string | null;
+  /** Item instances whose shared public ID is currently ambiguous. */
+  ambiguousItemInstanceIds: ReadonlySet<string>;
+  /** Item IDs known to be ambiguous from the rendered compound children. */
+  ambiguousItemIds: ReadonlySet<string>;
+  /** Updates the active trigger. Internal keyboard-navigation state. */
+  setActiveItem: (instanceId: string, id: string) => void;
+  /** Registers a tree item as a possible roving tab stop. */
+  registerActiveItem: (
+    instanceId: string,
+    id: string,
+    node: HTMLLIElement,
+    isFocusable: boolean,
+  ) => void;
+  /** Removes a trigger instance from the roving tab stop registry. */
+  unregisterActiveItem: (instanceId: string) => void;
+  /** Registers checkbox selection semantics for the owning tree. */
+  registerCheckboxItem: () => () => void;
+  /** Whether tree items use checkbox rather than selected-state semantics. */
+  hasCheckboxSelection: boolean;
+  /** Direction hint used only when the rendered tree has no resolved CSS direction. */
+  direction?: string;
 }
 
 /**
@@ -135,7 +118,20 @@ export interface TreeViewContextValue {
  * Use controlled `expandedIds`/`selectedIds` only when state is owned by routing,
  * persistence, or another external store.
  */
-export interface TreeViewRootOwnProps extends TreeViewVariantSubset {
+interface TreeViewRootBaseOwnProps extends TreeViewVariantSubset {
+  /** Additional CSS class names merged onto the root tree element. */
+  className?: string;
+}
+
+/** Externally owned TreeView expansion state. */
+export interface ControlledTreeViewExpandedProps {
+  expandedIds: string[];
+  onExpandedChange: (expandedIds: string[]) => void;
+  defaultExpandedIds?: never;
+}
+
+/** TreeView-owned expansion state. */
+export interface UncontrolledTreeViewExpandedProps {
   /**
    * Node IDs expanded on initial uncontrolled render.
    *
@@ -146,10 +142,19 @@ export interface TreeViewRootOwnProps extends TreeViewVariantSubset {
    * @defaultValue `[]`
    */
   defaultExpandedIds?: string[];
-  /** Controlled set of expanded node IDs. */
-  expandedIds?: string[];
-  /** Callback fired when expanded node IDs change. */
+  expandedIds?: never;
   onExpandedChange?: (expandedIds: string[]) => void;
+}
+
+/** Externally owned TreeView selection state. */
+export interface ControlledTreeViewSelectedProps {
+  selectedIds: string[];
+  onSelectedChange: (selectedIds: string[]) => void;
+  defaultSelectedIds?: never;
+}
+
+/** TreeView-owned selection state. */
+export interface UncontrolledTreeViewSelectedProps {
   /**
    * Node IDs selected on initial uncontrolled render.
    *
@@ -161,18 +166,67 @@ export interface TreeViewRootOwnProps extends TreeViewVariantSubset {
    * @defaultValue `[]`
    */
   defaultSelectedIds?: string[];
-  /** Controlled set of selected node IDs. */
-  selectedIds?: string[];
-  /** Callback fired when selected node IDs change. */
+  selectedIds?: never;
   onSelectedChange?: (selectedIds: string[]) => void;
-  /** Additional CSS class names merged onto the root tree element. */
-  className?: string;
 }
+
+/** Public props for TreeViewExpandedState. */
+export type TreeViewExpandedStateProps =
+  | ControlledTreeViewExpandedProps
+  | UncontrolledTreeViewExpandedProps;
+/** Public props for TreeViewSelectedState. */
+export type TreeViewSelectedStateProps =
+  | ControlledTreeViewSelectedProps
+  | UncontrolledTreeViewSelectedProps;
+/** Component-specific props for TreeViewRoot. */
+export type TreeViewRootOwnProps = TreeViewRootBaseOwnProps &
+  TreeViewExpandedStateProps &
+  TreeViewSelectedStateProps;
+
+type TreeViewRootNativeBaseProps = Omit<
+  PrimitiveProps<'ul', TreeViewRootBaseOwnProps>,
+  'aria-multiselectable' | 'role'
+>;
 
 /**
  * Comprehensive properties for the TreeViewRoot component.
  */
-export type TreeViewRootProps = PrimitiveProps<'ul', TreeViewRootOwnProps>;
+export type TreeViewRootProps = TreeViewRootNativeBaseProps &
+  TreeViewExpandedStateProps &
+  TreeViewSelectedStateProps;
+
+interface TreeViewBuilderOwnProps {
+  /** Node data used to construct the tree recursively. */
+  data: TreeViewData[];
+  /**
+   * Custom visible label renderer for each node. It must render non-interactive content.
+   * Use compound TreeView parts when a node requires links, buttons, or other controls.
+   */
+  renderLabel?: (node: TreeViewData) => ReactNode;
+  /**
+   * Maximum nested data depth rendered by the auto-construction API. This prevents malformed
+   * or untrusted data from exhausting the renderer stack. Use `Infinity` only when input
+   * depth is already bounded. Fractional values are rounded down; values below `1`, `NaN`,
+   * and `-Infinity` use the default of `100`.
+   *
+   * @defaultValue `100`
+   */
+  maxAutoTreeDepth?: number;
+}
+
+type TreeViewBuilderBaseProps = Omit<TreeViewRootNativeBaseProps, 'children'> &
+  TreeViewBuilderOwnProps;
+
+/**
+ * Properties for the auto-constructing TreeView.
+ *
+ * ### Notes
+ * Uses the same independent controlled/uncontrolled expansion and selection
+ * contracts as `TreeViewRootProps`.
+ */
+export type TreeViewBuilderProps = TreeViewBuilderBaseProps &
+  TreeViewExpandedStateProps &
+  TreeViewSelectedStateProps;
 
 /**
  * Own properties for a TreeView item node.
@@ -184,7 +238,11 @@ export type TreeViewRootProps = PrimitiveProps<'ul', TreeViewRootOwnProps>;
 export interface TreeViewItemOwnProps {
   /** Unique node identifier used by triggers and selection controls. */
   id: string;
-  /** Whether the item owns a nested child group. */
+  /**
+   * Whether the item owns a nested child group. Omitted values are leaves.
+   * Pass `true` for expandable branches.
+   * @defaultValue false
+   */
   hasChildren?: boolean;
   /** Descendant IDs used for cascading selection. */
   childrenIds?: string[];
@@ -195,7 +253,10 @@ export interface TreeViewItemOwnProps {
 /**
  * Comprehensive properties for the TreeViewItem component.
  */
-export type TreeViewItemProps = PrimitiveProps<'li', TreeViewItemOwnProps>;
+export type TreeViewItemProps = Omit<
+  PrimitiveProps<'li', TreeViewItemOwnProps>,
+  'aria-checked' | 'aria-disabled' | 'aria-expanded' | 'aria-selected' | 'role' | 'tabIndex'
+>;
 
 /**
  * Own properties for a TreeView trigger.
@@ -205,6 +266,8 @@ export type TreeViewItemProps = PrimitiveProps<'li', TreeViewItemOwnProps>;
  * `TreeViewLabel` so the trigger remains predictable for keyboard and screen reader users.
  * Do not nest other interactive controls inside the trigger; place selection
  * controls adjacent to the label using `TreeViewCheckbox`.
+ * When using `asChild`, provide one native `button`; other hosts safely fall
+ * back to the component's native button.
  */
 export interface TreeViewTriggerOwnProps {
   /** Hides the default disclosure indicator. */
@@ -216,7 +279,10 @@ export interface TreeViewTriggerOwnProps {
 /**
  * Comprehensive properties for the TreeViewTrigger component.
  */
-export type TreeViewTriggerProps = PrimitiveProps<'button', TreeViewTriggerOwnProps>;
+export type TreeViewTriggerProps = Omit<
+  PrimitiveProps<'button', TreeViewTriggerOwnProps>,
+  'aria-expanded' | 'tabIndex' | 'type'
+>;
 
 /**
  * Own properties for a TreeView content container.
@@ -233,7 +299,7 @@ export interface TreeViewContentOwnProps {
 /**
  * Comprehensive properties for the TreeViewContent component.
  */
-export type TreeViewContentProps = PrimitiveProps<'ul', TreeViewContentOwnProps>;
+export type TreeViewContentProps = Omit<NativeProps<'ul', TreeViewContentOwnProps>, 'role'>;
 
 /**
  * Own properties for a TreeView label.
@@ -250,7 +316,40 @@ export interface TreeViewLabelOwnProps {
 /**
  * Comprehensive properties for the TreeViewLabel component.
  */
-export type TreeViewLabelProps = PrimitiveProps<'span', TreeViewLabelOwnProps>;
+type TreeViewLabelNativeProps = PrimitiveProps<'span', TreeViewLabelOwnProps>;
+/** Props for TreeViewLabel rendered with its default host. */
+export type TreeViewLabelDefaultProps = DefaultHostProps<TreeViewLabelNativeProps>;
+type TreeViewLabelAsChildElement =
+  | ReactElement<ComponentPropsWithoutRef<'abbr'>, 'abbr'>
+  | ReactElement<ComponentPropsWithoutRef<'b'>, 'b'>
+  | ReactElement<ComponentPropsWithoutRef<'cite'>, 'cite'>
+  | ReactElement<ComponentPropsWithoutRef<'code'>, 'code'>
+  | ReactElement<ComponentPropsWithoutRef<'em'>, 'em'>
+  | ReactElement<ComponentPropsWithoutRef<'i'>, 'i'>
+  | ReactElement<ComponentPropsWithoutRef<'mark'>, 'mark'>
+  | ReactElement<ComponentPropsWithoutRef<'s'>, 's'>
+  | ReactElement<ComponentPropsWithoutRef<'small'>, 'small'>
+  | ReactElement<ComponentPropsWithoutRef<'span'>, 'span'>
+  | ReactElement<ComponentPropsWithoutRef<'strong'>, 'strong'>
+  | ReactElement<ComponentPropsWithoutRef<'sub'>, 'sub'>
+  | ReactElement<ComponentPropsWithoutRef<'sup'>, 'sup'>
+  | ReactElement<ComponentPropsWithoutRef<'time'>, 'time'>
+  | ReactElement<ComponentPropsWithoutRef<'u'>, 'u'>;
+/** Props for TreeViewLabel delegated to an asChild host. */
+export type TreeViewLabelAsChildProps = RetargetedAsChildHostProps<
+  TreeViewLabelNativeProps,
+  HTMLElement,
+  TreeViewLabelAsChildElement
+>;
+/** Public props for TreeViewLabel. */
+export type TreeViewLabelProps = TreeViewLabelDefaultProps | TreeViewLabelAsChildProps;
+/** Polymorphic component call signatures for TreeViewLabel. */
+export type TreeViewLabelComponent = PolymorphicAsChildComponent<
+  TreeViewLabelDefaultProps,
+  TreeViewLabelAsChildProps,
+  HTMLSpanElement,
+  HTMLElement
+>;
 
 /**
  * Own properties for a TreeView checkbox.
@@ -272,4 +371,7 @@ export interface TreeViewCheckboxOwnProps {
 /**
  * Comprehensive properties for the TreeViewCheckbox component.
  */
-export type TreeViewCheckboxProps = PrimitiveProps<'input', TreeViewCheckboxOwnProps>;
+export type TreeViewCheckboxProps = Omit<
+  NativeProps<'input', TreeViewCheckboxOwnProps>,
+  'aria-hidden' | 'checked' | 'defaultChecked' | 'tabIndex' | 'type'
+>;

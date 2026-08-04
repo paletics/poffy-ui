@@ -1,7 +1,15 @@
 import { PoffyBrand, PoffyResolvedColorMode } from '@/providers';
 import { ModalVariantProps } from '@/styled-system/recipes';
 import { ReactNode } from 'react';
-import type { OverlayAppearance, PrimitiveProps } from '@poffy-ui/types';
+import type { OverlayAppearance } from '@poffy-ui/types';
+import type {
+  OverlayCloseProps,
+  OverlayContentProps,
+  OverlayPartProps,
+  OverlaySectionAsChildElement,
+  OverlayTextAsChildElement,
+  OverlayTriggerProps,
+} from '../shared/factories/types';
 
 /**
  * Variants for the Modal component based on Panda CSS recipe.
@@ -24,7 +32,8 @@ export interface ModalVariantSubset extends Omit<ModalVariants, 'appearance'> {
  * when supplementary text should be announced by assistive technology.
  *
  * Controlled contract: pass `open` with `onOpenChange`. Uncontrolled
- * contract: omit `open` and optionally pass `defaultOpen`.
+ * contract: omit `open` and optionally pass `defaultOpen`. An unpaired
+ * controlled value warns and falls back to initial uncontrolled state.
  *
  * Do: import from `@poffy-ui/react/overlay` and compose the provided
  * subcomponents. Don't: render `ModalContent` outside `Modal` or omit an
@@ -56,25 +65,7 @@ export interface ModalVariantSubset extends Omit<ModalVariants, 'appearance'> {
  * Related: ModalTitleProps
  *
  */
-export interface ModalProps extends ModalVariantSubset {
-  /**
-   * Whether the modal is currently open.
-   * If provided, the modal becomes a controlled component.
-   */
-  open?: boolean;
-
-  /**
-   * Initial open state for uncontrolled mode.
-   * Ignored when `open` is provided.
-   * @defaultValue false
-   */
-  defaultOpen?: boolean;
-
-  /**
-   * Callback fired when the open state changes.
-   */
-  onOpenChange?: (open: boolean) => void;
-
+interface ModalBaseProps extends ModalVariantSubset {
   /** Modal subtree. Include `ModalContent` as the rendered dialog surface. */
   children?: ReactNode;
 
@@ -91,23 +82,65 @@ export interface ModalProps extends ModalVariantSubset {
   theme?: PoffyResolvedColorMode;
 }
 
-/** Props for the dialog surface rendered inside `Modal`. */
-export type ModalContentProps = PrimitiveProps<'div'>;
+/** Controlled state props for Modal. */
+export interface ControlledModalProps extends ModalBaseProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  defaultOpen?: never;
+}
+
+/** Uncontrolled state props for Modal. */
+export interface UncontrolledModalProps extends ModalBaseProps {
+  open?: never;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+/** Public props for Modal. */
+export type ModalProps = ControlledModalProps | UncontrolledModalProps;
+
+/**
+ * Props for the dialog surface rendered inside `Modal`.
+ * `asChild` accepts one native article, aside, div, or section surface; other
+ * children use the default div surface.
+ */
+export type ModalContentProps = OverlayContentProps;
+
+/**
+ * Props for the control that opens and closes the modal. The forwarded ref
+ * targets the default button or the slotted trigger element with `asChild`.
+ */
+export type ModalTriggerProps = OverlayTriggerProps;
 
 /** Props for the optional header region, typically containing title and close. */
-export type ModalHeaderProps = PrimitiveProps<'div'>;
+export type ModalHeaderProps = OverlayPartProps<
+  'div',
+  object,
+  HTMLElement,
+  OverlaySectionAsChildElement
+>;
 
 /** Props for the required accessible modal heading. */
-export type ModalTitleProps = PrimitiveProps<'h2'>;
+export type ModalTitleProps = OverlayPartProps<
+  'h2',
+  object,
+  HTMLElement,
+  OverlayTextAsChildElement
+>;
 
 /** Props for optional descriptive text linked by `aria-describedby`. */
-export type ModalDescriptionProps = PrimitiveProps<'p'>;
+export type ModalDescriptionProps = OverlayPartProps<
+  'p',
+  object,
+  HTMLElement,
+  OverlayTextAsChildElement
+>;
 
 /** Props for the modal's primary content region. */
-export type ModalBodyProps = PrimitiveProps<'div'>;
+export type ModalBodyProps = ModalHeaderProps;
 
 /** Props for the optional action/footer region. */
-export type ModalFooterProps = PrimitiveProps<'div'>;
+export type ModalFooterProps = ModalHeaderProps;
 
 /** Props for the dismiss button. It calls the parent `onOpenChange(false)`. */
-export type ModalCloseProps = PrimitiveProps<'button'>;
+export type ModalCloseProps = OverlayCloseProps;

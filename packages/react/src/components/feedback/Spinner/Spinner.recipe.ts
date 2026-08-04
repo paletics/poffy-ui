@@ -45,8 +45,17 @@ export const spinnerRecipe = defineSlotRecipe({
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
+      maxInlineSize: '100%',
+      minInlineSize: 0,
     },
-    svg: { transform: 'rotate(-90deg)', transformOrigin: 'center' },
+    svg: {
+      inlineSize: 'var(--spinner-size)',
+      maxInlineSize: '100%',
+      blockSize: 'auto',
+      flexShrink: 1,
+      transform: 'rotate(-90deg)',
+      transformOrigin: 'center',
+    },
     track: { fill: 'transparent', stroke: '{colors.layout.divider}' },
     indicator: {
       fill: 'transparent',
@@ -61,6 +70,8 @@ export const spinnerRecipe = defineSlotRecipe({
       spin: {
         indicator: {
           animation: `spin ${D_SMALL} linear infinite`,
+          _motionSubtle: { animationDuration: '3.621s' },
+          _motionPop: { animationDuration: '1.932s' },
           strokeDasharray: SPIN_ARC,
           willChange: 'transform',
         },
@@ -68,7 +79,9 @@ export const spinnerRecipe = defineSlotRecipe({
       dash: {
         indicator: {
           animation: `circle-dash ${D_FULL} cubic-bezier(0.445, 0.05, 0.55, 0.95) infinite`,
-          strokeDasharray: 'var(--circumference) var(--circumference)',
+          _motionSubtle: { animationDuration: '7.243s' },
+          _motionPop: { animationDuration: '3.864s' },
+          strokeDasharray: SPIN_ARC,
           willChange: 'transform, stroke-dashoffset',
           transition: 'none',
         },
@@ -76,6 +89,8 @@ export const spinnerRecipe = defineSlotRecipe({
       breathe: {
         indicator: {
           animation: `breathe ${D_FULL} cubic-bezier(0.4, 0, 0.2, 1) infinite`,
+          _motionSubtle: { animationDuration: '7.243s' },
+          _motionPop: { animationDuration: '3.864s' },
           strokeDasharray: 'var(--circumference) var(--circumference)',
           willChange: 'opacity, stroke-dashoffset',
           transition: 'none',
@@ -84,6 +99,8 @@ export const spinnerRecipe = defineSlotRecipe({
       'pop-spin': {
         indicator: {
           animation: `pop-spin ${D_FULL} ease-in-out infinite`,
+          _motionSubtle: { animationDuration: '7.243s' },
+          _motionPop: { animationDuration: '3.864s' },
           strokeDasharray: 'var(--circumference) var(--circumference)',
           willChange: 'transform, stroke-dashoffset',
           transition: 'none',
@@ -92,6 +109,8 @@ export const spinnerRecipe = defineSlotRecipe({
       'refined-dash': {
         indicator: {
           animation: `refined-dash ${D_FULL} ease-in-out infinite`,
+          _motionSubtle: { animationDuration: '7.243s' },
+          _motionPop: { animationDuration: '3.864s' },
           strokeDasharray: 'var(--circumference) var(--circumference)',
           willChange: 'transform, stroke-dashoffset',
           transition: 'none',

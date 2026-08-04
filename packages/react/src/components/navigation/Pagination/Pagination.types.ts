@@ -3,30 +3,46 @@ import type { NativeProps, NavigationAppearance } from '@poffy-ui/types';
 import { ReactNode } from 'react';
 import type { LayoutAnimationType } from '@/components/animations/LayoutTransition';
 
-/**
- * Variants for the Pagination component based on Panda CSS recipe.
- */
-export type PaginationVariants = NonNullable<Parameters<typeof pagination>[0]>;
+type PaginationRecipeVariants = NonNullable<Parameters<typeof pagination>[0]>;
 
 /**
  * Public Pagination variant props with shared navigation appearance names.
  */
-export interface PaginationVariantSubset extends Omit<PaginationVariants, 'appearance'> {
+export interface PaginationVariantSubset extends Omit<PaginationRecipeVariants, 'appearance'> {
   /**
    * Surface treatment.
    *
-   * @defaultValue recipe default
+   * @defaultValue `'soft'`
    */
   appearance?: NavigationAppearance;
+}
+
+/** Canonical public variants accepted by Pagination. */
+export type PaginationVariants = PaginationVariantSubset;
+
+/** Localized static text used by monolithic and compound pagination. */
+export interface PaginationLabels {
+  /** Accessible name for the navigation landmark. */
+  navigation: string;
+  /** Visible previous-page control text. */
+  previous: string;
+  /** Visible next-page control text. */
+  next: string;
+  /** Accessible label for the previous-page control. */
+  previousPage: string;
+  /** Accessible label for the next-page control. */
+  nextPage: string;
+  /** Accessible label for collapsed page-range ellipsis. */
+  morePages: string;
 }
 
 /**
  * Props for the root Pagination component.
  *
  * ### Notes
- * Use this type for custom compound pagination built from `PaginationItem`,
- * `PaginationLink`, and `PaginationEllipsis`. For the built-in generated range,
- * use `PaginationProps`.
+ * Use `PaginationRoot` with this type for custom compound pagination built from
+ * `PaginationItem`, `PaginationLink`, and `PaginationEllipsis`. For the
+ * built-in generated range, use `PaginationProps`.
  */
 export interface PaginationRootProps extends NativeProps<'nav', PaginationVariantSubset> {
   /**
@@ -38,6 +54,10 @@ export interface PaginationRootProps extends NativeProps<'nav', PaginationVarian
    * @defaultValue 'stable'
    */
   indicatorAnimation?: LayoutAnimationType;
+  /** BCP 47 locale for labels; exact locale, base language, then English. */
+  locale?: string;
+  /** Overrides localized pagination labels. */
+  labels?: Partial<PaginationLabels>;
 }
 
 /**
@@ -46,12 +66,8 @@ export interface PaginationRootProps extends NativeProps<'nav', PaginationVarian
 export type PaginationItemProps = NativeProps<'li'>;
 
 /**
- * Props for the PaginationLink component.
- *
- * ### AI Context & Architecture
- * Uses <a> without href for client-side navigation compatibility. tabIndex and
- * onKeyDown (Enter/Space) are applied manually in PaginationLink.tsx because
- * <a> without href is not focusable by default per the HTML spec.
+ * Props for a pagination control that behaves as a native link with `href`, or as an Enter/Space-
+ * activatable button when no destination is supplied.
  */
 export interface PaginationLinkProps extends NativeProps<'a'> {
   /**
@@ -61,6 +77,8 @@ export interface PaginationLinkProps extends NativeProps<'a'> {
   isActive?: boolean;
   /**
    * Whether the link is disabled (e.g., for "Prev" on the first page).
+   * Disabled links omit `href`, are removed from the tab order, and suppress Enter/Space
+   * activation while retaining `aria-disabled` state.
    * @defaultValue false
    */
   disabled?: boolean;
@@ -71,39 +89,26 @@ export interface PaginationLinkProps extends NativeProps<'a'> {
  */
 export type PaginationEllipsisProps = NativeProps<'li'>;
 
-/**
- * Combined props for the monolithic Pagination component.
- *
- * @example
- * ```tsx
- * import { Pagination } from '@poffy-ui/react/navigation';
- * ```
- *
- * ### Notes
- * `page` is 1-indexed. The component clamps displayed navigation to the valid
- * range but callers should still keep their state in sync with `onChange`.
- *
- * ### AI Usage
- * - Do: provide a stable `count`, current `page`, and `onChange` handler.
- * - Don't: use Pagination for infinite scrolling or cursor-only feeds.
- */
+/** Props for controlled one-based pagination with a stable page count and `onChange` handler. */
 export interface PaginationProps extends Omit<PaginationRootProps, 'onChange' | 'children'> {
   /**
    * Total number of pages.
    *
    * ### Notes
-   * Must be a positive integer for meaningful navigation.
+   * Must be a positive integer for meaningful navigation. Invalid values fall back to one page.
    */
   count: number;
   /**
-   * Current active page (1-indexed).
+   * Current active page (1-indexed). Invalid values fall back to page one and values beyond `count`
+   * are clamped.
    */
   page: number;
   /**
-   * Callback fired when the page changes.
+   * Notification fired when an enabled generated page control is activated.
    *
-   * ### Notes
-   * Receives a 1-indexed page number.
+   * Receives a one-based page number. It does not cancel navigation: when
+   * `getHref` returns a URL, the generated control remains a normal link and
+   * also invokes this callback.
    */
   onChange?: (page: number) => void;
   /**
@@ -113,7 +118,17 @@ export interface PaginationProps extends Omit<PaginationRootProps, 'onChange' | 
   siblingCount?: number;
   /**
    * Number of always visible pages at the beginning and end.
+   * Very large values are capped so the total rendered range stays bounded.
    * @defaultValue 1
    */
   boundaryCount?: number;
+  /** Formats visible page numbers. */
+  formatPage?: (page: number) => string;
+  /** Returns the accessible label for a page link. */
+  getPageAriaLabel?: (page: number, isCurrent: boolean) => string;
+  /**
+   * Returns the URL for a one-based page. When omitted, generated controls use
+   * state-button semantics and call `onChange` without link navigation.
+   */
+  getHref?: (page: number) => string | undefined;
 }

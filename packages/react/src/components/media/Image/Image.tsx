@@ -2,88 +2,107 @@
 
 import { cx } from '@/styled-system/css';
 import { image } from '@/styled-system/recipes';
-import { forwardRef } from 'react';
-import { ImageProps } from './Image.types';
+import { useMergeRefs } from '@poffy-ui/behavior/hooks';
+import { forwardRef, useCallback, useEffect, useRef, useState } from 'react';
+import type { ImageProps } from './Image.types';
 import { ImageFallback } from './ImageFallback';
 import { useImage } from '@poffy-ui/behavior/hooks';
 
 /**
- * A resilient `<img>` primitive with load-state awareness and graceful fallback rendering.
- * Tracks image load/error status via the `useImage` hook and automatically replaces a failed
- * image with a URL placeholder or a custom React node fallback.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: image — variants: `fit`, `aspectRatio`, `radius`).
- * `useImage` hook manages `status: 'pending' | 'loading' | 'loaded' | 'failed'`. Image renders
- * `<img>` in all states; on `failed` with `fallback`, delegates to `<ImageFallback>` instead.
- * ### Design Tokens
- * - aspectRatio: Silver Ratio token (`square` | `video` | `wide` | `portrait`).
- * radius: Silver Ratio border-radius token (`none` → `full`).
- * ### Variant Logic
- * - `fit="contain"`: Full image visible — product photos where no cropping is acceptable.
- * - `fit="cover"` (default): Fill container — hero banners, avatar thumbnails.
- * - `aspectRatio="video"`: 16:9 — video thumbnails, media cards.
- * - `aspectRatio="square"`: 1:1 — avatars, product grid tiles.
- * @example Basic image with URL fallback
- * ```tsx
- * import { Image } from '@poffy-ui/react/media';
+ * Renders one image with load-state-aware fallback content.
  *
- * <Image src="photo.jpg" alt="User profile" fallback="avatar-placeholder.svg" fit="cover" />
- * ```
- * @example Component fallback (e.g., skeleton loader)
- * ```tsx
- * import { Image } from '@poffy-ui/react/media';
- * import { Skeleton } from '@poffy-ui/react/feedback';
- *
- * <Image
- *   src={user.avatarUrl}
- *   alt={user.name}
- *   fallback={<Skeleton aspectRatio="square" radius="full" />}
- *   aspectRatio="square"
- *   radius="full"
- * />
- * ```
- * @example Lazy-loaded hero image
- * ```tsx
- * import { Image } from '@poffy-ui/react/media';
- *
- * <Image src="hero-2400w.jpg" alt="Mountain landscape" fit="cover" loading="lazy" aspectRatio="wide" />
- * ```
- * ### Notes
- * The `ref` is forwarded to the underlying `<img>` element. When status is `failed`
- * and `fallback` is provided, the `ref` is forwarded to `<ImageFallback>` instead.
- * If no `fallback` is given, the broken image icon is shown natively by the browser.
- * ### Accessibility
- * - `alt` is required for all meaningful images. Pass `alt=""` only for purely decorative
- * images (e.g., background textures). Never omit `alt` — missing `alt` fails WCAG 1.1.1.
- * ### AI Usage
- * - Use as the standard image primitive throughout the design system.
- * - Always provide `fallback` for user-generated or remotely hosted images that may fail to load.
- * - Use `loading="lazy"` for images that are below the fold to optimize LCP scores.
+ * A non-empty fallback replaces the image only after its active resource fails.
+ * Lazy and responsive images track browser events because preload selection may
+ * differ from the rendered candidate; ordinary `src` images use preload state.
+ * `onStatusChange` reports that lifecycle, while `onLoad` and `onError` report
+ * only events raised by the rendered image. URL fallbacks retain the forwarded
+ * image ref; React-node fallbacks cannot.
  */
 export const Image = forwardRef<HTMLImageElement, ImageProps>((props, ref) => {
   const {
     fallback,
     src,
     srcSet,
+    sizes,
     fit,
     loading,
     crossOrigin,
     onLoad,
     onError,
+    onStatusChange,
     className,
     aspectRatio,
     radius,
+    sizing,
     alt,
+    decorative: _decorative,
     ...rest
   } = props;
 
-  // onLoad/onError are delegated to useImage so they fire in all cases,
-  // including when `fallback` is provided and the <img> element is not rendered.
-  const { status } = useImage({ src, crossOrigin, onLoad, onError });
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const [ownerDocument, setOwnerDocument] = useState<Document>();
+  const setImageRef = useCallback((node: HTMLImageElement | null) => {
+    imageRef.current = node;
+    setOwnerDocument((current) =>
+      current === node?.ownerDocument ? current : node?.ownerDocument,
+    );
+  }, []);
+  const mergedRef = useMergeRefs(setImageRef, ref);
 
-  const styles = image({ fit, aspectRatio, radius });
+  const usesRenderedResourceEvents = loading === 'lazy' ? true : srcSet !== undefined;
+  const [renderedImageState, setRenderedImageState] = useState({
+    src,
+    srcSet,
+    sizes,
+    crossOrigin,
+    status: (src ? 'loading' : srcSet ? 'loading' : 'pending') as
+      | 'pending'
+      | 'loading'
+      | 'loaded'
+      | 'failed',
+  });
+  const renderedResourceChanged = [
+    renderedImageState.src !== src,
+    renderedImageState.srcSet !== srcSet,
+    renderedImageState.sizes !== sizes,
+    renderedImageState.crossOrigin !== crossOrigin,
+  ].some(Boolean);
+  const renderedStatus = renderedResourceChanged
+    ? src
+      ? 'loading'
+      : srcSet
+        ? 'loading'
+        : 'pending'
+    : renderedImageState.status;
 
-  if (status === 'failed' && fallback) {
+  // Preloading a responsive candidate can disagree with the resource selected by the browser.
+  // It would also defeat native lazy loading, so those paths use events from the rendered image.
+  const { status: preloadStatus } = useImage({
+    src: usesRenderedResourceEvents ? undefined : src,
+    crossOrigin,
+    ownerDocument,
+  });
+  const status = usesRenderedResourceEvents ? renderedStatus : preloadStatus;
+  const renderedResourceKey = JSON.stringify([src, srcSet, sizes, crossOrigin]);
+  const onStatusChangeRef = useRef(onStatusChange);
+
+  const styles = image({ fit, aspectRatio, radius, sizing });
+
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+  }, [onStatusChange]);
+
+  useEffect(() => {
+    onStatusChangeRef.current?.(status);
+  }, [status]);
+
+  if (
+    status === 'failed' &&
+    fallback !== null &&
+    fallback !== undefined &&
+    fallback !== false &&
+    fallback !== ''
+  ) {
     return (
       <ImageFallback
         ref={ref}
@@ -91,19 +110,38 @@ export const Image = forwardRef<HTMLImageElement, ImageProps>((props, ref) => {
         alt={alt}
         className={className}
         styles={styles}
+        imageProps={{ ...rest, crossOrigin, loading, onLoad, onError }}
       />
     );
   }
 
   return (
     <img
-      ref={ref}
+      key={renderedResourceKey}
+      ref={mergedRef}
       className={cx(styles, className)}
       src={src}
       srcSet={srcSet}
+      sizes={sizes}
       crossOrigin={crossOrigin}
       loading={loading}
-      alt={alt}
+      alt={alt ?? ''}
+      onLoad={
+        usesRenderedResourceEvents
+          ? (event) => {
+              setRenderedImageState({ src, srcSet, sizes, crossOrigin, status: 'loaded' });
+              onLoad?.(event);
+            }
+          : onLoad
+      }
+      onError={
+        usesRenderedResourceEvents
+          ? (event) => {
+              setRenderedImageState({ src, srcSet, sizes, crossOrigin, status: 'failed' });
+              onError?.(event);
+            }
+          : onError
+      }
       {...rest}
     />
   );

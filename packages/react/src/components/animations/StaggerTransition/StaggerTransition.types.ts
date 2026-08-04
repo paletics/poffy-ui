@@ -9,16 +9,7 @@ export type StaggerAnimationType = StaggerTransitionType;
 export type StaggerItemAnimationType = StaggerItemType;
 
 /**
- * Base props for `StaggerTransition`.
- *
- * ### Notes
- * `StaggerTransition` orchestrates child entrance through React
- * context. It is not a collection state manager and does not require list
- * semantics.
- *
- * ### AI Usage
- * - **DO**: Use for groups of cards, form rows, and dashboard tiles that enter together.
- * - **DON'T**: Use for semantic `<ul>/<li>` lists when `ListTransition` fits better.
+ * Props for coordinated entrance animation of child elements.
  */
 export interface StaggerTransitionBaseProps {
   /**

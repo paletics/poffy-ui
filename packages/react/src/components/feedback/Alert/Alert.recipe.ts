@@ -1,4 +1,4 @@
-﻿import { defineSlotRecipe } from '@pandacss/dev';
+import { defineSlotRecipe } from '@pandacss/dev';
 
 /**
  * Styles the Alert component slots with Panda CSS recipe variants.
@@ -17,6 +17,15 @@ export const alertRecipe = defineSlotRecipe({
       py: '{spacing.md}',
       borderRadius: '{radii.md}',
       position: 'relative',
+      minInlineSize: 0,
+      maxWidth: '100%',
+      boxSizing: 'border-box',
+      overflowWrap: 'anywhere',
+      '& > :not([data-alert-icon]):not([data-alert-close])': {
+        minInlineSize: 0,
+        maxInlineSize: '100%',
+        overflowWrap: 'anywhere',
+      },
     },
     icon: {
       flexShrink: 0,
@@ -27,20 +36,24 @@ export const alertRecipe = defineSlotRecipe({
       justifyContent: 'center',
     },
     title: {
+      minW: 0,
       fontWeight: 'semibold',
       lineHeight: '1.2',
       fontSize: 'sm',
       color: '{colors.text.primary}',
+      overflowWrap: 'anywhere',
     },
     description: {
+      minW: 0,
       lineHeight: '1.5',
       fontSize: 'sm',
       color: '{colors.text.secondary}',
+      overflowWrap: 'anywhere',
     },
     closeButton: {
       position: 'absolute',
       top: '{spacing.sm}',
-      right: '{spacing.sm}',
+      insetInlineEnd: '{spacing.sm}',
       bg: '{colors.layout.surface}',
       color: '{colors.text.secondary}',
       borderWidth: '1px',
@@ -98,10 +111,10 @@ export const alertRecipe = defineSlotRecipe({
     variant: {
       subtle: {},
       solid: {},
-      'left-accent': {
+      'start-accent': {
         root: {
-          borderLeftWidth: '4px',
-          borderLeftStyle: 'solid',
+          borderInlineStartWidth: '4px',
+          borderInlineStartStyle: 'solid',
         },
       },
       outline: {
@@ -115,7 +128,14 @@ export const alertRecipe = defineSlotRecipe({
     closable: {
       true: {
         root: {
-          pr: '{spacing.3xl}',
+          flexWrap: 'wrap',
+          paddingInlineEnd: '{spacing.base}',
+        },
+        closeButton: {
+          position: 'static',
+          alignSelf: 'flex-start',
+          flexShrink: 0,
+          marginInlineStart: 'auto',
         },
       },
     },
@@ -163,31 +183,23 @@ export const alertRecipe = defineSlotRecipe({
     },
     {
       status: 'info',
-      variant: 'left-accent',
-      css: {
-        root: { borderLeftColor: '{colors.variants.info.main}' },
-      },
+      variant: 'start-accent',
+      css: { root: { borderInlineStartColor: '{colors.variants.info.main}' } },
     },
     {
       status: 'success',
-      variant: 'left-accent',
-      css: {
-        root: { borderLeftColor: '{colors.variants.success.main}' },
-      },
+      variant: 'start-accent',
+      css: { root: { borderInlineStartColor: '{colors.variants.success.main}' } },
     },
     {
       status: 'warning',
-      variant: 'left-accent',
-      css: {
-        root: { borderLeftColor: '{colors.variants.warning.main}' },
-      },
+      variant: 'start-accent',
+      css: { root: { borderInlineStartColor: '{colors.variants.warning.main}' } },
     },
     {
       status: 'error',
-      variant: 'left-accent',
-      css: {
-        root: { borderLeftColor: '{colors.variants.danger.main}' },
-      },
+      variant: 'start-accent',
+      css: { root: { borderInlineStartColor: '{colors.variants.danger.main}' } },
     },
     {
       status: 'info',

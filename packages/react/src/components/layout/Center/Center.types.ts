@@ -1,26 +1,29 @@
 import { JsxStyleProps } from '@/styled-system/types';
 import { PrimitiveProps } from '@poffy-ui/types';
 import { ReactNode } from 'react';
+import type {
+  AsChildHostProps,
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Center Base Props
- * Center provides flex-based centering without additional variants.
- * ### AI Usage
- * - Use to type-check Center configurations without the outer div props.
- */
+/** Props for a layout region that centers its content on both axes. */
 export type CenterBaseProps = JsxStyleProps & {
-  /** The content to be centered */
   children?: ReactNode;
-  /**
-   * Additional CSS class names.
-   * Prefer using Panda CSS style props for styling.
-   */
   className?: string;
 };
 
-/**
- * Comprehensive properties for the Center component.
- * ### AI Usage
- * - Use to type-check Center components.
- */
-export type CenterProps = PrimitiveProps<'div', CenterBaseProps>;
+
+type CenterNativeProps = PrimitiveProps<'div', CenterBaseProps>;
+/** Props for Center rendered with its default host. */
+export type CenterDefaultProps = DefaultHostProps<CenterNativeProps>;
+/** Props for Center delegated to an asChild host. */
+export type CenterAsChildProps = AsChildHostProps<CenterNativeProps>;
+/** Public props for Center. */
+export type CenterProps = CenterDefaultProps | CenterAsChildProps;
+/** Polymorphic component call signatures for Center. */
+export type CenterComponent = PolymorphicAsChildComponent<
+  CenterDefaultProps,
+  CenterAsChildProps,
+  HTMLDivElement
+>;

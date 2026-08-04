@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
+import { createRef } from 'react';
 import { Stack } from './Stack';
 
 describe('Stack Component', () => {
@@ -29,6 +30,32 @@ describe('Stack Component', () => {
     expect(container.firstChild?.nodeName).toBe('SECTION');
   });
 
+  it('forwards refs to the actual default and slotted hosts', () => {
+    const divRef = createRef<HTMLDivElement>();
+    const hostRef = createRef<HTMLElement>();
+    const { rerender } = render(<Stack ref={divRef}>Content</Stack>);
+
+    expect(divRef.current).toBeInstanceOf(HTMLDivElement);
+    rerender(
+      <Stack asChild ref={hostRef}>
+        <nav>Content</nav>
+      </Stack>,
+    );
+    expect(hostRef.current).toBeInstanceOf(HTMLElement);
+    expect(hostRef.current?.tagName).toBe('NAV');
+  });
+
+  it('types and forwards a delegated SVG host as a DOM Element', () => {
+    const ref = createRef<Element>();
+    render(
+      <Stack asChild ref={ref}>
+        <svg aria-label="Chart" />
+      </Stack>,
+    );
+
+    expect(ref.current).toBeInstanceOf(SVGSVGElement);
+  });
+
   it('applies default styles (column, gap-md)', () => {
     const { container } = render(<Stack>Content</Stack>);
     expect(container.firstChild).toHaveClass(/stack/);
@@ -37,6 +64,11 @@ describe('Stack Component', () => {
   it('supports row direction', () => {
     const { container } = render(<Stack direction="row">Content</Stack>);
     expect(container.firstChild).toHaveClass(/stack/);
+  });
+
+  it('falls back to a div when asChild receives text', () => {
+    const { container } = render(<Stack asChild>Text content</Stack>);
+    expect(container.firstChild?.nodeName).toBe('DIV');
   });
 
   it('applies variant classes for direction, align, justify, gap', () => {

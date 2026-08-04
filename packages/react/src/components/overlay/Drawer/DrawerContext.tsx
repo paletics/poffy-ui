@@ -5,7 +5,7 @@ import { createContext, useContext, type HTMLProps } from 'react';
 import type { OverlayContext } from '../shared/factories/types';
 
 /**
- * Shared Drawer overlay state, ids, generated classes, and close behavior.
+ * Shared Drawer overlay state, registered accessibility parts, generated classes, and close behavior.
  */
 interface DrawerContextValue extends OverlayContext<HTMLElement> {
   /**
@@ -16,12 +16,6 @@ interface DrawerContextValue extends OverlayContext<HTMLElement> {
 
   /** Callback to change the open state (required for Drawer, optional in base OverlayContext). */
   onOpenChange: (open: boolean) => void;
-
-  /** ID for the title element (required; narrows base OverlayContext's optional titleId). */
-  titleId: string;
-
-  /** ID for the description element (required; narrows base OverlayContext's optional descriptionId). */
-  descriptionId: string;
 
   /** Computed classes from the drawer recipe (narrowed from Record<string, string>). */
   classes: ReturnType<typeof drawer>;

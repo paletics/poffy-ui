@@ -3,10 +3,7 @@
  */
 export const overlayBackdropStyles = {
   position: 'fixed',
-  top: 'none',
-  right: 'none',
-  bottom: 'none',
-  left: 'none',
+  inset: '0',
   bg: 'layout.overlay',
   backdropBlur: 'sm',
   zIndex: 'overlay',
@@ -18,6 +15,48 @@ export const overlayBackdropStyles = {
 export const centeredOverlayStyles = {
   display: 'grid',
   placeItems: 'center',
+} as const;
+
+/**
+ * Uses the dynamic viewport when supported while retaining a `vh` fallback.
+ */
+export const fullViewportHeightStyles = {
+  height: '100vh',
+  '@supports (height: 100dvh)': {
+    height: '100dvh',
+  },
+} as const;
+
+/**
+ * Caps a surface to the dynamic viewport while retaining a `vh` fallback.
+ */
+export const fullViewportMaxHeightStyles = {
+  maxHeight: '100vh',
+  '@supports (height: 100dvh)': {
+    maxHeight: '100dvh',
+  },
+} as const;
+
+/**
+ * Leaves breathing room around a dialog and follows changes to the visual viewport.
+ */
+export const dialogViewportMaxHeightStyles = {
+  maxHeight: '85vh',
+  '@supports (height: 100dvh)': {
+    maxHeight: '85dvh',
+  },
+} as const;
+
+/** Safe-area variables consumed by full-screen and edge-attached overlay internals. */
+export const fullOverlaySafeAreaStyles = {
+  '--overlay-safe-block-start': 'env(safe-area-inset-top, 0px)',
+  '--overlay-safe-block-end': 'env(safe-area-inset-bottom, 0px)',
+  '--overlay-safe-inline-start': 'env(safe-area-inset-left, 0px)',
+  '--overlay-safe-inline-end': 'env(safe-area-inset-right, 0px)',
+  '&:dir(rtl)': {
+    '--overlay-safe-inline-start': 'env(safe-area-inset-right, 0px)',
+    '--overlay-safe-inline-end': 'env(safe-area-inset-left, 0px)',
+  },
 } as const;
 
 /**
@@ -45,25 +84,39 @@ export const pomeAesthetics = {
  */
 export const overlayInternalStyles = {
   header: {
-    px: '{spacing.md}',
-    py: '{spacing.sm}',
-    borderBottomWidth: '1px',
+    paddingInlineStart: 'calc({spacing.md} + var(--overlay-safe-inline-start, 0px))',
+    paddingInlineEnd:
+      'calc({spacing.md} + {sizes.control.minimumTarget} + {spacing.sm} + var(--overlay-safe-inline-end, 0px))',
+    paddingBlockStart: 'calc({spacing.sm} + var(--overlay-safe-block-start, 0px))',
+    paddingBlockEnd: '{spacing.sm}',
+    borderBlockEndWidth: '1px',
     borderColor: 'layout.divider',
     position: 'relative',
+    minInlineSize: 0,
   },
   body: {
-    px: '{spacing.md}',
+    paddingInlineStart: 'calc({spacing.md} + var(--overlay-safe-inline-start, 0px))',
+    paddingInlineEnd: 'calc({spacing.md} + var(--overlay-safe-inline-end, 0px))',
     py: '{spacing.sm}',
     flex: '1',
+    minInlineSize: 0,
     overflowY: 'auto',
+    // Keep the external focus ring visible when the browser scrolls a child
+    // control to either edge of an overlay body.
+    scrollPaddingBlock: 'calc({focusRing.width} + {focusRing.offset})',
+    overflowWrap: 'anywhere',
     color: 'text.primary',
   },
   footer: {
-    px: '{spacing.md}',
-    py: '{spacing.sm}',
-    borderTopWidth: '1px',
+    paddingInlineStart: 'calc({spacing.md} + var(--overlay-safe-inline-start, 0px))',
+    paddingInlineEnd: 'calc({spacing.md} + var(--overlay-safe-inline-end, 0px))',
+    paddingBlockStart: '{spacing.sm}',
+    paddingBlockEnd: 'calc({spacing.sm} + var(--overlay-safe-block-end, 0px))',
+    borderBlockStartWidth: '1px',
     borderColor: 'layout.divider',
     display: 'flex',
+    minInlineSize: 0,
+    flexWrap: 'wrap',
     justifyContent: 'flex-end',
     gap: '{spacing.sm}',
   },
@@ -74,12 +127,16 @@ export const overlayInternalStyles = {
  */
 export const overlayTypographyStyles = {
   title: {
+    minInlineSize: 0,
+    overflowWrap: 'anywhere',
     fontSize: 'lg',
     fontWeight: 'semibold',
     color: 'text.primary',
   },
   description: {
-    fontSize: 'xs',
+    minInlineSize: 0,
+    overflowWrap: 'anywhere',
+    fontSize: 'sm',
     color: 'text.secondary',
     mt: '{spacing.xs}',
   },
@@ -90,11 +147,18 @@ export const overlayTypographyStyles = {
  */
 export const overlayCloseButtonStyles = {
   position: 'absolute',
-  top: '{spacing.md}',
-  right: '{spacing.md}',
+  insetBlockStart: 'calc({spacing.md} + var(--overlay-safe-block-start, 0px))',
+  insetInlineEnd: 'calc({spacing.md} + var(--overlay-safe-inline-end, 0px))',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  minInlineSize: '{sizes.control.minimumTarget}',
+  minBlockSize: '{sizes.control.minimumTarget}',
   color: 'text.secondary',
   cursor: 'pointer',
   transition: 'all {durations.fast} {easings.soft}',
+  _motionSubtle: { transition: 'all {durations.ultraFast} {easings.soft}' },
+  _motionPop: { transition: 'all {durations.standard} {easings.bounce}' },
   _hover: {
     color: 'text.primary',
   },

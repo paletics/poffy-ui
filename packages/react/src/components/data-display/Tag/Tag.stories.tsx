@@ -1,15 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { Tag, TagLabel, TagCloseButton } from '@/components/data-display/Tag';
 import { Flex } from '@/components/layout/Flex';
+import { Box } from '@/components/layout/Box';
 
-/**
- * Compact label used to annotate, categorize, or filter content with optional dismissal.
- * Use for taxonomy chips, status indicators, or removable filter tokens.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (tag recipe), Radix Slot
- */
 const meta = {
   title: 'Display/Tag',
   component: Tag,
@@ -97,6 +90,56 @@ export const Appearances: Story = {
       <Tag appearance="ghost" intent="info">
         <TagLabel>Ghost</TagLabel>
       </Tag>
+    </Flex>
+  ),
+};
+
+export const ConstrainedLongLabel: Story = {
+  render: () => (
+    <Box width="[120px]" aria-label="Constrained tag">
+      <Tag shape="pill">
+        <TagLabel>Filtervaluewithoutbreakopportunities</TagLabel>
+        <TagCloseButton aria-label="Remove filter" />
+      </Tag>
+    </Box>
+  ),
+};
+
+export const ConstrainedDismissibleSizes: Story = {
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Containment stress fixtures below the practical width of a dismissible tag. Labels preserve their full text and wrap at natural word boundaries; applications should provide more than 80px when a readable label and close target must coexist.',
+      },
+    },
+  },
+  render: () => (
+    <Flex gap="md" wrap="wrap" align="flex-start">
+      <Box width="[48px]" aria-label="Small constrained tag">
+        <Tag size="sm">
+          <TagLabel>Small</TagLabel>
+          <TagCloseButton aria-label="Remove small tag" />
+        </Tag>
+      </Box>
+      <Box width="[64px]" aria-label="Medium constrained tag">
+        <Tag size="md">
+          <TagLabel>Medium</TagLabel>
+          <TagCloseButton aria-label="Remove medium tag" />
+        </Tag>
+      </Box>
+      <Box width="[80px]" aria-label="Large constrained tag">
+        <Tag size="lg">
+          <TagLabel>Large</TagLabel>
+          <TagCloseButton aria-label="Remove large tag" />
+        </Tag>
+      </Box>
+      <Box width="[64px]" dir="rtl" aria-label="Medium constrained tag RTL">
+        <Tag size="md">
+          <TagLabel>متوسط</TagLabel>
+          <TagCloseButton aria-label="Remove RTL tag" />
+        </Tag>
+      </Box>
     </Flex>
   ),
 };

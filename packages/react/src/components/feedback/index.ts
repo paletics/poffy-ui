@@ -1,3 +1,4 @@
+/** Status, progress, loading, and outcome presentation components. */
 export * from './Alert';
 export * from './CircleProgress';
 export * from './Spinner';

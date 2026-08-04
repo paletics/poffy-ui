@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
+import { useControllableState } from '../hooks/state';
 import type {
   UseRadioGroupStateOptions,
   UseRadioGroupStateReturn,
@@ -9,7 +10,6 @@ import type {
 /**
  * Shared controlled/uncontrolled state for radio groups.
  *
- * ### Notes
  * This hook owns only the selected string value. React radio components should
  * provide the fieldset/radiogroup semantics, native radio inputs or equivalent
  * ARIA, shared `name`, disabled/read-only handling, and arrow-key movement.
@@ -21,9 +21,14 @@ export const useRadioGroupState = ({
   defaultValue,
   onChange,
 }: UseRadioGroupStateOptions): UseRadioGroupStateReturn => {
-  const [internalValue, setInternalValue] = useState(defaultValue ?? '');
-  const isControlled = controlledValue !== undefined;
-  const value = isControlled ? controlledValue : internalValue;
+  const {
+    value,
+    isControlled,
+    setValue: setInternalValue,
+  } = useControllableState({
+    value: controlledValue,
+    defaultValue: defaultValue ?? '',
+  });
 
   const handleChange = useCallback(
     (nextValue: string) => {
@@ -32,11 +37,12 @@ export const useRadioGroupState = ({
       }
       onChange?.(nextValue);
     },
-    [isControlled, onChange],
+    [isControlled, onChange, setInternalValue],
   );
 
   return {
     value,
     onChange: handleChange,
+    setValue: setInternalValue,
   };
 };

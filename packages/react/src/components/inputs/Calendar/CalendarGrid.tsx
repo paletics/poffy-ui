@@ -3,19 +3,21 @@
 import React from 'react';
 import { ActionMotion } from '@/components/animations/ActionMotion/ActionMotion';
 import { ButtonPrimitive } from '@/components/inputs/ButtonPrimitive';
-import { isSameDay, formatDateISO } from './Calendar.utils';
-import { DayProps } from './Calendar.types';
+import { formatDateISO, isSameDay, normalizeDateFormatOptions } from '@poffy-ui/behavior/date';
+import { CalendarDateFormatOptions, DayProps } from './Calendar.types';
 
 interface CalendarGridProps {
+  ariaDescribedBy?: string;
   weeks: Date[][];
   weekdayNames: string[];
-  focusedDate: Date;
+  focusedDate?: Date;
   setHoveredDate: (date: Date | null) => void;
   handleDateSelect: (date: Date) => void;
   handleKeyDown: (e: React.KeyboardEvent) => void;
   isDateUnavailable: (date: Date) => boolean;
   showOutsideDays: boolean;
   locale: string;
+  dateFormatOptions?: CalendarDateFormatOptions;
   gridRef: React.RefObject<HTMLTableElement | null>;
   classes: {
     table: string;
@@ -26,32 +28,26 @@ interface CalendarGridProps {
   month: number;
   monthName: string;
   readOnly?: boolean;
+  today: Date;
   isSelected: (date: Date) => boolean;
   isRangeStart: (date: Date) => boolean;
   isRangeEnd: (date: Date) => boolean;
   isRangeMiddle: (date: Date) => boolean;
+  isMultiselectable?: boolean;
   components?: {
     Day?: React.ComponentType<DayProps>;
   };
 }
 
 /**
- * Sub-component for the Calendar's grid (table) area.
- * ### AI Context & Architecture
- * - Tier: Molecules (Internal Sub-component), Stack: React, ActionMotion
- * ### Design Tokens
- * - sizes: silver.2 (button size), padding: silver.xs
- * ### Variant Logic
- * - N/A (Inherits from Calendar recipe)
- * @example <CalendarGrid {...props} />
- * ### Notes
- * Keyboard navigation relies on `gridRef` being passed. Do not use independently.
- * ### Accessibility
- * - Implements WAI-ARIA `grid`, `row`, `columnheader`, and `gridcell` roles with proper `aria-selected` and `aria-label` states.
- * ### AI Usage
- * - Internal component for Calendar to render the 42-day date table.
+ * Renders Calendar's APG-style date grid from the navigation hook's month snapshot.
+ *
+ * It owns `grid`/`gridcell` ARIA, one roving day-button tab stop, unavailable-day disabling, and
+ * range-state data attributes. When a custom Day is supplied, it receives the same button props
+ * and must spread them onto its interactive day control to retain navigation and labelling.
  */
 export const CalendarGrid = ({
+  ariaDescribedBy,
   weeks,
   weekdayNames,
   focusedDate,
@@ -61,15 +57,18 @@ export const CalendarGrid = ({
   isDateUnavailable,
   showOutsideDays,
   locale,
+  dateFormatOptions,
   gridRef,
   classes,
   month,
   monthName,
   readOnly,
+  today,
   isSelected: isDateSelected,
   isRangeStart,
   isRangeEnd,
   isRangeMiddle,
+  isMultiselectable,
   components,
 }: CalendarGridProps) => {
   const CustomDay = components?.Day;
@@ -81,6 +80,7 @@ export const CalendarGrid = ({
       role="grid"
       onKeyDown={handleKeyDown}
       aria-label={monthName}
+      aria-multiselectable={isMultiselectable || undefined}
       aria-readonly={readOnly ? true : undefined}
       onMouseLeave={() => setHoveredDate(null)}
     >
@@ -112,8 +112,8 @@ export const CalendarGrid = ({
               }
 
               const isSelected = isDateSelected(date);
-              const isFocused = isSameDay(date, focusedDate);
-              const isToday = isSameDay(date, new Date());
+              const isFocused = focusedDate ? isSameDay(date, focusedDate) : false;
+              const isToday = isSameDay(date, today);
               const isDisabled = isDateUnavailable(date);
 
               const rangeStart = isRangeStart(date);
@@ -133,7 +133,7 @@ export const CalendarGrid = ({
                 disabled: isDisabled,
                 'aria-disabled': isDisabled,
                 'data-disabled': isDisabled ? '' : undefined,
-                tabIndex: isFocused ? 0 : -1,
+                tabIndex: isFocused && !isDisabled ? 0 : -1,
                 'data-selected': isSelected ? '' : undefined,
                 'data-today': isToday ? '' : undefined,
                 'data-outside': isOutside ? '' : undefined,
@@ -141,7 +141,11 @@ export const CalendarGrid = ({
                 'data-range-end': rangeEnd ? '' : undefined,
                 'data-range-middle': rangeMiddle ? '' : undefined,
                 'data-date': dateISO,
-                'aria-label': date.toLocaleDateString(locale, { dateStyle: 'full' }),
+                'aria-label': date.toLocaleDateString(
+                  locale,
+                  normalizeDateFormatOptions(dateFormatOptions, 'full'),
+                ),
+                'aria-describedby': ariaDescribedBy,
               };
 
               const dayButton = CustomDay ? (

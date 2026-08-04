@@ -14,6 +14,7 @@ export default defineConfig({
       'react/jsx-runtime',
       'react/jsx-dev-runtime',
       'motion/react',
+      '@floating-ui/react',
       'storybook/viewport',
     ],
   },

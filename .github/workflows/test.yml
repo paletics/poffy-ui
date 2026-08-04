@@ -35,6 +35,9 @@ jobs:
       - name: Check encoding
         run: pnpm check:encoding
 
+      - name: Test release tag guard
+        run: pnpm test:release-tag
+
       - name: Check prohibited licenses
         run: pnpm check:licenses
 
@@ -83,11 +86,22 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
 
+      - name: Install browser test fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes fonts-noto-cjk
+
       - name: Browser tests
         run: pnpm test:browser
 
       - name: Storybook tests
         run: pnpm test:storybook
 
+      - name: Build static Storybook
+        run: pnpm build:storybook
+
       - name: Run E2E Tests
         run: pnpm test:e2e
+
+      - name: Run cross-browser smoke tests
+        run: pnpm test:e2e:smoke

@@ -13,20 +13,39 @@ export const timePickerRecipe = defineSlotRecipe({
       alignItems: 'center',
       gap: '{spacing.xs}',
       flexWrap: 'nowrap',
+      width: '100%',
+      maxWidth: '100%',
+      minWidth: 0,
+      boxSizing: 'border-box',
+      overflowX: 'auto',
+      overscrollBehaviorX: 'contain',
+      scrollbarWidth: 'thin',
+      scrollPaddingInline: '{spacing.2xs}',
+      px: '{spacing.2xs}',
+      // Do not add focus-ring clearance to the control height: this compound
+      // field needs to align with DatePicker at each public size.
+      py: '0',
+      scrollPaddingBlock: 'calc({focusRing.width} + {focusRing.offset})',
     },
-    segment: {},
+    segment: {
+      flexShrink: 1,
+      minWidth: '{sizes.silver.3}',
+    },
     separator: {
       fontWeight: 'medium',
       color: '{colors.text.secondary}',
     },
-    meridiem: {},
+    meridiem: {
+      flexShrink: 1,
+      minWidth: '{sizes.silver.3}',
+    },
   },
   variants: {
     size: {
       sm: {
-        segment: { width: '6.25rem' },
+        segment: { width: '6.25rem', minWidth: '{sizes.root.2}' },
         separator: { fontSize: 'sm' },
-        meridiem: { width: '4.75rem' },
+        meridiem: { width: '4.75rem', minWidth: '{sizes.root.2}' },
       },
       md: {
         segment: { width: '7rem' },

@@ -2,27 +2,12 @@ import type { MotionPrimitiveProps } from '@/types/motion';
 import { CustomData } from '../types';
 import { LoopEffectType } from './LoopEffect.presets';
 
-/**
- * Loop Effect Type Definitions
- *
- * ### AI Context & Architecture
- * Defines prop interfaces and component types for `LoopEffect`.
- * Extends `MotionProps` and integrates with `LoopEffectType` presets.
- */
-
+/** Named looping-animation preset. */
 export type LoopAnimationType = LoopEffectType;
 
 /**
- * Base props for LoopEffect component.
- *
- * ### Notes
- * `LoopEffect` is intentionally ambient. Prefer pausing or disabling
- * it for hidden/offscreen content and avoid tying important state meaning to
- * continuous motion alone.
- *
- * ### AI Usage
- * - **DO**: Use for small decorative or feedback elements.
- * - **DON'T**: Apply to large containers or primary reading content.
+ * Props for an ambient looping animation.
+ * @typeParam C - Custom data accepted by the selected preset.
  */
 export interface LoopEffectBaseProps<C extends CustomData = CustomData> {
   /**

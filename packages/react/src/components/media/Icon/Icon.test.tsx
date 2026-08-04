@@ -9,15 +9,18 @@ import { createRef } from 'react';
 import { describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
 import { Icon } from './Icon';
+import { StarIcon } from './icons';
 
 describe('Icon Component', () => {
-  it('should pass accessibility compliance', async () => {
+  it('exposes a labelled default SVG as an image', async () => {
     const { container } = render(
-      <Icon aria-hidden={false} role="img" aria-label="Info">
+      <Icon aria-label="Info">
         <path d="M12 16v-4M12 8h.01" />
       </Icon>,
     );
-    expect(screen.getByRole('img', { name: 'Info' })).toBeInTheDocument();
+    const icon = screen.getByRole('img', { name: 'Info' });
+    expect(icon).toHaveAttribute('role', 'img');
+    expect(icon).not.toHaveAttribute('aria-hidden');
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -33,15 +36,47 @@ describe('Icon Component', () => {
     expect(screen.queryByRole('img')).not.toBeInTheDocument();
   });
 
-  it('does not inject aria-hidden when using asChild', () => {
-    render(
-      <Icon asChild>
-        <span data-testid="child">Custom</span>
+  it('treats empty accessible names as decorative', () => {
+    const { container } = render(
+      <Icon aria-label=" ">
+        <path d="M0 0h24v24H0z" />
       </Icon>,
     );
-    const child = screen.getByTestId('child');
-    expect(child).not.toHaveAttribute('aria-hidden');
-    expect(child).not.toHaveAttribute('focusable');
+
+    expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  });
+
+  it('rejects native non-SVG asChild hosts', () => {
+    expect(() =>
+      render(
+        <Icon asChild>
+          <span>Custom</span>
+        </Icon>,
+      ),
+    ).toThrow(
+      '[Icon] `asChild` requires a native SVG or a custom component that renders an SVG host.',
+    );
+  });
+
+  it('rejects native anchor elements whose tag name also exists in SVG', () => {
+    expect(() =>
+      render(
+        <Icon asChild>
+          <a href="/destination">Destination</a>
+        </Icon>,
+      ),
+    ).toThrow(
+      '[Icon] `asChild` requires a native SVG or a custom component that renders an SVG host.',
+    );
+  });
+
+  it('keeps named icons semantic when they have an accessible label', async () => {
+    const { container } = render(<StarIcon role="img" aria-label="Favorite" />);
+
+    const icon = screen.getByRole('img', { name: 'Favorite' });
+    expect(icon).not.toHaveAttribute('aria-hidden');
+    expect(await axe(container)).toHaveNoViolations();
   });
 
   it('renders svg by default', () => {
@@ -60,6 +95,16 @@ describe('Icon Component', () => {
       </Icon>,
     );
     expect(screen.getByTestId('child')).toBeInTheDocument();
+  });
+
+  it('keeps native SVG definition elements inside the default SVG host', () => {
+    const { container } = render(
+      <Icon asChild>
+        <defs data-testid="definitions" />
+      </Icon>,
+    );
+
+    expect(container.querySelector('svg > defs')).toBe(screen.getByTestId('definitions'));
   });
 
   it('applies size variant class', () => {
@@ -92,16 +137,17 @@ describe('Icon Component', () => {
     expect(ref.current).toBeInstanceOf(SVGSVGElement);
   });
 
-  it('supports asChild pattern', () => {
+  it('keeps a named icon as an SVG when it is slotted into Icon', () => {
     render(
-      <Icon asChild>
-        <span data-testid="custom-child">Custom</span>
+      <Icon asChild size="lg">
+        <StarIcon role="img" aria-label="Favorite" />
       </Icon>,
     );
-    const child = screen.getByTestId('custom-child');
-    expect(child).toBeInTheDocument();
-    expect(child.tagName).toBe('SPAN');
-    expect(child).toHaveClass('poffy-icon');
+
+    const icon = screen.getByRole('img', { name: 'Favorite' });
+    expect(icon.tagName).toBe('svg');
+    expect(icon).toHaveAttribute('viewBox', '0 0 24 24');
+    expect(icon).toHaveClass('poffy-icon--size_lg');
   });
 
   it('applies filled variant class', () => {

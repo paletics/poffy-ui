@@ -33,6 +33,8 @@ export const checkboxRecipe = defineSlotRecipe({
       borderRadius: '{radii.sm}',
       transitionDuration: '{durations.fast}',
       transitionProperty: 'background-color, border-color, box-shadow, transform, color',
+      _motionSubtle: { transitionDuration: '{durations.ultraFast}' },
+      _motionPop: { transitionDuration: '{durations.standard}', transitionTimingFunction: '{easings.bounce}' },
 
       _hover: {
         borderColor: 'brand.border',
@@ -76,6 +78,8 @@ export const checkboxRecipe = defineSlotRecipe({
       alignItems: 'center',
       justifyContent: 'center',
       transition: 'color 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+      _motionSubtle: { transition: 'color {durations.fast} {easings.soft}' },
+      _motionPop: { transition: 'color {durations.standard} {easings.bounce}' },
       '& > span': {
         width: '75%',
         height: '75%',

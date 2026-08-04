@@ -35,4 +35,16 @@ describe('useRadioGroupState', () => {
     expect(result.current.value).toBe('a');
     expect(onChange).toHaveBeenCalledWith('b');
   });
+
+  it('retains the latest controlled value when becoming uncontrolled', () => {
+    const { result, rerender } = renderHook(
+      ({ value }: { value?: string }) => useRadioGroupState({ value }),
+      { initialProps: { value: 'a' } as { value?: string } },
+    );
+
+    rerender({ value: 'b' });
+    rerender({ value: undefined });
+
+    expect(result.current.value).toBe('b');
+  });
 });

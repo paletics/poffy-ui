@@ -2,6 +2,7 @@
  * Public primitive prop helpers for polymorphic and native element typing.
  */
 export type { NativeProps, PrimitiveProps } from './primitive';
+export type { DateOnlyFormatOptions } from './date';
 export {
   ACTION_APPEARANCES,
   ACTION_INTENTS,

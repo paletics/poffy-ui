@@ -1,54 +1,60 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useLayoutEffect, useRef } from 'react';
 import { cx } from '@/styled-system/css';
+import { getDeepActiveElement, getDOMTreeRoot, useMergeRefs } from '@poffy-ui/behavior/hooks';
 import { TreeViewContentProps } from './TreeView.types';
 import { useTreeViewContext, useTreeViewItemContext } from './TreeViewContext';
 import { CollapseTransition } from '../animations';
 
 /**
- * The container for nested TreeViewItems.
- * Renders through CollapseTransition to support animated expanding/collapsing.
+ * Renders the nested `role="group"` for an expandable TreeViewItem.
  *
- * ### Notes
- * Must live inside the `TreeViewItem` it belongs to. It renders a nested
- * `role="group"` list and stays mounted while collapsed for animation support.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: CollapseTransition
- * - **Props**: TreeViewContentProps
- *
- * ### Design Tokens
- * - **layout**: uses the `treeView` content slot for nested indentation and vertical rhythm.
- * - **motion**: delegates height and fade timing to `CollapseTransition`.
- *
- * ### Variant Logic
- * - Inherits the parent `TreeViewRoot` appearance; do not style nested groups independently.
- *
- * ### Accessibility
- * - **Role**: group.
- * - **Pattern**: nested WAI-ARIA Tree group owned by the surrounding `TreeViewItem`.
- * - **Required**: render only inside the item controlled by the matching `TreeViewTrigger`.
- *
- * ### AI Usage
- * - Do: wrap child `TreeViewItem` elements for an expandable node.
- * - Don't: render as a standalone list outside `TreeViewRoot`.
- *
- * @example Nested group
- * ```tsx
- * import { TreeViewContent, TreeViewItem } from '@poffy-ui/react/tree-view';
- *
- * <TreeViewContent>
- *   <TreeViewItem id="child">...</TreeViewItem>
- * </TreeViewContent>
- * ```
+ * It remains mounted while collapsed so the disclosure transition can finish.
+ * If collapse would hide a focused descendant, focus returns to the owning
+ * item, preserving the TreeView roving-focus contract. It is intentionally a
+ * fixed nested `ul`, not a polymorphic content container.
  */
 export const TreeViewContent = forwardRef<HTMLUListElement, TreeViewContentProps>(
-  ({ children, className, asChild: _asChild, ...props }, ref) => {
-    const { expandedIds, classes } = useTreeViewContext();
-    const { id } = useTreeViewItemContext();
-    const isExpanded = expandedIds.has(id);
+  (contentProps, ref) => {
+    const {
+      children,
+      className,
+      asChild: _legacyAsChild,
+      ...props
+    } = contentProps as TreeViewContentProps & { asChild?: unknown };
+    void _legacyAsChild;
+    const { activeId, expandedIds, classes, setActiveItem } = useTreeViewContext();
+    const { id, instanceId, isAmbiguous } = useTreeViewItemContext();
+    const isExpanded = !isAmbiguous && expandedIds.has(id);
+    const contentRef = useRef<HTMLUListElement | null>(null);
+    const mergedRef = useMergeRefs(contentRef, ref);
+
+    useLayoutEffect(() => {
+      const activeItemIsDescendant = Array.from(
+        contentRef.current?.querySelectorAll<HTMLElement>('[data-treeview-item-id]') ?? [],
+      ).some((item) => {
+        const { treeviewItemId } = item.dataset;
+        return treeviewItemId === activeId;
+      });
+      const tree = contentRef.current?.closest('[role="tree"]');
+      const parentItem = Array.from(
+        tree?.querySelectorAll<HTMLElement>('[data-treeview-item-id]') ?? [],
+      ).find((item) => {
+        const { treeviewItemId } = item.dataset;
+        return treeviewItemId === id;
+      });
+      const activeElement = parentItem ? getDeepActiveElement(getDOMTreeRoot(parentItem)) : null;
+      const focusedDescendant =
+        parentItem !== undefined &&
+        parentItem !== activeElement &&
+        parentItem.contains(activeElement);
+      if (isExpanded || (!activeItemIsDescendant && !focusedDescendant)) return;
+
+      if (focusedDescendant) parentItem.focus();
+
+      setActiveItem(instanceId, id);
+    }, [activeId, id, instanceId, isExpanded, setActiveItem]);
 
     return (
       <CollapseTransition
@@ -58,7 +64,7 @@ export const TreeViewContent = forwardRef<HTMLUListElement, TreeViewContentProps
         customData={{ duration: 0.28 }}
         className={cx(classes.content, className)}
       >
-        <ul ref={ref} role="group" {...(props as React.HTMLAttributes<HTMLUListElement>)}>
+        <ul ref={mergedRef} {...props} role="group">
           {children}
         </ul>
       </CollapseTransition>

@@ -6,14 +6,6 @@ import { getCustomValue } from '../utils';
 const entranceInitial = { opacity: 0, y: 10, scale: 0.98 };
 const entranceAnimate = { opacity: 1, y: 0, scale: 1 };
 
-/**
- * Action Motion Presets
- *
- * ### AI Context & Architecture
- * Defines micro-interaction variants for user actions like hover, press, and focus.
- * Most variants use spring-based physics from `baseTokens.motion.springs`.
- * Customization is supported via `customData` and the `getCustomValue` utility.
- */
 export const actionVariants = {
   /**
    * Press: Standard bouncy interaction.

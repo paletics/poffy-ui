@@ -1,18 +1,10 @@
-﻿import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import { userEvent, within, expect } from 'storybook/test';
 import { css } from '@/styled-system/css';
 import { Checkbox } from './Checkbox';
 import { Stack } from '../../layout/Stack';
 import { useState } from 'react';
 
-/**
- * A binary selection control for forms and multi-selection lists.
- * Supports `intent`, `size`, `error`, `indeterminate` states and a `Checkbox.Group` composition pattern.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`checkbox` recipe), `CheckboxContext`, `CheckboxGroup`
- */
 const meta: Meta<typeof Checkbox> = {
   title: 'Inputs/Checkbox',
   component: Checkbox,

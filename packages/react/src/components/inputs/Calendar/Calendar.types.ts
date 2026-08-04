@@ -1,19 +1,25 @@
-import { CalendarVariantProps } from '@/styled-system/recipes';
-import { ComponentProps } from 'react';
+import type { CalendarVariantProps } from '@/styled-system/recipes';
+import type { DateOnlyFormatOptions, NativeProps } from '@poffy-ui/types';
+import type { ComponentProps } from 'react';
 
-/**
- * Variants for the Calendar component based on Panda CSS recipe.
- * ### AI Usage
- * - Use this when extending calendar styles.
- */
+/** Visual recipe options for `Calendar`. */
 export type CalendarVariants = CalendarVariantProps;
 
 /**
- * Localized labels for the Calendar component to ensure a11y and i18n.
- * ### AI Usage
- * - Use this to provide custom translations for internal UI strings.
+ * Date-only Intl options accepted for Calendar day button labels.
+ *
+ * `dateStyle` and individual date components are mutually exclusive, matching
+ * `Intl.DateTimeFormat`. Time and time-zone options are intentionally excluded
+ * because Calendar represents local calendar days without a time of day.
  */
+export type CalendarDateFormatOptions = DateOnlyFormatOptions;
+
+/** Localized labels used by `Calendar`. */
 export interface CalendarLabels {
+  /** Accessible fallback name for the calendar control. */
+  calendar?: string;
+  /** Native validation message for an unavailable selected date. */
+  unavailable: string;
   /** Display text for the "Today" button. */
   today: string;
   /** Accessibility label for the "Go to today" button. */
@@ -52,11 +58,19 @@ export interface DayProps {
   buttonProps: ComponentProps<'button'>;
 }
 
+/**
+ * Shared Calendar props.
+ *
+ * Every `Date` accepted or emitted by Calendar represents a local calendar
+ * day: only its local year, month, and day are used. For SSR, do not pass a
+ * UTC-midnight instant such as `new Date('2026-04-14')` when server and client
+ * time zones can differ. Preserve a `YYYY-MM-DD` value and construct
+ * `new Date(year, month - 1, day)` in each environment instead.
+ */
 interface BaseCalendarProps
   extends
-    Omit<ComponentProps<'div'>, 'onSelect' | 'onChange' | 'selected' | 'defaultValue'>,
+    Omit<NativeProps<'div'>, 'defaultValue' | 'onChange' | 'onSelect' | 'role' | 'selected'>,
     CalendarVariants {
-  mode?: 'single' | 'multiple' | 'range';
   month?: Date;
   onMonthChange?: (date: Date) => void;
   defaultMonth?: Date;
@@ -69,25 +83,24 @@ interface BaseCalendarProps
   locale?: string;
   disabled?: boolean;
   readOnly?: boolean;
+  /** Whether a completed date selection is required for native form validation. */
+  required?: boolean;
   labels?: Partial<CalendarLabels>;
-  formatOptions?: Intl.DateTimeFormatOptions;
-  asChild?: boolean;
+  /**
+   * Formatting options for each day button's accessible date label.
+   * The visible month heading and weekday names remain locale-standard so grid
+   * navigation stays recognizable.
+   */
+  formatOptions?: CalendarDateFormatOptions;
   name?: string;
   form?: string;
   autoFocus?: boolean;
   components?: {
     Day?: React.ComponentType<DayProps>;
   };
-  defaultValue?: Date | Date[] | DateRange;
 }
 
-/**
- * Props for single date selection.
- *
- * ### Notes
- * Use this mode for one date. `selected` is controlled and `onSelect` may
- * receive `undefined` when the selection is cleared.
- */
+/** Props for single-date selection. */
 export interface SingleCalendarProps extends BaseCalendarProps {
   /**
    * Selects one date at a time.
@@ -95,6 +108,8 @@ export interface SingleCalendarProps extends BaseCalendarProps {
    * @defaultValue `'single'`
    */
   mode?: 'single';
+  /** Initial selected date for uncontrolled single selection. */
+  defaultValue?: Date;
   /**
    * Controlled selected date for single selection.
    */
@@ -105,18 +120,14 @@ export interface SingleCalendarProps extends BaseCalendarProps {
   onSelect?: (date: Date | undefined) => void;
 }
 
-/**
- * Props for multiple date selection.
- *
- * ### Notes
- * Use this mode for independent multi-date selection. Keep `selected` as a
- * stable array of Date values when controlled.
- */
+/** Props for independent multi-date selection. */
 export interface MultipleCalendarProps extends BaseCalendarProps {
   /**
    * Enables independent multi-date selection.
    */
   mode: 'multiple';
+  /** Initial selected dates for uncontrolled multiple selection. */
+  defaultValue?: Date[];
   /**
    * Controlled selected dates.
    */
@@ -141,18 +152,14 @@ export interface DateRange {
   to?: Date;
 }
 
-/**
- * Props for date range selection.
- *
- * ### Notes
- * Range selections use `{ from, to }`; either edge can be omitted while the user
- * is choosing the range.
- */
+/** Props for range selection; either edge may be omitted while the range is incomplete. */
 export interface RangeCalendarProps extends BaseCalendarProps {
   /**
    * Enables start/end range selection.
    */
   mode: 'range';
+  /** Initial selected range for uncontrolled range selection. */
+  defaultValue?: DateRange;
   /**
    * Controlled selected date range.
    */
@@ -163,32 +170,5 @@ export interface RangeCalendarProps extends BaseCalendarProps {
   onSelect?: (range: DateRange | undefined) => void;
 }
 
-/**
- * Comprehensive properties for the Calendar component.
- *
- * ### Notes
- * Calendar renders an interactive date grid. It should be paired with a visible
- * field label, heading, or `aria-label`/`aria-labelledby` on the root depending
- * on context. Disabled dates remain visible but cannot be selected.
- *
- * Do: choose the `mode` that matches the shape of `selected` and `defaultValue`.
- * Don't: mix a range value with `mode="single"` or a single Date with
- * `mode="multiple"`.
- *
- * @example
- * ```tsx
- * import { Calendar } from '@poffy-ui/react/inputs';
- *
- * <Calendar
- *   aria-label="Appointment date"
- *   selected={date}
- *   onSelect={setDate}
- *   minDate={new Date()}
- * />
- * ```
- *
- * Related: DatePickerProps for an input-triggered calendar popover.
- * ### Formula
- * - Silver Ratio (1:1.414) is applied to all spacing variants inside the recipe.
- */
+/** Discriminated props for one Calendar selection mode. Provide a visible or ARIA label. */
 export type CalendarProps = SingleCalendarProps | MultipleCalendarProps | RangeCalendarProps;

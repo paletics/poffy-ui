@@ -1,15 +1,20 @@
 'use client';
 
 import { useOptionalAnimation } from '@/providers/AnimationProvider';
-import { createContext, useContext, useMemo } from 'react';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import { createContext, useContext, useMemo, useState } from 'react';
+import { resolvePresetKey } from '../utils';
+import { useHydrated } from '../useHydrated';
 import { pathDrawVariants, type PathDrawTransitionType } from './PathDrawTransition.presets';
 
 /** Context for inherited PathDrawTransition animation defaults. */
 export const PathDrawContext = createContext<{
   animationType: PathDrawTransitionType;
   customData?: Record<string, unknown>;
+  isVisible: boolean;
 }>({
   animationType: 'draw',
+  isVisible: true,
 });
 
 /**
@@ -20,8 +25,38 @@ export const usePathDrawAnimation = (
   customData: Record<string, unknown> | undefined,
 ) => {
   const parent = useContext(PathDrawContext);
-  const { isAnimating } = useOptionalAnimation();
-  const effectiveType = animationType ?? parent.animationType;
+  const { isAnimating, resolvedMotionStyle } = useOptionalAnimation();
+  const isHydrated = useHydrated();
+  const [animationState, setAnimationState] = useState<{
+    isVisible: boolean;
+    isAnimating: boolean;
+    target: 'animate' | 'enter' | 'exit';
+  }>(() => ({
+    isVisible: parent.isVisible,
+    isAnimating,
+    target: parent.isVisible ? (isAnimating ? 'enter' : 'animate') : 'exit',
+  }));
+
+  if (
+    animationState.isVisible !== parent.isVisible ||
+    animationState.isAnimating !== isAnimating
+  ) {
+    setAnimationState({
+      isVisible: parent.isVisible,
+      isAnimating,
+      target:
+        animationState.isVisible !== parent.isVisible || !isAnimating
+          ? parent.isVisible
+            ? 'animate'
+            : 'exit'
+          : animationState.target,
+    });
+  }
+  const effectiveType = resolvePresetKey(
+    pathDrawVariants,
+    animationType ?? parent.animationType,
+    'draw',
+  );
   const effectiveCustomData = customData ?? parent.customData;
   const preset = pathDrawVariants[effectiveType];
   const transition = useMemo(
@@ -33,10 +68,16 @@ export const usePathDrawAnimation = (
   );
 
   return {
-    animate: isAnimating ? 'animate' : undefined,
-    exit: isAnimating ? 'exit' : undefined,
-    initial: isAnimating ? 'initial' : false,
-    transition,
-    variants: isAnimating ? preset : undefined,
+    animate: isHydrated
+      ? isAnimating
+        ? animationState.target
+        : parent.isVisible
+          ? 'animate'
+          : 'exit'
+      : undefined,
+    exit: isHydrated ? 'exit' : undefined,
+    initial: parent.isVisible ? false : 'exit',
+    transition: applyMotionStyle(transition, isAnimating ? resolvedMotionStyle : 'none'),
+    variants: applyMotionStyle(preset, isAnimating ? resolvedMotionStyle : 'none'),
   };
 };

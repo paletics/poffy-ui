@@ -1,11 +1,29 @@
 'use client';
 
-import { Slot } from '@radix-ui/react-slot';
+import { Slot, Slottable } from '@radix-ui/react-slot';
 import { cx } from '@/styled-system/css';
-import { avatar } from '@/styled-system/recipes';
-import { ElementType, forwardRef, useEffect, useState } from 'react';
-import { AvatarFallbackProps } from './Avatar.types';
+import { cloneElement, ElementType, forwardRef, isValidElement, useEffect, useState } from 'react';
+import type { AvatarFallbackComponent, AvatarFallbackProps } from './Avatar.types';
 import { useAvatarContext } from './AvatarContext';
+import { getFallbackChildrenPreservingVoidHost, isAsChildHost } from '@/components/shared/asChild';
+
+const avatarFallbackAsChildHosts = new Set([
+  'abbr',
+  'b',
+  'cite',
+  'code',
+  'em',
+  'i',
+  'mark',
+  's',
+  'small',
+  'span',
+  'strong',
+  'sub',
+  'sup',
+  'time',
+  'u',
+]);
 
 const getInitials = (name?: string) => {
   if (!name?.trim()) return '';
@@ -14,63 +32,88 @@ const getInitials = (name?: string) => {
   return ((parts[0]?.[0] ?? '') + (parts[parts.length - 1]?.[0] ?? '')).toUpperCase();
 };
 
-/**
- * The fallback element rendered when the Avatar image is not available or loading.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: avatar), Radix Slot
- * ### Design Tokens
- * - size: silver-ratio tokens map to font size for initials
- * ### Variant Logic
- * - N/A
- * ### Notes
- * Delay can be configured via `delayMs` to avoid flash of fallback during fast loads.
- * ### Accessibility
- * - Relies on surrounding context if providing user identification.
- * ### AI Usage
- * - Used strictly within the AvatarRoot. Automatically handles initial generation from the `name` prop if `children` are not provided.
- * @example Auto-generated initials from name
- * ```tsx
- * import { Avatar } from '@poffy-ui/react/data-display';
- *
- * <Avatar.Root size="md">
- *   <Avatar.Image src="/photo.jpg" alt="Jane Doe" />
- *   <Avatar.Fallback name="Jane Doe" delayMs={300} />
- * </Avatar.Root>
- * ```
- *
- * @example Custom fallback icon
- * ```tsx
- * import { Avatar } from '@poffy-ui/react/data-display';
- * import { UserIcon } from '@poffy-ui/react/media';
- *
- * <Avatar.Root size="md">
- *   <Avatar.Fallback><UserIcon /></Avatar.Fallback>
- * </Avatar.Root>
- * ```
- */
-export const AvatarFallback = forwardRef<HTMLSpanElement, AvatarFallbackProps>((props, ref) => {
-  const { asChild, children, name, className, delayMs, ...rest } = props;
-  const { size, status } = useAvatarContext();
-  const classes = avatar({ size });
+const AvatarFallbackImpl = forwardRef<HTMLElement, AvatarFallbackProps>((props, ref) => {
+  const {
+    asChild,
+    children,
+    name,
+    className,
+    delayMs,
+    'aria-label': userAriaLabel,
+    'aria-hidden': userAriaHidden,
+    ...rest
+  } = props;
+  const { classes, status, hasImage, hasLoadingImage } = useAvatarContext();
 
-  const [isMounted, setIsMounted] = useState(delayMs === undefined);
+  const [mountState, setMountState] = useState(() => ({
+    delayMs,
+    isMounted: delayMs === undefined,
+  }));
+  const isMounted = mountState.delayMs === delayMs ? mountState.isMounted : delayMs === undefined;
 
   useEffect(() => {
-    if (delayMs !== undefined) {
-      const timer = setTimeout(() => setIsMounted(true), delayMs);
-      return () => clearTimeout(timer);
+    if (delayMs === undefined) {
+      queueMicrotask(() => setMountState({ delayMs, isMounted: true }));
+      return undefined;
     }
-  }, [delayMs]);
+    if (status !== 'loading') {
+      queueMicrotask(() => setMountState({ delayMs, isMounted: true }));
+      return undefined;
+    }
+
+    queueMicrotask(() => setMountState({ delayMs, isMounted: false }));
+    const timer = setTimeout(() => setMountState({ delayMs, isMounted: true }), delayMs);
+    return () => clearTimeout(timer);
+  }, [delayMs, status]);
 
   if (status === 'loaded' || !isMounted) return null;
 
-  const Component = asChild ? Slot : ('span' as ElementType);
+  const generatedInitials = children === undefined ? getInitials(name) : undefined;
+  const fallbackContent = children ?? generatedInitials;
+  const isLoadingFallback = hasImage && status === 'loading' ? true : hasLoadingImage;
+  const ariaLabel = userAriaLabel ?? (generatedInitials && name ? name : undefined);
+  const ariaHidden = isLoadingFallback ? true : userAriaHidden;
+  const canUseAsChild = Boolean(
+    asChild && isAsChildHost(fallbackContent, avatarFallbackAsChildHosts),
+  );
+  const fallbackChild =
+    canUseAsChild &&
+    isValidElement<{ 'aria-label'?: string; 'aria-hidden'?: boolean }>(fallbackContent)
+      ? isLoadingFallback
+        ? cloneElement(fallbackContent, { 'aria-hidden': true })
+        : fallbackContent
+      : null;
+  const Component = (fallbackChild ? Slot : 'span') as ElementType;
 
   return (
-    <Component ref={ref} className={cx(classes.fallback, className)} {...rest}>
-      {children ?? getInitials(name)}
+    <Component
+      ref={ref}
+      className={cx(classes.fallback, className)}
+      {...rest}
+      aria-label={ariaLabel}
+      aria-hidden={ariaHidden}
+    >
+      {fallbackChild ? (
+        <Slottable>{fallbackChild}</Slottable>
+      ) : asChild ? (
+        getFallbackChildrenPreservingVoidHost(fallbackContent)
+      ) : (
+        fallbackContent
+      )}
     </Component>
   );
 });
 
-AvatarFallback.displayName = 'Avatar.Fallback';
+AvatarFallbackImpl.displayName = 'Avatar.Fallback';
+
+/**
+ * Displays Avatar fallback content while no image has loaded.
+ *
+ * With no children it derives one or two uppercase initials from `name` and
+ * labels those initials with the name. `delayMs` postpones the loading-state
+ * fallback to avoid a flash; an errored image shows it immediately. Fallback
+ * content is hidden while an image is still loading, and `asChild` supports
+ * only inline text-level hosts.
+ */
+
+export const AvatarFallback = AvatarFallbackImpl as AvatarFallbackComponent;

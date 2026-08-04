@@ -1,74 +1,117 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
-import { forwardRef, ReactNode, useMemo } from 'react';
+import type { AnimationDefinition } from 'motion/react';
+import { forwardRef, Fragment, isValidElement, ReactNode, useMemo } from 'react';
 import { useOptionalAnimation } from '@/providers/AnimationProvider';
-import { getMotionComponent } from '../utils';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
+import { getMotionComponent, resolvePresetKey } from '../utils';
+import { useOneShotEntranceVariant } from '../useOneShotEntranceVariant';
 import { listContainerVariants } from './ListTransition.presets';
 import { ListAnimationType, ListTransitionProps } from './ListTransition.types';
 import { ListTransitionItem } from './ListTransitionItem';
 
-const ListTransitionRoot = forwardRef<HTMLUListElement, ListTransitionProps>(
-  ({ asChild, animationType = 'flow', children, className, style, ...rest }, ref) => {
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'ul'), [asChild]);
+const isListHost = (children: unknown) =>
+  isValidElement(children) &&
+  children.type !== Fragment &&
+  ['ul', 'ol'].includes(children.type as string);
 
-    const { isAnimating } = useOptionalAnimation();
-    const animationKey = animationType as ListAnimationType;
+const getFallbackChildren = (children: unknown) =>
+  isValidElement<{ children?: ReactNode }>(children) && children.type !== Fragment
+    ? children.props.children
+    : children;
+
+const ListTransitionRootImpl = forwardRef<HTMLUListElement, ListTransitionProps>(
+  (
+    {
+      asChild,
+      animationType = 'flow',
+      customData,
+      children,
+      className,
+      style,
+      onAnimationComplete: consumerAnimationComplete,
+      ...rest
+    },
+    ref,
+  ) => {
+    const canUseAsChild = Boolean(asChild && isListHost(children));
+    const Component = useMemo(
+      () => getMotionComponent(canUseAsChild ? Slot : 'ul'),
+      [canUseAsChild],
+    );
+
+    const { isAnimating, resolvedMotionStyle } = useOptionalAnimation();
+    const animationKey = resolvePresetKey<typeof listContainerVariants, ListAnimationType>(
+      listContainerVariants,
+      animationType,
+      'flow',
+    );
     const variants = listContainerVariants[animationKey];
+    const { completeSettlement, isHydrated, settleEntrance, target } = useOneShotEntranceVariant({
+      enabled: isAnimating,
+      enter: '__poffyListEnter',
+      entranceIdentity: animationKey,
+      settled: '__poffyListSettled',
+    });
+    const handleAnimationComplete = (definition: AnimationDefinition) => {
+      if (definition === '__poffyListEnter') settleEntrance();
+      if (definition === '__poffyListSettled') {
+        completeSettlement();
+        return;
+      }
+      consumerAnimationComplete?.(definition);
+    };
 
     return (
       // eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support.
       <Component
         ref={ref}
         className={className}
-        style={style}
-        variants={isAnimating ? variants : undefined}
-        initial={isAnimating ? 'hidden' : false}
-        animate={isAnimating ? 'visible' : undefined}
-        exit={isAnimating ? 'exit' : undefined}
-        {...rest}
+        style={sanitizeStaticStyle(style)}
+        variants={
+          isHydrated
+            ? applyMotionStyle(variants, isAnimating ? resolvedMotionStyle : 'none')
+            : undefined
+        }
+        initial={false}
+        animate={target}
+        onAnimationComplete={handleAnimationComplete}
+        custom={customData}
+        {...sanitizeControlledMotionProps(rest)}
       >
-        {children as ReactNode}
+        {
+          (canUseAsChild
+            ? children
+            : asChild
+              ? getFallbackChildren(children)
+              : children) as ReactNode
+        }
       </Component>
     );
   },
 );
 
-ListTransitionRoot.displayName = 'ListTransition';
+ListTransitionRootImpl.displayName = 'ListTransition';
+
+const ListTransitionRoot = defineMotionSlotComponent<
+  HTMLUListElement,
+  ListTransitionProps,
+  HTMLUListElement | HTMLOListElement
+>(ListTransitionRootImpl);
 
 /**
- * Compound list transition component with an item subcomponent.
- * Use for semantic lists whose children should animate in a coordinated sequence.
+ * Coordinates entrance animation for semantic list items.
  *
- * ### AI Context & Architecture
- * - Tier: Molecules
- * - Stack: Framer Motion variants, compound `ListTransition.Item`
- *
- * ### Design Tokens
- * - Motion timing and offsets come from `listContainerVariants` and `listItemVariants`.
- * - Layout spacing remains owned by the list content or surrounding layout component.
- *
- * ### Variant Logic
- * - `animationType`: Controls the container cadence for list entrance.
- * - `ListTransition.Item animationType`: Controls the individual item entrance style.
- *
- * ### Accessibility
- * - Renders list semantics through the root and item elements; keep `ListTransition.Item` aligned with list children.
- * - Honors reduced-motion handling through the underlying motion primitives.
- *
- * ### AI Usage
- * - Use for list entrance choreography where children should animate as items.
- * - Do not use for non-list grids when `StaggerTransition` better matches the markup.
- *
- * @example
- * ```tsx
- * import { ListTransition } from '@poffy-ui/react';
- *
- * <ListTransition animationType="flow">
- *   <ListTransition.Item>First</ListTransition.Item>
- *   <ListTransition.Item>Second</ListTransition.Item>
- * </ListTransition>
- * ```
+ * The root retains native `ul`/`ol` semantics, and `ListTransition.Item`
+ * renders each animated `li`. It does not create or announce collection
+ * changes; the caller owns that state. Motion policy can render the list
+ * without animation.
  */
 export const ListTransition = Object.assign(ListTransitionRoot, {
   Item: ListTransitionItem,

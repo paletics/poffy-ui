@@ -1,24 +1,29 @@
 import { JsxStyleProps } from '@/styled-system/types';
 import { PrimitiveProps } from '@poffy-ui/types';
 import { ReactNode } from 'react';
+import type {
+  AsChildHostProps,
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Container Base Props
- * Container provides responsive max-width constraint without additional variants.
- */
+/** Props for a page-width-constrained content region. */
 export type ContainerBaseProps = JsxStyleProps & {
-  /** The content of the container */
   children?: ReactNode;
-  /**
-   * Additional CSS class names.
-   * Prefer using Panda CSS style props for styling.
-   */
   className?: string;
 };
 
-/**
- * Comprehensive properties for the core Container component.
- * ### AI Usage
- * - Use this to type-check Container components.
- */
-export type ContainerProps = PrimitiveProps<'div', ContainerBaseProps>;
+
+type ContainerNativeProps = PrimitiveProps<'div', ContainerBaseProps>;
+/** Props for Container rendered with its default host. */
+export type ContainerDefaultProps = DefaultHostProps<ContainerNativeProps>;
+/** Props for Container delegated to an asChild host. */
+export type ContainerAsChildProps = AsChildHostProps<ContainerNativeProps>;
+/** Public props for Container. */
+export type ContainerProps = ContainerDefaultProps | ContainerAsChildProps;
+/** Polymorphic component call signatures for Container. */
+export type ContainerComponent = PolymorphicAsChildComponent<
+  ContainerDefaultProps,
+  ContainerAsChildProps,
+  HTMLDivElement
+>;

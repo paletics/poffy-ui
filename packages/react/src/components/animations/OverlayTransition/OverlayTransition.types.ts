@@ -2,27 +2,12 @@ import type { MotionPrimitiveProps } from '@/types/motion';
 import { CustomData } from '../types';
 import { OverlayTransitionType } from './OverlayTransition.presets';
 
-/**
- * Overlay Transition Type Definitions
- *
- * ### AI Context & Architecture
- * Defines prop interfaces and component types for `OverlayTransition`.
- * Orchestrates entrance and exit animations for modals, popovers, and drawers.
- * Integration with `AnimatePresence` is expected for most presets.
- */
-
+/** Named overlay-transition preset. */
 export type OverlayAnimationType = OverlayTransitionType;
 
 /**
- * Base props for OverlayTransition.
- *
- * ### Notes
- * This is a controlled visual wrapper. The owning overlay component
- * controls `isVisible`, focus management, dismissal, and ARIA dialog/menu semantics.
- *
- * ### AI Usage
- * - **DO**: Use inside Modal, Drawer, Popover, Tooltip, and menu surfaces that already own state.
- * - **DON'T**: Treat this as an overlay primitive by itself; it only animates visibility.
+ * Props for a controlled overlay animation. The caller owns visibility, focus, dismissal, and ARIA semantics.
+ * @typeParam C - Custom data accepted by the selected preset.
  */
 export interface OverlayTransitionBaseProps<C extends CustomData = CustomData> {
   /** Visibility state of the overlay. */
@@ -39,6 +24,10 @@ export interface OverlayTransitionBaseProps<C extends CustomData = CustomData> {
    * @defaultValue `false`
    */
   keepMounted?: boolean;
+  /** Enables Motion layout coordination for this controlled overlay root. */
+  layout?: true | false | 'position' | 'size' | 'preserve-aspect';
+  /** Shared layout identity for coordinating a transition between overlay roots. */
+  layoutId?: string;
   /** Custom values passed to the animation variants. */
   customData?: C;
 }

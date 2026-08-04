@@ -2,16 +2,7 @@ import { RefObject } from 'react';
 import type { MotionPrimitiveProps } from '@/types/motion';
 
 /**
- * Base props for `DragMotion`.
- *
- * ### Notes
- * `DragMotion` delegates gesture state to Framer Motion. The parent
- * may constrain motion with `dragConstraints`, but this type does not expose a
- * controlled position API.
- *
- * ### AI Usage
- * - **DO**: Use for draggable handles, cards, sliders, and reorder affordances.
- * - **DON'T**: Use for native HTML drag-and-drop file/data transfer.
+ * Props for Motion-managed dragging with optional bounds; does not provide controlled position state.
  */
 export interface DragMotionBaseProps {
   /**
@@ -57,5 +48,5 @@ export interface DragMotionBaseProps {
   dragPropagation?: boolean;
 }
 
-/** Props for `DragMotion`. */
+/** Public props for DragMotion. */
 export type DragMotionProps = MotionPrimitiveProps<'div', DragMotionBaseProps>;

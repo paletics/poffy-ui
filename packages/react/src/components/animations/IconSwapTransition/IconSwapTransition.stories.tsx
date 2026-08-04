@@ -6,13 +6,6 @@ import { IconSwapTransition } from './IconSwapTransition';
 import { iconSwapVariants } from './IconSwapTransition.presets';
 import type { IconSwapTransitionProps } from './IconSwapTransition.types';
 
-/**
- * Animates compact icon and status content replacements with a keyed transition boundary.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (AnimatePresence), IconSwapTransition presets, Radix Slot
- */
 const meta: Meta<typeof IconSwapTransition> = {
   title: 'Animations/IconSwapTransition',
   component: IconSwapTransition,

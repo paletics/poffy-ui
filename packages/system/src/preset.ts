@@ -7,18 +7,10 @@ import { baseTokens } from './theme/tokens';
 import { tokens } from './theme/tokensConfig';
 
 /**
- * Panda CSS preset for Poffy UI.
- * Consuming packages (react, pro, enterprise) import this preset into
- * their own panda.config.ts via `presets: [poffyPreset]`.
- *
- * ### AI Context
- * - **Domain**: Design System / Panda CSS
- * - **Side Effects**: None (pure configuration object)
- *
- * ### AI Usage
- * - **DO**: Import in panda.config.ts of any package that extends Poffy UI.
- * - **DO**: Extend `theme` via `theme.extend` in consuming packages for package-specific additions.
- * - **DON'T**: Edit tokens here directly — update `src/theme/tokens.ts` first.
+ * Panda CSS preset for packages that consume Poffy UI tokens, conditions, global styles, and theme
+ * extensions. It registers brand (`pome`, `blue`, and `custom`), dark-mode, and motion conditions;
+ * the custom brand conditions resolve their color values from the documented `--poffy-custom-*` CSS
+ * variables. Add package-specific theme values through the consuming Panda configuration.
  */
 export const poffyPreset = {
   name: '@poffy-ui/system',
@@ -65,6 +57,8 @@ export const poffyPreset = {
         .replace(/\s+/g, ' ')
         .trim(),
       reducedMotion: '@media (prefers-reduced-motion: reduce)',
+      motionSubtle: '@scope ([data-motion-style="subtle"]) to ([data-motion-style])',
+      motionPop: '@scope ([data-motion-style="pop"]) to ([data-motion-style])',
       highlighted: '&[data-highlighted], &[data-highlighted=true]',
     },
   },

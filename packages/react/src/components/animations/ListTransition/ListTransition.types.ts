@@ -2,29 +2,15 @@ import type { MotionPrimitiveProps } from '@/types/motion';
 import { CustomData } from '../types';
 import { ListContainerType, ListItemType } from './ListTransition.presets';
 
-/**
- * List Transition Type Definitions
- *
- * ### AI Context & Architecture
- * Defines prop interfaces and component types for `ListTransition` and `ListTransitionItem`.
- * Manages staggered entry for collections of items.
- */
-
+/** Named list-container transition preset. */
 export type ListAnimationType = ListContainerType;
 
 /** Named list item transition preset. */
 export type ListItemAnimationType = ListItemType;
 
 /**
- * Base props for ListTransition (Container).
- *
- * ### Notes
- * `ListTransition` is an entrance orchestration wrapper for a stable
- * list. It does not manage item identity, sorting, or add/remove exit motion.
- *
- * ### AI Usage
- * - **DO**: Use with `ListTransitionItem` children for first-render or reveal-in-view lists.
- * - **DON'T**: Use for dynamic reorder operations; use `ReorderTransition`.
+ * Props for initial entrance animation of a stable list; item identity and mutations remain parent-owned.
+ * @typeParam C - Custom data accepted by the selected preset.
  */
 export interface ListTransitionBaseProps<C extends CustomData = CustomData> {
   /**
@@ -52,7 +38,7 @@ export type ListTransitionProps<C extends CustomData = CustomData> = MotionPrimi
  *
  * ### Notes
  * Must be rendered under a `ListTransition` container so Framer Motion
- * can dispatch the matching `hidden` and `visible` variant labels.
+ * can dispatch the matching `enter` variant label.
  */
 export interface ListTransitionItemBaseProps {
   /**

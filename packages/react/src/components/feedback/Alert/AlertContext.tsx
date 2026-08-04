@@ -1,7 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
-import { AlertBaseProps } from './Alert.types';
+import { AlertBaseProps } from '@/components/feedback/Alert/Alert.types';
 
 /**
  * Shared alert status and generated class names for alert compound parts.

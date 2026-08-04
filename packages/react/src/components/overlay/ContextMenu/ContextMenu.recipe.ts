@@ -1,5 +1,10 @@
 import { defineSlotRecipe } from '@pandacss/dev';
 import { pomeAesthetics } from '../overlay.shared';
+import {
+  floatingAvailableHeight,
+  floatingAvailableWidth,
+  floatingViewportFallbackStyles,
+} from '@/components/shared/floatingViewportFallback';
 
 /**
  * Slot recipe for the ContextMenu component.
@@ -16,9 +21,15 @@ export const contextMenuRecipe = defineSlotRecipe({
   slots: ['content', 'item', 'itemContent', 'itemIcon', 'itemLabel', 'itemShortcut', 'separator'],
   base: {
     content: {
+      ...floatingViewportFallbackStyles,
+      // Mirrors ContextMenu's Floating UI shift/size middleware padding.
+      '--floating-fallback-padding': '10px',
       display: 'flex',
       flexDirection: 'column',
-      minW: '{sizes.ratio.sm}',
+      boxSizing: 'border-box',
+      minW: `min({sizes.ratio.sm}, ${floatingAvailableWidth})`,
+      maxW: floatingAvailableWidth,
+      maxH: floatingAvailableHeight,
       py: '{spacing.sm}',
       bg: '{colors.layout.surface}',
       border: '2px solid',
@@ -27,7 +38,8 @@ export const contextMenuRecipe = defineSlotRecipe({
       boxShadow: '{shadows.lg}',
       outline: 'none',
       zIndex: 'modal',
-      overflow: 'hidden',
+      overflowX: 'hidden',
+      overflowY: 'auto',
       ...pomeAesthetics,
     },
     item: {
@@ -41,6 +53,8 @@ export const contextMenuRecipe = defineSlotRecipe({
       fontWeight: 'bold',
       color: '{colors.text.primary}',
       transition: 'all 0.2s {easings.soft}',
+      _motionSubtle: { transition: 'all {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'all {durations.standard} {easings.bounce}' },
       userSelect: 'none',
       outline: 'none',
       gap: '{spacing.md}',
@@ -77,6 +91,7 @@ export const contextMenuRecipe = defineSlotRecipe({
       alignItems: 'center',
       gap: '{spacing.sm}',
       flex: 1,
+      minW: 0,
     },
     itemIcon: {
       display: 'flex',
@@ -94,11 +109,19 @@ export const contextMenuRecipe = defineSlotRecipe({
     },
     itemLabel: {
       flex: 1,
+      minW: 0,
+      overflowWrap: 'anywhere',
     },
     itemShortcut: {
       fontSize: 'sm',
       color: '{colors.text.disabled}',
-      ml: '{spacing.base}',
+      marginInlineStart: '{spacing.base}',
+      minWidth: 0,
+      maxWidth: '50%',
+      flexShrink: 1,
+      whiteSpace: 'nowrap',
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
     },
     separator: {
       h: '1px',

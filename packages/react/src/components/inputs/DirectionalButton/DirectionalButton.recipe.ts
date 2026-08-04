@@ -123,10 +123,16 @@ const generateCompoundVariants = (): SlotRecipeConfig['compoundVariants'] => {
       css: {
         group: {
           '& [data-directional-button] + [data-directional-button]': {
-            borderLeftWidth: '{borderWidths.thin}',
-            borderLeftColor: 'brand.border',
-            borderLeftStyle: 'solid',
+            borderInlineStartWidth: '{borderWidths.thin}',
+            borderInlineStartColor: 'brand.border',
+            borderInlineStartStyle: 'solid',
           },
+          boxSizing: 'border-box',
+          minInlineSize: 0,
+          maxInlineSize: '100%',
+          overflowX: 'auto',
+          overflowY: 'hidden',
+          overscrollBehaviorX: 'contain',
         },
       },
     },
@@ -160,7 +166,14 @@ export const directionalButtonRecipe = defineSlotRecipe({
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
+      boxSizing: 'border-box',
       flexShrink: 0,
+      gap: '{spacing.xs}',
+      maxInlineSize: '100%',
+      overflow: 'hidden',
+      overflowWrap: 'anywhere',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap',
       borderWidth: '0',
       outline: '0',
       appearance: 'none',
@@ -170,10 +183,22 @@ export const directionalButtonRecipe = defineSlotRecipe({
       transitionDuration: '{durations.fast}',
       transitionTimingFunction: '{easings.soft}',
       transitionProperty: 'background-color, color, box-shadow, border-color, transform',
+      _motionSubtle: { transitionDuration: '{durations.ultraFast}' },
+      _motionPop: {
+        transitionDuration: '{durations.standard}',
+        transitionTimingFunction: '{easings.bounce}',
+      },
       '& svg': {
         width: '1em',
         height: '1em',
         flexShrink: 0,
+      },
+      '& > :not([aria-hidden="true"])': {
+        minInlineSize: 0,
+        maxInlineSize: '100%',
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
       },
       _focusVisible: {
         position: 'relative',
@@ -184,6 +209,11 @@ export const directionalButtonRecipe = defineSlotRecipe({
         outlineOffset: '{focusRing.insetOffset}',
       },
       _disabled: {
+        opacity: 0.4,
+        cursor: 'not-allowed',
+        pointerEvents: 'none',
+      },
+      '&[aria-disabled="true"]': {
         opacity: 0.4,
         cursor: 'not-allowed',
         pointerEvents: 'none',
@@ -278,6 +308,7 @@ export const directionalButtonRecipe = defineSlotRecipe({
           overflow: 'hidden',
           borderWidth: '{borderWidths.default}',
           borderColor: 'brand.border',
+          borderStyle: 'solid',
         },
         button: {
           borderRadius: '{radii.none}',

@@ -29,7 +29,7 @@ const toSnapshotPart = (value: string) =>
     .replace(/^-+|-+$/g, '')
     .toLowerCase();
 
-const waitForStoryRoot = async (page: import('@playwright/test').Page) => {
+export const waitForStoryRoot = async (page: import('@playwright/test').Page) => {
   const storyRoot = page.locator('#storybook-root, #root').first();
 
   await expect
@@ -48,6 +48,52 @@ const waitForStoryRoot = async (page: import('@playwright/test').Page) => {
     .toBeGreaterThan(0);
 
   return storyRoot;
+};
+
+/** Loads one Storybook iframe story and waits for its rendered root. */
+export const gotoStory = async (
+  page: import('@playwright/test').Page,
+  {
+    componentId,
+    globals,
+    story,
+  }: {
+    componentId: string;
+    globals?: string;
+    story: string;
+  },
+) => {
+  const globalsQuery = globals ? `&globals=${encodeURIComponent(globals)}` : '';
+  await page.goto(`/iframe.html?id=${componentId}--${story}&viewMode=story${globalsQuery}`);
+  return waitForStoryRoot(page);
+};
+
+export const expectNoHorizontalOverflow = async (page: import('@playwright/test').Page) => {
+  const hasHorizontalOverflow = await page.evaluate(() => {
+    if (document.documentElement.scrollWidth > document.documentElement.clientWidth) return true;
+    return document.body.scrollWidth > document.body.clientWidth;
+  });
+
+  expect(hasHorizontalOverflow).toBe(false);
+};
+
+export const testStoriesDoNotOverflowOnMobile = ({
+  componentId,
+  stories,
+  title,
+}: Pick<VisualSpecOptions, 'componentId' | 'stories' | 'title'>) => {
+  test.describe(`${title} Mobile Overflow`, () => {
+    for (const story of stories) {
+      test(`${story.name} story does not overflow on mobile`, async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.goto(`/iframe.html?id=${componentId}--${story.story}&viewMode=story`);
+        await waitForStoryRoot(page);
+        await page.waitForTimeout(500);
+
+        await expectNoHorizontalOverflow(page);
+      });
+    }
+  });
 };
 
 /**
@@ -80,8 +126,10 @@ export const testVisualStories = ({
       await waitForStoryRoot(page);
       await page.waitForTimeout(500);
 
+      // Floating UI renders overlay content into a portal under document.body,
+      // outside Storybook's canvas root. Scan the iframe document so open
+      // dialog/menu content and its focus guards are checked as well.
       const results = await new AxeBuilder({ page })
-        .include('#storybook-root')
         .exclude('iframe')
         .disableRules(['landmark-one-main', 'page-has-heading-one', 'region'])
         .analyze();

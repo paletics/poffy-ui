@@ -3,14 +3,6 @@ import { Button } from '@/components/inputs/Button';
 import { Box, Flex } from '@/components/layout';
 import { Badge } from './Badge';
 
-/**
- * Overlays a small status indicator or notification count on an anchor element.
- * Use to draw attention to a count, status, or new activity on icons, avatars, or buttons.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (badge recipe), Radix Slot
- */
 const meta: Meta<typeof Badge> = {
   title: 'Display/Badge',
   component: Badge,
@@ -66,7 +58,7 @@ export const Playground: Story = {
 
 export const Sizes: Story = {
   render: () => (
-    <Flex gap="lg">
+    <Flex gap="lg" wrap="wrap">
       <Badge content="1" size="sm">
         <Box {...demoBoxProps} />
       </Badge>
@@ -82,7 +74,7 @@ export const Sizes: Story = {
 
 export const Intents: Story = {
   render: () => (
-    <Flex gap="lg">
+    <Flex gap="lg" wrap="wrap">
       <Badge content="1" intent="primary">
         <Box {...demoBoxProps} />
       </Badge>
@@ -98,20 +90,42 @@ export const Intents: Story = {
       <Badge content="1" intent="warning">
         <Box {...demoBoxProps} />
       </Badge>
+      <Badge content="1" intent="info">
+        <Box {...demoBoxProps} />
+      </Badge>
+      <Badge content="1" intent="light">
+        <Box {...demoBoxProps} />
+      </Badge>
+      <Badge content="1" intent="dark">
+        <Box {...demoBoxProps} />
+      </Badge>
+    </Flex>
+  ),
+};
+
+export const Shapes: Story = {
+  render: () => (
+    <Flex gap="lg">
+      <Badge content="New" shape="rounded">
+        <Box {...demoBoxProps} />
+      </Badge>
+      <Badge content="New" shape="pill">
+        <Box {...demoBoxProps} />
+      </Badge>
     </Flex>
   ),
 };
 
 export const Appearances: Story = {
   render: () => (
-    <Flex gap="lg">
-      <Badge content="1" appearance="solid" intent="primary">
+    <Flex gap="lg" wrap="wrap">
+      <Badge content="Solid" appearance="solid" intent="danger">
         <Box {...demoBoxProps} />
       </Badge>
-      <Badge content="1" appearance="soft" intent="success">
+      <Badge content="Soft" appearance="soft" intent="success">
         <Box {...demoBoxProps} />
       </Badge>
-      <Badge content="1" appearance="outline" intent="warning">
+      <Badge content="Outline" appearance="outline" intent="info">
         <Box {...demoBoxProps} />
       </Badge>
     </Flex>
@@ -120,7 +134,7 @@ export const Appearances: Story = {
 
 export const Placements: Story = {
   render: () => (
-    <Flex gap="2xl">
+    <Flex gap="2xl" wrap="wrap">
       <Badge content="1" placement="top-right">
         <Box {...demoBoxProps} />
       </Badge>
@@ -147,6 +161,19 @@ export const Standalone: Story = {
     content: 'New',
     intent: 'primary',
   },
+};
+
+export const ConstrainedStandaloneLongContent: Story = {
+  render: () => (
+    <Flex gap="md" wrap="wrap">
+      <Box width="[64px]" aria-label="Constrained standalone badge LTR">
+        <Badge content="StandaloneStatusWithoutBreakOpportunities" />
+      </Box>
+      <Box width="[64px]" dir="rtl" aria-label="Constrained standalone badge RTL">
+        <Badge content="StandaloneStatusWithoutBreakOpportunities" />
+      </Box>
+    </Flex>
+  ),
 };
 
 export const AsChild: Story = {

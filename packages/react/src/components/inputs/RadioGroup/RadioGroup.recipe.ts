@@ -11,6 +11,8 @@ export const radioGroupRecipe = defineSlotRecipe({
     root: {
       display: 'flex',
       gap: '{spacing.sm}',
+      minWidth: 0,
+      maxWidth: '100%',
     },
   },
   variants: {
@@ -24,6 +26,7 @@ export const radioGroupRecipe = defineSlotRecipe({
       horizontal: {
         root: {
           flexDirection: 'row',
+          flexWrap: 'wrap',
           gap: '{spacing.base}',
         },
       },

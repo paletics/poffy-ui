@@ -47,32 +47,11 @@ interface MultiSelectControlProps {
   required: boolean;
   tabIndex?: number;
   value: string[];
+  toggleLabel: string;
+  getRemoveLabel: (label: string) => string;
 }
 
-/**
- * Internal input shell used by MultiSelect.
- * Renders tags, combobox input, and disclosure trigger with no local state.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: native input, `DisclosureIconButton`, `MultiSelectTags`
- * - **Props**: internal `MultiSelectControlProps`
- *
- * ### Accessibility
- * - **Role**: combobox input with `aria-controls`, `aria-expanded`, and `aria-activedescendant`.
- * - **Keyboard**: Parent hook handles Arrow, Enter, Backspace, and Escape interactions.
- * - **Required**: Pass either `ariaLabel` or `ariaLabelledBy` from the root component.
- *
- * ### AI Usage
- * - Internal use only; prefer `MultiSelect` for public composition.
- *
- * @example Internal composition
- * ```tsx
- * import { MultiSelectControl } from './MultiSelectControl';
- *
- * <MultiSelectControl {...controlProps} />
- * ```
- */
+
 export const MultiSelectControl = forwardRef<HTMLDivElement, MultiSelectControlProps>(
   (
     {
@@ -101,6 +80,8 @@ export const MultiSelectControl = forwardRef<HTMLDivElement, MultiSelectControlP
       required,
       tabIndex,
       value,
+      toggleLabel,
+      getRemoveLabel,
     },
     ref,
   ) => (
@@ -111,6 +92,7 @@ export const MultiSelectControl = forwardRef<HTMLDivElement, MultiSelectControlP
         disabled={disabled ? true : readOnly}
         onRemove={onRemoveTag}
         renderTag={renderTag}
+        getRemoveLabel={getRemoveLabel}
       />
       {/* eslint-disable-next-line jsx-a11y/aria-activedescendant-has-tabindex -- The input is focusable and receives tabIndex below; the rule does not recognize this dynamic tabIndex expression. */}
       <input
@@ -130,6 +112,7 @@ export const MultiSelectControl = forwardRef<HTMLDivElement, MultiSelectControlP
         aria-controls={listId}
         aria-expanded={isOpen}
         aria-invalid={error ? true : undefined}
+        aria-readonly={readOnly ? true : undefined}
         aria-required={required ? true : undefined}
         aria-haspopup="listbox"
         aria-autocomplete="list"
@@ -139,10 +122,11 @@ export const MultiSelectControl = forwardRef<HTMLDivElement, MultiSelectControlP
         onKeyDown={onInputKeyDown}
       />
       <DisclosureIconButton
+        data-multiselect-trigger
         className={classes.trigger}
         open={isOpen}
         disabled={disabled ? true : readOnly}
-        aria-label="Toggle options"
+        aria-label={toggleLabel}
         aria-haspopup="listbox"
         aria-controls={listId}
         tabIndex={-1}

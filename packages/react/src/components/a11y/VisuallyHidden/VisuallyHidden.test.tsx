@@ -24,6 +24,25 @@ describe('VisuallyHidden Utility', () => {
     expect(container.firstChild?.nodeName).toBe('DIV');
   });
 
+  it('keeps an asChild control focusable for the focus-reveal styling', () => {
+    render(
+      <VisuallyHidden asChild>
+        <button type="button">Skip to main content</button>
+      </VisuallyHidden>,
+    );
+
+    const button = screen.getByRole('button', { name: 'Skip to main content' });
+    button.focus();
+    expect(button).toHaveFocus();
+  });
+
+  it('falls back to a span when asChild does not receive one host element', () => {
+    const { container } = render(<VisuallyHidden asChild>Hidden text</VisuallyHidden>);
+
+    expect(container.firstChild?.nodeName).toBe('SPAN');
+    expect(container).toHaveTextContent('Hidden text');
+  });
+
   it('defaults to a "span" element', () => {
     const { container } = render(<VisuallyHidden>Hidden</VisuallyHidden>);
     expect(container.firstChild?.nodeName).toBe('SPAN');

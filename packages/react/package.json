@@ -40,6 +40,36 @@
     },
     "./styles.css": "./dist/styles.css",
     "./style/poffy-ui.min.css": "./dist/style/poffy-ui.min.css",
+    "./ssr": {
+      "import": {
+        "types": "./dist/types/ssr/index.d.mts",
+        "default": "./dist/ssr/index.mjs"
+      },
+      "require": {
+        "types": "./dist/types/ssr/index.d.ts",
+        "default": "./dist/ssr/index.js"
+      }
+    },
+    "./providers": {
+      "import": {
+        "types": "./dist/types/providers/index.d.mts",
+        "default": "./dist/providers/index.mjs"
+      },
+      "require": {
+        "types": "./dist/types/providers/index.d.ts",
+        "default": "./dist/providers/index.js"
+      }
+    },
+    "./hooks": {
+      "import": {
+        "types": "./dist/types/hooks/index.d.mts",
+        "default": "./dist/hooks/index.mjs"
+      },
+      "require": {
+        "types": "./dist/types/hooks/index.d.ts",
+        "default": "./dist/hooks/index.js"
+      }
+    },
     "./a11y": {
       "import": {
         "types": "./dist/types/components/a11y/index.d.mts",
@@ -160,6 +190,16 @@
         "default": "./dist/tree-view/index.js"
       }
     },
+    "./screen-composer": {
+      "import": {
+        "types": "./dist/types/components/screen-composer/index.d.mts",
+        "default": "./dist/screen-composer/index.mjs"
+      },
+      "require": {
+        "types": "./dist/types/components/screen-composer/index.d.ts",
+        "default": "./dist/screen-composer/index.js"
+      }
+    },
     "./package.json": "./package.json"
   },
   "main": "dist/index.js",
@@ -187,7 +227,8 @@
     "tslib": "catalog:"
   },
   "scripts": {
-    "build": "panda codegen && panda cssgen && tsup && tsc --project tsconfig.json --emitDeclarationOnly --outDir dist/types && node ../../scripts/copy-dts-to-dmts.mjs dist/types && node ../../scripts/prune-react-internal-declarations.mjs",
+    "build": "panda codegen && panda cssgen && tsup && node scripts/add-use-client-directives.mjs && node scripts/check-use-client-directives.mjs && tsc --project tsconfig.json --emitDeclarationOnly --outDir dist/types && node ../../scripts/copy-dts-to-dmts.mjs dist/types && node ../../scripts/prune-react-internal-declarations.mjs",
+    "check:client-boundaries": "node scripts/check-use-client-directives.mjs",
     "dev": "tsup --watch",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

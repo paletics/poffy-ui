@@ -7,7 +7,7 @@ import {
   type MouseEventHandler,
 } from 'react';
 import { describe, expect, it, vi } from 'vitest';
-import { guardActivationHandlers } from './guardActivation';
+import { guardActivationHandlers, guardDisabledActivationHandlers } from './guardActivation';
 
 describe('guardActivationHandlers', () => {
   it('leaves children unchanged when guarding is disabled', () => {
@@ -57,5 +57,23 @@ describe('guardActivationHandlers', () => {
     expect(onClickCapture).toHaveBeenCalledTimes(1);
     expect(onKeyDown).toHaveBeenCalledTimes(1);
     expect(onKeyDownCapture).toHaveBeenCalledTimes(1);
+  });
+
+  it('blocks a child auxiliary click through the disabled guard', () => {
+    const originalAuxClick = vi.fn();
+    const child = createElement('a', { href: '/test', onAuxClick: originalAuxClick }, 'Link');
+    const guarded = guardDisabledActivationHandlers(child, true);
+
+    expect(isValidElement(guarded)).toBe(true);
+    if (!isValidElement(guarded)) return;
+    const event = {
+      preventDefault: vi.fn(),
+      stopPropagation: vi.fn(),
+    } as unknown as MouseEvent<HTMLElement>;
+    (guarded.props as { onAuxClick: MouseEventHandler<HTMLElement> }).onAuxClick(event);
+
+    expect(originalAuxClick).not.toHaveBeenCalled();
+    expect(event.preventDefault).toHaveBeenCalledOnce();
+    expect(event.stopPropagation).toHaveBeenCalledOnce();
   });
 });

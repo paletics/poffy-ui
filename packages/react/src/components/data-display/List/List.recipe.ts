@@ -11,6 +11,7 @@ export const listRecipe = defineSlotRecipe({
     root: {
       display: 'flex',
       flexDirection: 'column',
+      minInlineSize: 0,
       gap: '{spacing.xs}',
       m: '0',
       p: '0',
@@ -18,6 +19,7 @@ export const listRecipe = defineSlotRecipe({
     },
     item: {
       display: 'flex',
+      minInlineSize: 0,
       alignItems: 'center',
       gap: '{spacing.md}',
       p: '{spacing.sm}',
@@ -37,17 +39,21 @@ export const listRecipe = defineSlotRecipe({
     },
     text: {
       flex: '1',
-      minWidth: '0',
+      minInlineSize: 0,
       display: 'flex',
       flexDirection: 'column',
     },
     primary: {
+      minInlineSize: 0,
       fontWeight: 'medium',
       color: 'text.primary',
+      overflowWrap: 'anywhere',
     },
     secondary: {
+      minInlineSize: 0,
       fontSize: 'sm',
       color: 'text.secondary',
+      overflowWrap: 'anywhere',
     },
     marker: {
       color: 'text.secondary',
@@ -62,7 +68,7 @@ export const listRecipe = defineSlotRecipe({
       marker: {
         root: {
           listStyle: 'disc',
-          pl: '{spacing.xl}',
+          paddingInlineStart: '{spacing.xl}',
         },
         item: {
           display: 'list-item',
@@ -72,7 +78,7 @@ export const listRecipe = defineSlotRecipe({
       ordered: {
         root: {
           listStyle: 'decimal',
-          pl: '{spacing.xl}',
+          paddingInlineStart: '{spacing.xl}',
         },
         item: {
           display: 'list-item',
@@ -81,8 +87,9 @@ export const listRecipe = defineSlotRecipe({
       },
       menu: {
         item: {
-          cursor: 'pointer',
           transition: 'background-color 0.2s',
+          _motionSubtle: { transition: 'background-color {durations.ultraFast} {easings.soft}' },
+          _motionPop: { transition: 'background-color {durations.standard} {easings.bounce}' },
           _hover: {
             bg: 'brand.tint',
           },

@@ -1,47 +1,20 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
-import { MotionProps } from 'motion/react';
-import { useOptionalAnimation } from '@/providers/AnimationProvider';
-import { forwardRef, ReactNode, useMemo } from 'react';
-import { baseTokens } from '@poffy-ui/system';
-import { getMotionComponent } from '../utils';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
+import { forwardRef, Fragment, isValidElement, type ReactNode, useMemo, useState } from 'react';
+import { isolatePresenceChild } from '../presenceIsolation';
+import { getMotionComponent, resolvePresetKey } from '../utils';
+import { useHydratedAnimationPolicy } from '../useHydratedAnimationPolicy';
 import { revealVariants } from './RevealTransition.presets';
 import { RevealAnimationType, RevealTransitionProps } from './RevealTransition.types';
 
-const reducedMotionVariants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1 },
-};
-const reducedMotionTransition = { duration: baseTokens.motion.durations.fast };
-
-/**
- * A wrapper that triggers highly performant entrance animations when an element scrolls into the viewport.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Framer Motion (whileInView, Intersection Observer API), Radix Slot
- * ### Design Tokens
- * - translate/scale: Hooked into Silver Ratio motion equivalents via `revealVariants`.
- * ### Variant Logic
- * - animationType: 'fade-up', 'fade-down', 'fade-left', 'fade-right', 'zoom', or 'blur' defines spatial origin and emphasis.
- * @example
- * ```tsx
- * import { RevealTransition } from '@poffy-ui/react';
- *
- * // Reveals as soon as 20% of the element enters the viewport
- * <RevealTransition animationType="fade-up" threshold={0.2} asChild>
- *   <section>Content block</section>
- * </RevealTransition>
- * ```
- * ### Notes
- * Utilizes native `IntersectionObserver` via Framer Motion's `whileInView`, avoiding expensive `onScroll` event listener bindings.
- * ### Accessibility
- * - Must map to user's "prefer-reduced-motion" settings or default to a simple opacity fade if disabled at higher levels.
- * ### AI Usage
- * - **DO**: Wrap landing page sections, marketing cards, and heavy text blocks to choreograph scroll reading.
- * - **DO**: Keep `once` enabled unless repeated scroll playback is a core interaction.
- * - **DON'T**: Hide information that must be immediately measurable or announced behind a delayed reveal.
- */
-export const RevealTransition = forwardRef<HTMLDivElement, RevealTransitionProps>(
+const RevealTransitionImpl = forwardRef<HTMLDivElement, RevealTransitionProps>(
   (
     {
       asChild,
@@ -51,46 +24,127 @@ export const RevealTransition = forwardRef<HTMLDivElement, RevealTransitionProps
       threshold,
       once = true,
       delay = 0,
+      duration,
+      blurAmount,
       customData,
       className,
       style,
+      onViewportEnter,
+      onViewportLeave,
       ...rest
     },
     ref,
   ) => {
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'div'), [asChild]);
-    const { isAnimating } = useOptionalAnimation();
+    const canUseAsChild = Boolean(
+      asChild && isValidElement(children) && children.type !== Fragment,
+    );
+    const Component = useMemo(
+      () => getMotionComponent(canUseAsChild ? Slot : 'div'),
+      [canUseAsChild],
+    );
+    const { resolvedMotionStyle, shouldAnimate } = useHydratedAnimationPolicy();
+    const safeRest = sanitizeControlledMotionProps(rest);
+    const [hasEntered, setHasEntered] = useState(false);
+    const staticStyle = sanitizeStaticStyle(style);
+    const effectiveOnce = viewport?.once ?? once;
 
-    const animationKey = animationType as RevealAnimationType;
-    const baseVariant = revealVariants[animationKey] as MotionProps;
+    const animationKey = resolvePresetKey<typeof revealVariants, RevealAnimationType>(
+      revealVariants,
+      animationType,
+      'fade-up',
+    );
+    const baseVariant = revealVariants[animationKey];
 
-    const activeVariants = isAnimating ? baseVariant.variants : reducedMotionVariants;
-    const activeTransition = isAnimating ? baseVariant.transition : reducedMotionTransition;
+    const normalizedBlurAmount =
+      typeof blurAmount === 'number' && Number.isFinite(blurAmount) && blurAmount >= 0
+        ? blurAmount
+        : undefined;
+    const activeVariants =
+      shouldAnimate && animationKey === 'blur' && normalizedBlurAmount !== undefined
+        ? {
+            ...baseVariant.variants,
+            hidden: {
+              ...baseVariant.variants.hidden,
+              filter: `blur(${normalizedBlurAmount}px)`,
+            },
+          }
+        : baseVariant.variants;
+    const baseTransition = baseVariant.transition;
+    const normalizedThreshold =
+      typeof threshold === 'number' && Number.isFinite(threshold)
+        ? Math.min(1, Math.max(0, threshold))
+        : 0.2;
+    const normalizedDuration =
+      typeof duration === 'number' && Number.isFinite(duration) && duration >= 0
+        ? duration
+        : undefined;
+    const normalizedDelay =
+      typeof delay === 'number' && Number.isFinite(delay) && delay >= 0 ? delay : 0;
+    const activeTransition =
+      normalizedDuration === undefined
+        ? baseTransition
+        : { ...baseTransition, duration: normalizedDuration };
+    const isHidden = shouldAnimate && !hasEntered;
+    const renderedChildren = isolatePresenceChild(children as ReactNode, canUseAsChild && isHidden);
+    const handleViewportEnter = (entry: IntersectionObserverEntry | null) => {
+      setHasEntered(true);
+      onViewportEnter?.(entry);
+    };
+    const handleViewportLeave = (entry: IntersectionObserverEntry | null) => {
+      if (!effectiveOnce) setHasEntered(false);
+      onViewportLeave?.(entry);
+    };
 
     return (
       // eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support.
       <Component
         ref={ref}
         className={className}
-        style={style}
-        {...rest}
-        variants={activeVariants}
-        initial="hidden"
-        whileInView="visible"
+        style={{
+          ...staticStyle,
+          pointerEvents: isHidden ? 'none' : staticStyle?.pointerEvents,
+        }}
+        {...safeRest}
+        variants={shouldAnimate ? applyMotionStyle(activeVariants, resolvedMotionStyle) : undefined}
+        initial={false}
+        animate={shouldAnimate ? 'hidden' : undefined}
+        whileInView={shouldAnimate ? 'visible' : undefined}
         viewport={{
-          once,
           // Negative bottom margin triggers animation before element is fully visible
           margin: '0px 0px -20% 0px',
-          amount: threshold ?? 0.2,
+          amount: normalizedThreshold,
           ...viewport,
+          once: effectiveOnce,
         }}
-        transition={{ ...activeTransition, delay }}
+        transition={
+          shouldAnimate
+            ? applyMotionStyle({ ...activeTransition, delay: normalizedDelay }, resolvedMotionStyle)
+            : undefined
+        }
         custom={customData}
+        aria-hidden={isHidden ? true : safeRest['aria-hidden']}
+        inert={isHidden ? true : safeRest.inert}
+        onViewportEnter={handleViewportEnter}
+        onViewportLeave={handleViewportLeave}
       >
-        {children as ReactNode}
+        {renderedChildren as ReactNode}
       </Component>
     );
   },
 );
 
-RevealTransition.displayName = 'RevealTransition';
+RevealTransitionImpl.displayName = 'RevealTransition';
+
+/**
+ * Reveals content when it enters the viewport.
+ *
+ * Before its first reveal, animated content is inert, hidden from assistive
+ * technology, and cannot receive pointer events. `once` defaults to true;
+ * setting it false lets leave events reset the hidden state. Threshold, delay,
+ * duration, and blur values are normalized to safe ranges. When motion is
+ * disabled, content is immediately available. `asChild` delegates to one child.
+ */
+
+export const RevealTransition = defineMotionSlotComponent<HTMLDivElement, RevealTransitionProps>(
+  RevealTransitionImpl,
+);

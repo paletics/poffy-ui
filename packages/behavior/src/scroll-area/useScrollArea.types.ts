@@ -16,7 +16,10 @@ export interface UseScrollAreaReturn {
   vThumbRef: RefObject<HTMLDivElement | null>;
   /** Ref for the horizontal scrollbar thumb. */
   hThumbRef: RefObject<HTMLDivElement | null>;
-  /** Returns the pointer down handler for a scrollbar thumb orientation. */
+  /**
+   * Returns a thumb pointer handler for this orientation. It ignores non-primary/secondary-button
+   * interactions and tracks an accepted drag on the viewport's owner window until up or cancel.
+   */
   getThumbPointerDown: (
     orientation: 'vertical' | 'horizontal',
   ) => PointerEventHandler<HTMLDivElement>;

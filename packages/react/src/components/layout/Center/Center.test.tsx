@@ -19,6 +19,13 @@ describe('Center Component', () => {
     expect(container.firstChild).toHaveClass(/center/);
   });
 
+  it('delegates to a valid host and falls back for invalid asChild content', () => {
+    const { rerender } = render(<Center asChild><main>Content</main></Center>);
+    expect(screen.getByRole('main')).toHaveClass(/center/);
+    rerender(<Center asChild>Content</Center>);
+    expect(screen.getByText('Content').parentElement?.tagName).toBe('DIV');
+  });
+
   it('passes accessibility checks', async () => {
     const { container } = render(<Center>Centered</Center>);
     expect(await axe(container)).toHaveNoViolations();

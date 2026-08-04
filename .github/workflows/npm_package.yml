@@ -35,6 +35,12 @@ jobs:
           node-version: 24.x
           registry-url: 'https://registry.npmjs.org'
 
+      - name: Check release tag and package versions
+        run: node scripts/check-release-tag.mjs "$GITHUB_REF_NAME"
+
+      - name: Check release commit is on main
+        run: git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

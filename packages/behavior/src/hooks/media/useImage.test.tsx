@@ -3,12 +3,14 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { useImage } from './useImage';
 
 class MockImage {
+  static lastInstance: MockImage | null = null;
   onload: (() => void) | null = null;
   onerror: (() => void) | null = null;
   crossOrigin?: string;
   src = '';
 
   constructor() {
+    MockImage.lastInstance = this;
     setTimeout(() => {
       if (this.src.includes('broken')) {
         this.onerror?.();
@@ -49,5 +51,28 @@ describe('useImage', () => {
 
     await waitFor(() => expect(result.current.status).toBe('failed'));
     expect(onError).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves an empty crossOrigin mode for the preload request', () => {
+    renderHook(() => useImage({ src: 'image.jpg', crossOrigin: '' }));
+
+    expect(MockImage.lastInstance?.crossOrigin).toBe('');
+  });
+
+  it('returns loading immediately when the crossOrigin mode changes', async () => {
+    const { result, rerender } = renderHook(
+      ({ crossOrigin }) => useImage({ src: 'image.jpg', crossOrigin }),
+      {
+        initialProps: { crossOrigin: 'anonymous' } as {
+          crossOrigin: 'anonymous' | 'use-credentials';
+        },
+      },
+    );
+
+    await waitFor(() => expect(result.current.status).toBe('loaded'));
+
+    rerender({ crossOrigin: 'use-credentials' });
+
+    expect(result.current.status).toBe('loading');
   });
 });

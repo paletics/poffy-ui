@@ -2,7 +2,10 @@ import type { TextStyles } from '@pandacss/dev';
 import { baseTokens } from './tokens';
 
 /**
- * Global text styles for the design system.
+ * Panda text-style definitions backed by the corresponding `baseTokens.textStyles` entries.
+ *
+ * The exported names (`h1`–`h6`, `body1`, `body2`, `caption`, and `button`) are available after
+ * installing `poffyPreset`; they define typography only and do not add document semantics.
  */
 export const textStyles = {
   h1: { value: baseTokens.textStyles.h1 },

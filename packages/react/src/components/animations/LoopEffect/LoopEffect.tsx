@@ -1,39 +1,22 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
-import { forwardRef, ReactNode, useMemo } from 'react';
-import { Variants } from 'motion/react';
+import { forwardRef, Fragment, isValidElement, type ReactNode, useMemo } from 'react';
+import { withNoMotionStyle } from '@/components/shared/withNoMotionStyle';
+import { type MotionStyle, Variants } from 'motion/react';
 import { useOptionalAnimation } from '@/providers/AnimationProvider';
-import { getMotionComponent } from '../utils';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  createNoMotionStyle,
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
+import { getMotionComponent, resolvePresetKey } from '../utils';
 import { loopVariants } from './LoopEffect.presets';
 import { LoopAnimationType, LoopEffectProps } from './LoopEffect.types';
 
-/**
- * A component that applies continuous, repeating animations (e.g. floating, spinning) to its children.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Framer Motion (Infinite animations), Radix Slot
- * ### Design Tokens
- * - duration: Animation cycles are inherently tied to Silver Ratio durations (e.g., 2.8s) to maintain system rhythm.
- * ### Variant Logic
- * - animationType: 'float', 'pulse', 'spin', 'shake', 'bounce'.
- * @example
- * ```tsx
- * import { LoopEffect } from '@poffy-ui/react';
- *
- * <LoopEffect animationType="float" asChild>
- *   <div className="icon">Status</div>
- * </LoopEffect>
- * ```
- * ### Notes
- * Utilizes Framer Motion's `repeat: Infinity` mechanics. Pausable via the `isPaused` prop to save CPU cycles.
- * ### Accessibility
- * - Continuous motion can trigger vestibular disorders. Consider tying `isPaused` to user preference or viewport visibility.
- * ### AI Usage
- * - **DO**: Use for ambient, non-interactive visual flair such as loaders, badges, and floating hero images.
- * - **DO**: Pause with `isPaused` when the effect is offscreen or no longer relevant.
- * - **DON'T**: Use on large layout containers; restrict to isolated visual atoms.
- */
-export const LoopEffect = forwardRef<HTMLDivElement, LoopEffectProps>(
+const LoopEffectImpl = forwardRef<HTMLDivElement, LoopEffectProps>(
   (
     {
       asChild,
@@ -48,29 +31,65 @@ export const LoopEffect = forwardRef<HTMLDivElement, LoopEffectProps>(
     },
     ref,
   ) => {
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'div'), [asChild]);
-    const { isAnimating } = useOptionalAnimation();
+    const canUseAsChild = Boolean(
+      asChild && isValidElement(children) && children.type !== Fragment,
+    );
+    const Component = useMemo(
+      () => getMotionComponent(canUseAsChild ? Slot : 'div'),
+      [canUseAsChild],
+    );
+    const { isAnimating, resolvedMotionStyle } = useOptionalAnimation();
 
-    const animationKey = animationType as LoopAnimationType;
+    const animationKey = resolvePresetKey<typeof loopVariants, LoopAnimationType>(
+      loopVariants,
+      animationType,
+      'float',
+    );
     const variants = loopVariants[animationKey];
 
-    const isStatic = [isPaused, animationType === 'none', !isAnimating].some(Boolean);
+    const isStatic = [
+      isPaused,
+      animationKey === 'none',
+      !isAnimating,
+      resolvedMotionStyle === 'subtle',
+    ].some(Boolean);
+    const staticStyle = (!isAnimating ? createNoMotionStyle(style) : sanitizeStaticStyle(style)) as
+      | MotionStyle
+      | undefined;
+    const staticChildren = withNoMotionStyle(children as ReactNode, !isAnimating && canUseAsChild);
 
     return (
       // eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support.
       <Component
         ref={ref}
         className={className}
-        style={style}
-        {...rest}
-        variants={isStatic ? undefined : (variants as unknown as Variants)}
+        style={staticStyle}
+        {...sanitizeControlledMotionProps(rest)}
+        variants={
+          isStatic
+            ? undefined
+            : (applyMotionStyle(variants, resolvedMotionStyle) as unknown as Variants)
+        }
         animate={isStatic ? undefined : 'animate'}
         custom={isStatic ? undefined : { ...customData, duration }}
       >
-        {children as ReactNode}
+        {staticChildren as ReactNode}
       </Component>
     );
   },
 );
 
-LoopEffect.displayName = 'LoopEffect';
+LoopEffectImpl.displayName = 'LoopEffect';
+
+/**
+ * Applies a non-essential looping visual effect.
+ *
+ * It becomes static when paused, when `animationType` is `none`, when the
+ * animation provider disables motion, or when that provider selects the
+ * subtle policy. The effect must not be the only indication of state. `asChild`
+ * delegates to one non-Fragment child; otherwise it renders a `div`.
+ */
+
+export const LoopEffect = defineMotionSlotComponent<HTMLDivElement, LoopEffectProps>(
+  LoopEffectImpl,
+);

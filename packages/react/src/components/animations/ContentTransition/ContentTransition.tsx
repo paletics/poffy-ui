@@ -2,80 +2,89 @@
 
 import { Slot } from '@radix-ui/react-slot';
 import { AnimatePresence } from 'motion/react';
-import { useOptionalAnimation } from '@/providers/AnimationProvider';
-import { forwardRef, useMemo } from 'react';
-import { getMotionComponent } from '../utils';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
+import { forwardRef, Fragment, isValidElement, type ReactNode, useMemo } from 'react';
+import { getMotionComponent, resolvePresetKey } from '../utils';
+import { useHydratedAnimationPolicy } from '../useHydratedAnimationPolicy';
 import { contentVariants } from './ContentTransition.presets';
 import { ContentAnimationType, ContentTransitionProps } from './ContentTransition.types';
+import { ContentTransitionPresence } from './ContentTransitionPresence';
+
+const ContentTransitionImpl = forwardRef<HTMLDivElement, ContentTransitionProps>((props, ref) => {
+  const {
+    asChild,
+    children,
+    animationType = 'fade',
+    mode = 'wait',
+    transitionKey,
+    customData,
+    initial = true,
+    className,
+    style,
+    ...rest
+  } = props;
+
+  const { resolvedMotionStyle, shouldAnimate } = useHydratedAnimationPolicy();
+
+  const effectiveAnimationType =
+    !shouldAnimate && animationType !== 'none' ? 'fade' : animationType;
+
+  const canUseAsChild = Boolean(asChild && isValidElement(children) && children.type !== Fragment);
+  const Component = useMemo(
+    () => getMotionComponent(canUseAsChild ? Slot : 'div'),
+    [canUseAsChild],
+  );
+  const animationKey = resolvePresetKey<typeof contentVariants, ContentAnimationType>(
+    contentVariants,
+    effectiveAnimationType,
+    'fade',
+  );
+  const { transition, ...variants } = contentVariants[animationKey];
+  const contentIdentity =
+    transitionKey === undefined
+      ? `fallback:${typeof children === 'string' ? children : 'content'}`
+      : `${typeof transitionKey}:${String(transitionKey)}`;
+  const shouldPlayEntrance = shouldAnimate && initial;
+  const motionKey = `${contentIdentity}:${shouldPlayEntrance ? 'entrance' : 'static'}`;
+
+  return (
+    <AnimatePresence mode={mode} initial={false}>
+      <ContentTransitionPresence
+        key={motionKey}
+        Component={Component}
+        ref={ref}
+        className={className}
+        customData={customData}
+        isAsChild={canUseAsChild}
+        safeRest={sanitizeControlledMotionProps(rest)}
+        shouldAnimate={shouldAnimate}
+        staticStyle={sanitizeStaticStyle(style)}
+        transition={applyMotionStyle(transition, resolvedMotionStyle)}
+        variants={applyMotionStyle(variants, resolvedMotionStyle)}
+      >
+        {children as ReactNode}
+      </ContentTransitionPresence>
+    </AnimatePresence>
+  );
+});
+
+ContentTransitionImpl.displayName = 'ContentTransition';
 
 /**
- * A polymorphic component that handles smooth content switching with various animation presets.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Framer Motion (`AnimatePresence`), Radix Slot
- * ### Design Tokens
- * - transition/timing: Defined by Silver Ratio scalars in `contentVariants` (e.g. `springs.snappy`).
- * ### Variant Logic
- * - animationType: 'fade', 'slide-up', 'zoom', 'morph', 'book-turn', etc.
- * @example
- * ```tsx
- * import { ContentTransition } from '@poffy-ui/react';
+ * Animates replacement content when `transitionKey` changes.
  *
- * <ContentTransition transitionKey={activeTabId} animationType="slide-up">
- *   <div>{activeTabContent}</div>
- * </ContentTransition>
- * ```
- * ### Notes
- * Internally manages `AnimatePresence`. To trigger animations, the `transitionKey` prop must change.
- * ### Accessibility
- * - Automatically falls back to `'fade'` or `'none'` when the user's OS has "prefer-reduced-motion" enabled.
- * ### AI Usage
- * - **DO**: Replace manual `AnimatePresence` + `motion.div` setups for tabs, steps, and conditional panels.
- * - **DO**: Provide a unique `transitionKey` when the children's shape changes.
- * - **DON'T**: Use for array item mutations; prefer `ReorderTransition` for keyed collections.
+ * The key identifies which child should enter and exit; without one, a limited
+ * fallback identity is derived from string children. `mode` controls presence
+ * sequencing. Exiting content is isolated from interaction by the presence
+ * wrapper, and a reduced-motion policy yields a static transition. `asChild`
+ * delegates only to one non-Fragment child.
  */
-export const ContentTransition = forwardRef<HTMLDivElement, ContentTransitionProps>(
-  (props, ref) => {
-    const {
-      asChild,
-      children,
-      animationType = 'fade',
-      mode = 'wait',
-      transitionKey,
-      customData,
-      initial = true,
-      className,
-      style,
-      ...rest
-    } = props;
 
-    const { isAnimating } = useOptionalAnimation();
-
-    const effectiveAnimationType =
-      !isAnimating && animationType !== 'none' ? 'fade' : animationType;
-
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'div'), [asChild]);
-    const variants = contentVariants[effectiveAnimationType as ContentAnimationType];
-
-    return (
-      <AnimatePresence mode={mode} initial={initial}>
-        {/* eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support. */}
-        <Component
-          key={transitionKey ?? (typeof children === 'string' ? children : undefined)}
-          ref={ref}
-          className={className}
-          style={style}
-          initial="initial"
-          animate="animate"
-          exit="exit"
-          variants={variants}
-          custom={customData}
-          {...rest}
-        >
-          {children}
-        </Component>
-      </AnimatePresence>
-    );
-  },
+export const ContentTransition = defineMotionSlotComponent<HTMLDivElement, ContentTransitionProps>(
+  ContentTransitionImpl,
 );
-
-ContentTransition.displayName = 'ContentTransition';

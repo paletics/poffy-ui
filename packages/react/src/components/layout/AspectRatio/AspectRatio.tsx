@@ -1,52 +1,58 @@
 import { css, cx } from '@/styled-system/css';
 import { splitCssProps } from '@/styled-system/jsx';
 import { aspectRatioStyle } from '@/styled-system/recipes';
-import { Slot } from '@radix-ui/react-slot';
-import { CSSProperties, ElementType, forwardRef } from 'react';
-import { AspectRatioProps } from './AspectRatio.types';
+import { Slot, Slottable } from '@radix-ui/react-slot';
+import {
+  cloneElement,
+  CSSProperties,
+  ElementType,
+  forwardRef,
+  Fragment,
+  isValidElement,
+} from 'react';
+import type { AspectRatioComponent, AspectRatioProps } from './AspectRatio.types';
 
 type AspectRatioCSSVars = CSSProperties & { '--aspect-ratio'?: number };
 
-/**
- * A layout container that maintains a specific proportional aspect ratio for its child element.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Recipe: aspectRatio), Radix Slot
- * - **Props**: PrimitiveProps<'div', AspectRatioBaseProps>
- *
- * ### Design Tokens
- * - **ratio**: Commonly uses standard photographic/video ratios (e.g., 16/9, 4/3, 1/1) but can hook into Silver Ratio proportions if mathematically desired.
- *
- * ### Accessibility
- * - **Role**: generic
- * - **Required**: Essential for preventing Cumulative Layout Shift (CLS) on slow loading images or iframes.
- *
- * @example Standard usage
- * ```tsx
- * <AspectRatio ratio={16 / 9}>
- *   <iframe src="https://www.google.com/maps/embed..." />
- * </AspectRatio>
- * ```
- */
-export const AspectRatio = forwardRef<HTMLDivElement, AspectRatioProps>((props, ref) => {
+interface AspectRatioChildProps extends Record<string, unknown> {
+  style?: CSSProperties;
+}
+
+
+const AspectRatioImpl = forwardRef<Element, AspectRatioProps>((props, ref) => {
   const { asChild, ratio = 16 / 9, className, children, style, ...rest } = props;
 
   const [cssProps, elementProps] = splitCssProps(rest);
 
+  const resolvedRatio = Number.isFinite(ratio) && ratio > 0 ? ratio : 16 / 9;
+  const asChildElement =
+    isValidElement<AspectRatioChildProps>(children) && children.type !== Fragment ? children : null;
+  const canUseAsChild = Boolean(asChild && asChildElement);
+  const Component = (canUseAsChild ? Slot : 'div') as ElementType;
+  const resolvedStyle = { ...style, '--aspect-ratio': resolvedRatio } satisfies AspectRatioCSSVars;
+  const childStyle = asChildElement?.props.style ?? {};
+  const slottableChild =
+    canUseAsChild && asChildElement
+      ? cloneElement(asChildElement, { style: { ...childStyle, ...resolvedStyle } })
+      : children;
   const recipeClass = aspectRatioStyle();
-  const Component = (asChild ? Slot : 'div') as ElementType;
 
   return (
     <Component
       ref={ref}
       className={cx(recipeClass, css(cssProps), className)}
-      style={{ '--aspect-ratio': ratio, ...style } satisfies AspectRatioCSSVars}
+      style={resolvedStyle}
       {...elementProps}
     >
-      {children}
+      {canUseAsChild ? <Slottable>{slottableChild}</Slottable> : children}
     </Component>
   );
 });
 
-AspectRatio.displayName = 'AspectRatio';
+AspectRatioImpl.displayName = 'AspectRatio';
+/**
+ * Reserves a fixed width-to-height ratio for media, embeds, or placeholders.
+ *
+ * It does not crop or size its child; the child must fill the available box when that is desired.
+ */
+export const AspectRatio = AspectRatioImpl as AspectRatioComponent;

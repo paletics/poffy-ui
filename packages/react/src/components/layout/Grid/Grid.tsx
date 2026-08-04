@@ -2,8 +2,13 @@ import { css, cx } from '@/styled-system/css';
 import { splitCssProps } from '@/styled-system/jsx';
 import { gridStyle } from '@/styled-system/recipes';
 import { Slot } from '@radix-ui/react-slot';
-import { CSSProperties, ElementType, forwardRef } from 'react';
-import { GridProps } from './Grid.types';
+import {
+  getFallbackChildrenPreservingVoidHost,
+  isNonVoidAsChildHost,
+} from '@/components/shared/asChild';
+import { CSSProperties, forwardRef, type ElementType } from 'react';
+import type { GridComponent, GridProps } from './Grid.types';
+import { normalizeGridColumns, normalizeMinChildWidth } from '../gridValidation';
 
 interface GridCSSVars extends CSSProperties {
   '--grid-columns'?: string;
@@ -13,46 +18,16 @@ interface RuntimeEnv {
   process?: { env?: Record<string, string | undefined> };
 }
 
-/**
- * A highly structural layout component powered by CSS Grid, specifically tuned for Silver and Golden ratio asymmetric layouts.
- * The `columns` prop accepts a single number and generates generic equal columns via CSS variable. For complex responsive grids (e.g. `base: 1, md: 3`), use `<SimpleGrid>`.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Recipe: gridStyle, splitCssProps), Radix Slot
- * - **Props**: PrimitiveProps<'div', GridOwnProps>
- *
- * ### Design Tokens
- * - **spacing**: gap: Applies Silver Ratio spacing tokens.
- * - **ratio**: 'silver-left' (1.414:1), 'silver-right' (1:1.414).
- *
- * ### Variant Logic
- * - **ratio**: Enforces strict mathematical asymmetric column definitions for main/sidebar aesthetics.
- *
- * ### Accessibility
- * - **Role**: generic
- * - **Required**: No inherent semantic meaning. Map to appropriate semantic elements via `asChild` if establishing page-level structure.
- *
- * ### AI Usage
- * - **DO**: Use `<Grid ratio="silver-x">` to instantly construct mathematically balanced asymmetric UI panels.
- *
- * @example Standard usage
- * ```tsx
- * // Creates a layout where the left column is roughly 58% and the right is 42%.
- * <Grid ratio="silver-left" gap="6">
- *   <main>Main Content</main>
- *   <aside>Sidebar</aside>
- * </Grid>
- * ```
- */
-export const Grid = forwardRef<HTMLDivElement, GridProps>((props, ref) => {
+
+const GridImpl = forwardRef<Element, GridProps>((props, ref) => {
   const { asChild, columns, gap, ratio, minChildWidth, className, children, style, ...rest } =
     props;
 
   const [cssProps, elementProps] = splitCssProps(rest);
   const recipeClass = gridStyle({ ratio, gap });
 
-  const Component = (asChild ? Slot : 'div') as ElementType;
+  const canUseAsChild = Boolean(asChild && isNonVoidAsChildHost(children));
+  const Component = (canUseAsChild ? Slot : 'div') as ElementType;
   const nodeEnv = (globalThis as RuntimeEnv).process?.env?.['NODE_ENV'];
 
   if (nodeEnv !== 'production' && ratio && (columns !== undefined || minChildWidth !== undefined)) {
@@ -61,11 +36,14 @@ export const Grid = forwardRef<HTMLDivElement, GridProps>((props, ref) => {
     );
   }
 
-  const gridColumns = minChildWidth
-    ? `repeat(auto-fit, minmax(${minChildWidth}, 1fr))`
-    : columns
-      ? `repeat(${columns}, 1fr)`
-      : undefined;
+  const normalizedMinChildWidth = ratio ? undefined : normalizeMinChildWidth(minChildWidth, 'Grid');
+  const normalizedColumns = ratio ? undefined : normalizeGridColumns(columns, 'Grid');
+  const gridColumns =
+    normalizedMinChildWidth !== undefined
+      ? `repeat(auto-fit, minmax(min(100%, ${normalizedMinChildWidth}), 1fr))`
+      : normalizedColumns
+        ? `repeat(${normalizedColumns}, minmax(0, 1fr))`
+        : undefined;
   const gridStyleVars = {
     ...style,
     '--grid-columns': gridColumns,
@@ -78,9 +56,16 @@ export const Grid = forwardRef<HTMLDivElement, GridProps>((props, ref) => {
       {...elementProps}
       style={gridStyleVars}
     >
-      {children}
+      {asChild && !canUseAsChild ? getFallbackChildrenPreservingVoidHost(children) : children}
     </Component>
   );
 });
 
-Grid.displayName = 'Grid';
+GridImpl.displayName = 'Grid';
+/**
+ * Arranges children in an explicit CSS grid with configurable tracks and placement.
+ *
+ * A `ratio` layout takes precedence over `columns` and `minChildWidth`; use a non-void single
+ * host element with `asChild` when the grid itself must be semantic.
+ */
+export const Grid = GridImpl as GridComponent;

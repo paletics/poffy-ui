@@ -2,76 +2,27 @@
 
 import { useOverlay } from '@/hooks/overlay/useFloating';
 import { modal } from '@/styled-system/recipes';
-import { useId, useMemo, useState } from 'react';
+import { FloatingNode, useFloatingNodeId } from '@floating-ui/react';
+import { useEffect, useMemo } from 'react';
 import type { OverlayRefs } from '../shared/factories/types';
+import { FloatingTreeBoundary } from '../shared/FloatingTreeBoundary';
+import { useDialogOpenState } from '../shared/useDialogOpenState';
+import { useOverlayAriaParts } from '../shared/useOverlayAriaParts';
+import { useWarnUnpairedControlledOpen } from '../shared/useWarnUnpairedControlledOpen';
 import type { ModalProps } from './Modal.types';
 import { ModalContext } from './ModalContext';
+import { ModalContent } from './ModalContent';
+import { ModalTrigger } from './ModalTrigger';
+import { sanitizeOverlayRootChildren } from '../shared/sanitizeOverlayRootChildren';
+import { useOverlayPartOwnership } from '../shared/useOverlayPartOwnership';
 
-/**
- * A dialog window that sits on top of the primary window.
- * Supports both controlled and uncontrolled states.
- *
- * ### AI Context & Architecture
- * - **Tier**: Organisms
- * - **Stack**: React Context, Floating UI, Panda CSS `modal` recipe
- * - **Props**: ModalProps
- *
- * ### Component Details
- * Root provider for all Modal sub-components. Renders no DOM node itself —
- * only a React Context provider. DOM ref access is intentionally not supported
- * at this level; use ModalContent's ref instead.
- * Manages accessibility IDs (`titleId`, `descriptionId`) and Floating UI state.
- *
- * ### Variant Logic
- * - `size`: Choose the smallest size that fits the focused task.
- * - `scrollBehavior`: Use `inside` for long forms and `outside` for short dialogs.
- *
- * ### Accessibility
- * - Include `ModalTitle` inside `ModalContent` so the generated `aria-labelledby` target exists.
- * - Include `ModalClose` or another visible action that calls `onOpenChange(false)`.
- *
- * ### AI Usage
- * - Do: use Modal for blocking decisions, confirmations, and focused tasks.
- * - Don't: render `ModalContent` outside `Modal` or use Modal for hover/focus hints.
- *
- * @example
- * ```tsx
- * import {
- *   Modal,
- *   ModalBody,
- *   ModalClose,
- *   ModalContent,
- *   ModalFooter,
- *   ModalHeader,
- *   ModalTitle,
- * } from '@poffy-ui/react/overlay';
- *
- * <Modal size="md">
- *   <ModalContent>
- *     <ModalHeader>
- *       <ModalTitle>Confirm Action</ModalTitle>
- *       <ModalClose />
- *     </ModalHeader>
- *     <ModalBody>Are you sure you want to proceed?</ModalBody>
- *     <ModalFooter>
- *       <Button onClick={handleConfirm}>Confirm</Button>
- *     </ModalFooter>
- *   </ModalContent>
- * </Modal>
- * ```
- *
- * @example Controlled state
- * ```tsx
- * import { Modal, ModalContent, ModalTitle } from '@poffy-ui/react/overlay';
- *
- * <Modal open={open} onOpenChange={setOpen}>
- *   <ModalContent>
- *     <ModalTitle>Edit profile</ModalTitle>
- *   </ModalContent>
- * </Modal>
- * ```
- */
-export const Modal = ({
+const modalPartGroups = [
+  { name: 'reference owner', types: new Set([ModalTrigger]) },
+  { name: 'content', types: new Set([ModalContent]) },
+];
+
+
+const ModalRoot = ({
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   defaultOpen = false,
@@ -82,18 +33,36 @@ export const Modal = ({
   brand,
   theme,
 }: ModalProps) => {
-  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const sanitizedChildren = useMemo(
+    () => sanitizeOverlayRootChildren(children, modalPartGroups),
+    [children],
+  );
+  useEffect(() => {
+    for (const group of sanitizedChildren.duplicateGroups) {
+      console.warn(`[Modal] Only one ${group} can be mounted per root; later parts were ignored.`);
+    }
+  }, [sanitizedChildren]);
+  const hasControlledHandler = typeof controlledOnOpenChange === 'function';
+  useWarnUnpairedControlledOpen('Modal', controlledOpen, hasControlledHandler);
+  const { open, onOpenChange } = useDialogOpenState({
+    open: hasControlledHandler ? controlledOpen : undefined,
+    defaultOpen:
+      !hasControlledHandler && controlledOpen !== undefined ? controlledOpen : defaultOpen,
+    onOpenChange: controlledOnOpenChange as
+      | ((open: boolean, ...args: unknown[]) => void)
+      | undefined,
+  });
+  const { registeredTitleId, registeredDescriptionId, registerTitle, registerDescription } =
+    useOverlayAriaParts();
+  const partOwnership = useOverlayPartOwnership();
 
-  const open = controlledOpen ?? internalOpen;
-  const onOpenChange = controlledOnOpenChange ?? setInternalOpen;
-
+  const nodeId = useFloatingNodeId();
   const { refs, context, getReferenceProps, getFloatingProps } = useOverlay<HTMLElement>({
     open,
     onOpenChange,
+    nodeId,
   });
 
-  const titleId = useId();
-  const descriptionId = useId();
   const rawClasses = useMemo(
     () => modal({ appearance, size, scrollBehavior }),
     [appearance, size, scrollBehavior],
@@ -107,12 +76,15 @@ export const Modal = ({
       context,
       getReferenceProps,
       getFloatingProps,
-      titleId,
-      descriptionId,
+      registeredTitleId,
+      registeredDescriptionId,
+      registerTitle,
+      registerDescription,
       classes: rawClasses,
       brand,
       theme,
       animationType: 'modal' as const,
+      ...partOwnership,
     }),
     [
       open,
@@ -121,15 +93,39 @@ export const Modal = ({
       context,
       getReferenceProps,
       getFloatingProps,
-      titleId,
-      descriptionId,
+      registeredTitleId,
+      registeredDescriptionId,
+      registerTitle,
+      registerDescription,
       rawClasses,
       brand,
       theme,
+      partOwnership,
     ],
   );
 
-  return <ModalContext.Provider value={contextValue}>{children}</ModalContext.Provider>;
+  return (
+    <FloatingNode id={nodeId}>
+      <ModalContext.Provider value={contextValue}>
+        {sanitizedChildren.children}
+      </ModalContext.Provider>
+    </FloatingNode>
+  );
 };
+
+/**
+ * Provides controlled or uncontrolled state and floating-dialog context.
+ *
+ * The root renders no DOM node. It accepts one trigger/reference owner and
+ * one content surface; later duplicates are ignored with a development
+ * warning so focus and ARIA ownership remain unambiguous. Controlled `open`
+ * requires `onOpenChange`; an unpaired value falls back to uncontrolled
+ * initial state. Compose `ModalContent` for the actual dialog surface.
+ */
+export const Modal = (props: ModalProps) => (
+  <FloatingTreeBoundary>
+    <ModalRoot {...props} />
+  </FloatingTreeBoundary>
+);
 
 Modal.displayName = 'Modal';

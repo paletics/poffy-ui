@@ -1,46 +1,48 @@
 'use client';
 
-import { Slot } from '@radix-ui/react-slot';
+import { Slot, Slottable } from '@radix-ui/react-slot';
 import { cx } from '@/styled-system/css';
-import { list } from '@/styled-system/recipes';
-import { ElementType, forwardRef } from 'react';
-import { ListItemTextProps } from './List.types';
+import { Children, ElementType, forwardRef } from 'react';
+import type { ListItemTextComponent, ListItemTextProps } from './List.types';
 import { useListContext } from './ListContext';
+import { isAsChildHost } from '@/components/shared/asChild';
+import { materializeReactNodeTree } from '@/components/shared/flattenFragmentChildren';
 
-/**
- * The text block within a ListItem, supporting primary and secondary labels.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: list), Radix Slot
- * ### Design Tokens
- * - typography: silver-ratio scale applied to font sizes.
- * ### Variant Logic
- * - Inherits parent variant from ListContext.
- * ### Notes
- * Supports `primary` and `secondary` text slots for two-line list items.
- * ### Accessibility
- * - Secondary text should have sufficient contrast ratio for legibility.
- * @example
- * ```tsx
- * import { List } from '@poffy-ui/react/data-display';
- *
- * <List.Item>
- *   <List.Text primary="Settings" secondary="Manage your preferences" />
- * </List.Item>
- * ```
- */
-export const ListItemText = forwardRef<HTMLDivElement, ListItemTextProps>((props, ref) => {
+const listItemTextAsChildHosts = new Set(['a', 'label', 'p', 'span']);
+
+const ListItemTextImpl = forwardRef<Element, ListItemTextProps>((props, ref) => {
   const { asChild, children, primary, secondary, className, ...rest } = props;
-  const { variant } = useListContext();
-  const classes = list({ variant });
-  const Component = asChild ? Slot : ('div' as ElementType);
+  const { classes } = useListContext();
+  const childArray = Children.toArray(materializeReactNodeTree(children));
+  const [anchor, ...remainingChildren] = childArray;
+  const canUseAsChild = Boolean(
+    asChild && isAsChildHost(anchor, listItemTextAsChildHosts) && remainingChildren.length === 0,
+  );
+  const Component = (canUseAsChild ? Slot : 'div') as ElementType;
+  const TextSlotElement = canUseAsChild ? 'span' : 'div';
 
   return (
     <Component ref={ref} className={cx(classes.text, className)} {...rest}>
-      {primary && <div className={cx(classes.primary)}>{primary}</div>}
-      {secondary && <div className={cx(classes.secondary)}>{secondary}</div>}
-      {children}
+      {canUseAsChild ? <Slottable>{anchor}</Slottable> : null}
+      {primary != null && (
+        <TextSlotElement className={cx(classes.primary)}>{primary}</TextSlotElement>
+      )}
+      {secondary != null && (
+        <TextSlotElement className={cx(classes.secondary)}>{secondary}</TextSlotElement>
+      )}
+      {canUseAsChild ? null : childArray}
     </Component>
   );
 });
 
-ListItemText.displayName = 'List.Text';
+ListItemTextImpl.displayName = 'List.Text';
+
+/**
+ * Renders primary and secondary text slots for a list item.
+ *
+ * `primary` and `secondary` are emitted in separate styled elements. With
+ * `asChild`, exactly one supported text host is delegated and those slots use
+ * inline wrappers; otherwise children and slots are placed in a `div`.
+ */
+
+export const ListItemText = ListItemTextImpl as ListItemTextComponent;

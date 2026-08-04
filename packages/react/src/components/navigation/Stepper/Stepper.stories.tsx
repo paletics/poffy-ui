@@ -2,18 +2,14 @@
 import { useState } from 'react';
 import { Button } from '@/components/inputs/Button';
 import { Box, Flex, Stack } from '@/components/layout';
+import { css } from '@/styled-system/css';
 import { Stepper } from './Stepper';
 import { Step } from './Step';
 import type { StepperProps } from './index';
 
-/**
- * Storybook documentation and visual review surface for Stepper.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+const narrowStepperClass = css({ width: '[240px]', maxWidth: '100%' });
+
+
 const meta: Meta<typeof Stepper> = {
   title: 'Navigation/Stepper',
   component: Stepper,
@@ -35,6 +31,10 @@ const meta: Meta<typeof Stepper> = {
       control: 'select',
       options: ['sm', 'md', 'lg'],
     },
+    completed: {
+      control: 'boolean',
+      description: 'Renders the workflow as fully completed.',
+    },
   },
 };
 
@@ -43,9 +43,10 @@ type Story = StoryObj<typeof Stepper>;
 
 const StepperDemo = (args: StepperProps) => {
   const [activeStep, setActiveStep] = useState(0);
+  const resolvedActiveStep = args.activeStep ?? activeStep;
 
   return (
-    <Stepper {...args} activeStep={activeStep} onStepChange={setActiveStep}>
+    <Stepper {...args} activeStep={resolvedActiveStep} onStepChange={setActiveStep}>
       <Step title="Step 1" description="Personal Info" />
       <Step title="Step 2" description="Account Details" />
       <Step title="Step 3" description="Review" />
@@ -67,6 +68,15 @@ export const Playground: Story = {
   render: Default.render,
 };
 
+export const Completed: Story = {
+  args: {
+    ...Default.args,
+    activeStep: 2,
+    completed: true,
+  },
+  render: (args) => <StepperDemo {...args} />,
+};
+
 export const Vertical: Story = {
   args: {
     orientation: 'vertical',
@@ -81,8 +91,14 @@ export const Vertical: Story = {
 
 const StepperWithContentDemo = (args: StepperProps) => {
   const [activeStep, setActiveStep] = useState(0);
+  const resolvedActiveStep = args.activeStep ?? activeStep;
   return (
-    <Stepper {...args} activeStep={activeStep} onStepChange={setActiveStep} orientation="vertical">
+    <Stepper
+      {...args}
+      activeStep={resolvedActiveStep}
+      onStepChange={setActiveStep}
+      orientation="vertical"
+    >
       <Step title="Contact Info" description="Add your contact details">
         <Stack gap="md">
           <Box>Step 1 Content Form...</Box>
@@ -141,4 +157,31 @@ export const WithContent: Story = {
     orientation: 'vertical',
   },
   render: (args) => <StepperWithContentDemo {...args} />,
+};
+
+export const NarrowAndRtl: Story = {
+  args: {
+    orientation: 'horizontal',
+    linear: false,
+    size: 'sm',
+    className: narrowStepperClass,
+  },
+  render: (args) => (
+    <Stack gap="lg">
+      <StepperDemo {...args} />
+      <div dir="rtl">
+        <Stepper
+          {...args}
+          activeStep={1}
+          onStepChange={() => undefined}
+          aria-label="التقدم"
+          data-testid="horizontal-stepper-rtl"
+        >
+          <Step title="بيانات الحساب الطويلة جدًا" description="وصف طويل يلتف في المساحة الضيقة" />
+          <Step title="averylongunbrokensteptitle" description="averylongunbrokendescription" />
+          <Step title="المراجعة" />
+        </Stepper>
+      </div>
+    </Stack>
+  ),
 };

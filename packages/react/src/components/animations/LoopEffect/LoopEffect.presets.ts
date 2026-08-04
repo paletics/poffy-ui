@@ -2,18 +2,6 @@ import { motionOffsets, motionScales, transitions } from '../presets';
 import { CustomData } from '../types';
 import { getCustomValue } from '../utils';
 
-/**
- * Loop Effect Animation Variants
- *
- * ### AI Context & Architecture
- * Defines infinite loop animations for continuous micro-interactions.
- * All variants use `repeat: Infinity` and are optimized for performance with GPU-accelerated
- * properties. Recommended to be used with `whileInView` to only animate visible elements,
- * preventing unnecessary CPU/GPU usage for off-screen content.
- *
- * Each variant function accepts optional `CustomData` to allow runtime customization
- * of animation parameters (duration, distance, scale, delay).
- */
 export const loopVariants = {
   /**
    * Float Animation

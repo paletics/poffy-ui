@@ -1,5 +1,5 @@
 import { ErrorIcon, InfoIcon, SuccessIcon, WarningIcon } from '@/components/media/Icon/icons';
-import type { AlertBaseProps } from './Alert.types';
+import type { AlertBaseProps } from '@/components/feedback/Alert/Alert.types';
 
 /**
  * Renders the status icon that matches the Alert status variant.

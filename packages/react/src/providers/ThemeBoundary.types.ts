@@ -1,20 +1,12 @@
 import type { ReactNode } from 'react';
+import type { ThemeTokenOverrides } from './theme-token-overrides';
 
-/**
- * Props for the ThemeBoundary component.
- *
- * ### Notes
- * `ThemeBoundary` is not a provider. It reads provider context and
- * mirrors brand, color mode, locale, and direction attributes onto a local DOM
- * node for scoped token resolution.
- *
- * ### AI Usage
- * - **DO**: Use only inside a provider tree.
- * - **DON'T**: Use at the app root instead of `ThemeProvider`.
- */
+/** Props for a local DOM boundary that mirrors nearest theme-provider state. */
 export interface ThemeBoundaryProps {
   /** The content to render inside the themed boundary. */
   children: ReactNode;
   /** Additional CSS class names merged with the boundary's base Panda CSS styles via `cx()`. */
   className?: string;
+  /** Runtime values for `--poffy-*` CSS custom properties in this subtree. */
+  tokenOverrides?: ThemeTokenOverrides;
 }

@@ -7,7 +7,12 @@ import {
   type Shape,
   type SurfaceAppearance,
 } from '@poffy-ui/types';
-import { ElementType, ReactNode } from 'react';
+import { ReactNode } from 'react';
+import type {
+  AsChildHostProps,
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+} from '@/components/shared/polymorphicAsChild.types';
 
 /**
  * Variants for the Card component derived from Panda CSS recipe.
@@ -51,37 +56,27 @@ export interface CardVariantSubset extends Omit<CardVariants, 'appearance' | 'in
    * @defaultValue 'rounded'
    */
   shape?: CardShape;
-  /**
-   * Legacy surface alias.
-   */
-  variant?: 'elevated' | 'outlined' | 'filled';
 }
 
-/**
- * Properties for the root Card component.
- *
- * @example
- * ```tsx
- * import { Card, CardBody, CardFooter, CardHeader } from '@poffy-ui/react/surfaces';
- * ```
- *
- * ### Notes
- * Recommended structure: use `CardHeader` for titles/actions, `CardBody` for the
- * primary content, and `CardFooter` for trailing actions or metadata. Card itself
- * has no landmark role; choose semantic children or `asChild` when needed.
- *
- * ### AI Usage
- * - Do: use Card for grouped content with a clear boundary.
- * - Don't: nest Cards inside Cards for page section layout.
- *
- * Supports polymorphic rendering via `asChild` (Radix UI Slot pattern).
- */
-export type CardProps<T extends ElementType = 'div'> = PrimitiveProps<
-  T,
+
+type CardNativeProps = PrimitiveProps<
+  'div',
   CardVariantSubset & {
     /** CardHeader, CardBody, and CardFooter components. */
     children?: ReactNode;
   }
+>;
+/** Props for Card rendered with its default host. */
+export type CardDefaultProps = DefaultHostProps<CardNativeProps>;
+/** Props for Card delegated to an asChild host. */
+export type CardAsChildProps = AsChildHostProps<CardNativeProps>;
+/** Public props for Card. */
+export type CardProps = CardDefaultProps | CardAsChildProps;
+/** Polymorphic component call signatures for Card. */
+export type CardComponent = PolymorphicAsChildComponent<
+  CardDefaultProps,
+  CardAsChildProps,
+  HTMLDivElement
 >;
 
 /**

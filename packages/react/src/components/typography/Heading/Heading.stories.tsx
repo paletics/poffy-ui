@@ -1,16 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TextRevealTransition } from '@/components/animations';
+import { Box } from '@/components/layout/Box';
 import { Stack } from '@/components/layout/Stack';
 import { Heading } from '@/components/typography/Heading';
+import { Link } from '@/components/typography/Link';
+import { Text } from '@/components/typography/Text';
 
-/**
- * A semantic heading component that renders h1-h6 elements with Silver Ratio-scaled typography.
- * Use to establish page and section hierarchy; supports `asChild` for visual/semantic decoupling.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS recipe (`heading`), Radix Slot
- */
+
 const meta: Meta<typeof Heading> = {
   title: 'Display/Heading',
   component: Heading,
@@ -124,5 +120,19 @@ export const Animation: Story = {
         <Heading level="3">H3 styling but renders as div</Heading>
       </TextRevealTransition>
     </Stack>
+  ),
+};
+
+const longToken = `https://example.com/${'localized-path-segment-'.repeat(12)}`;
+
+export const ConstrainedLongToken: Story = {
+  render: () => (
+    <Box aria-label="Constrained typography" width="[160px]">
+      <Stack gap="sm">
+        <Heading level="3">{longToken}</Heading>
+        <Text>{longToken}</Text>
+        <Link href="https://example.com">{longToken}</Link>
+      </Stack>
+    </Box>
   ),
 };

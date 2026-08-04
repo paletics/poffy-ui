@@ -1,15 +1,9 @@
 ﻿import type { Meta, StoryObj } from '@storybook/react';
 import { css } from '@/styled-system/css';
+import { tabs as tabsRecipe } from '@/styled-system/recipes';
 import { Tabs, TabList, TabTrigger, TabContent } from '.';
 
-/**
- * Storybook documentation and visual review surface for Tabs.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta: Meta<typeof Tabs> = {
   title: 'Navigation/Tabs',
   component: Tabs,
@@ -22,6 +16,10 @@ const meta: Meta<typeof Tabs> = {
     size: {
       control: 'select',
       options: ['sm', 'md', 'lg'],
+    },
+    orientation: {
+      control: 'radio',
+      options: ['horizontal', 'vertical'],
     },
     indicatorAnimation: {
       control: 'select',
@@ -36,7 +34,16 @@ type Story = StoryObj<typeof Tabs>;
 const variantsStackClass = css({
   display: 'flex',
   flexDirection: 'column',
-  gap: '8',
+  gap: 'xl',
+});
+
+const constrainedTabsClass = css({ width: '[11rem]' });
+const verticalTabsClass = css({ minHeight: '[12rem]' });
+const constrainedVerticalTabsClass = css({ width: '[12rem]', minHeight: '[12rem]' });
+const verticalLineCoverage = tabsRecipe({ orientation: 'vertical', variant: 'line' });
+const verticalEnclosedCoverage = tabsRecipe({
+  orientation: 'vertical',
+  variant: 'enclosed',
 });
 
 export const Default: Story = {
@@ -97,4 +104,104 @@ export const PopIndicator: Story = {
     indicatorAnimation: 'pop',
   },
   render: Default.render,
+};
+
+export const ConstrainedWidth: Story = {
+  render: () => (
+    <div className={constrainedTabsClass} aria-label="Constrained tabs example">
+      <Tabs defaultValue="overview">
+        <TabList>
+          <TabTrigger value="overview">Overview</TabTrigger>
+          <TabTrigger value="activity">Recent activity</TabTrigger>
+          <TabTrigger value="permissions">Permissions</TabTrigger>
+          <TabTrigger value="integrations">Integrations</TabTrigger>
+        </TabList>
+        <TabContent value="overview">Overview content</TabContent>
+        <TabContent value="activity">Activity content</TabContent>
+        <TabContent value="permissions">Permissions content</TabContent>
+        <TabContent value="integrations">Integrations content</TabContent>
+      </Tabs>
+    </div>
+  ),
+};
+
+export const Vertical: Story = {
+  render: () => (
+    <div className={variantsStackClass}>
+      {(['ghost', 'outline'] as const).map((appearance) => (
+        <Tabs
+          key={appearance}
+          className={verticalTabsClass}
+          defaultValue="overview"
+          appearance={appearance}
+          orientation="vertical"
+        >
+          <TabList aria-label={`${appearance} vertical tabs`}>
+            <TabTrigger value="overview">Overview</TabTrigger>
+            <TabTrigger value="activity">Activity</TabTrigger>
+            <TabTrigger value="settings">Settings</TabTrigger>
+          </TabList>
+          <TabContent value="overview">Overview content</TabContent>
+          <TabContent value="activity">Activity content</TabContent>
+          <TabContent value="settings">Settings content</TabContent>
+        </Tabs>
+      ))}
+    </div>
+  ),
+};
+
+export const VerticalConstrainedLongLabel: Story = {
+  render: () => (
+    <div
+      className={constrainedVerticalTabsClass}
+      aria-label="Constrained vertical tabs example"
+      dir="rtl"
+    >
+      <Tabs defaultValue="overview" orientation="vertical" dir="rtl">
+        <TabList aria-label="Constrained vertical tabs">
+          <TabTrigger value="overview">
+            Overviewwithanunusuallylongunbrokenlocalizedlabel
+          </TabTrigger>
+          <TabTrigger value="activity">Activity</TabTrigger>
+          <TabTrigger value="settings">Settings</TabTrigger>
+        </TabList>
+        <TabContent value="overview">Overview content</TabContent>
+        <TabContent value="activity">Activity content</TabContent>
+        <TabContent value="settings">Settings content</TabContent>
+      </Tabs>
+    </div>
+  ),
+};
+
+// Internal story - excluded from autodocs and dev mode.
+// Panda CSS v1.8 does not emit slot-recipe compound variants from staticCss,
+// so keep the two defined vertical combinations as literal JSX.
+export const _CSSCoverage: Story = {
+  tags: ['!autodocs', '!dev'],
+  render: () => (
+    <div className={variantsStackClass}>
+      <Tabs
+        className={verticalLineCoverage.root}
+        defaultValue="line"
+        orientation="vertical"
+        appearance="ghost"
+      >
+        <TabList>
+          <TabTrigger value="line">Line</TabTrigger>
+        </TabList>
+        <TabContent value="line">Line content</TabContent>
+      </Tabs>
+      <Tabs
+        className={verticalEnclosedCoverage.root}
+        defaultValue="enclosed"
+        orientation="vertical"
+        appearance="outline"
+      >
+        <TabList>
+          <TabTrigger value="enclosed">Enclosed</TabTrigger>
+        </TabList>
+        <TabContent value="enclosed">Enclosed content</TabContent>
+      </Tabs>
+    </div>
+  ),
 };

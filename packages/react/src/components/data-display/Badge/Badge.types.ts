@@ -1,6 +1,12 @@
 import { PrimitiveProps } from '@poffy-ui/types';
 import { BadgeVariantProps } from '@/styled-system/recipes';
-import { ReactNode } from 'react';
+import type { badge } from '@/styled-system/recipes';
+import type { ReactElement, ReactNode } from 'react';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
 /**
  * Public surface treatment for Badge.
@@ -25,16 +31,7 @@ export type BadgeIntent =
  */
 export type BadgeShape = 'rounded' | 'pill';
 
-/**
- * Extracted variant types from the Panda CSS badge recipe.
- *
- * ### Notes
- * Prefer `BadgeProps` in application code. Use this interface for
- * wrapper components that expose the same visual axes.
- *
- * ### AI Usage
- * - Use this when extending badge styles.
- */
+/** Public type for `BadgeRecipeVariants`. */
 export interface BadgeRecipeVariants extends Omit<
   BadgeVariantProps,
   'appearance' | 'intent' | 'shape'
@@ -47,30 +44,13 @@ export interface BadgeRecipeVariants extends Omit<
 /**
  * Context value mapping for Badge propagation.
  */
-export type BadgeContextValue = BadgeRecipeVariants;
+export type BadgeContextValue = BadgeRecipeVariants & {
+  classes: ReturnType<typeof badge>;
+  /** Whether compound children are being slotted into a delegated root host. */
+  isDelegated: boolean;
+};
 
-/**
- * Comprehensive properties for the BadgeRoot component.
- * ### Formula
- * - Silver Ratio (1:1.414) applied conceptually to positioning Offsets.
- *
- * @example
- * ```tsx
- * import { Badge } from '@poffy-ui/react/data-display';
- *
- * <Badge.Root intent="success" placement="top-end">
- *   <span aria-label="Online user" />
- *   <Badge.Indicator />
- * </Badge.Root>
- * ```
- *
- * ### Notes
- * Do: make the anchored child or surrounding text explain what the badge means.
- * Don't: rely on color alone for status, counts, or urgency.
- *
- * ### AI Usage
- * - Use this to type-check the parent container setting up the relative positioning context.
- */
+/** Shared base props for BadgeRoot. */
 export interface BadgeRootBaseProps extends BadgeRecipeVariants {
   children?: ReactNode;
 }
@@ -78,10 +58,26 @@ export interface BadgeRootBaseProps extends BadgeRecipeVariants {
 /**
  * Validates BadgeRoot props, injecting element type constraints.
  */
-export type BadgeRootProps = PrimitiveProps<'div', BadgeRootBaseProps>;
+type BadgeRootNativeProps = PrimitiveProps<'div', BadgeRootBaseProps>;
+export type BadgeRootDefaultProps = DefaultHostProps<BadgeRootNativeProps>;
+export type BadgeRootAsChildProps = Omit<
+  RetargetedAsChildHostProps<BadgeRootNativeProps, HTMLElement>,
+  'children'
+> & {
+  /** The first child is the delegated anchor; remaining children must be Badge indicators. */
+  children: ReactNode;
+};
+/** Public props for BadgeRoot. */
+export type BadgeRootProps = BadgeRootDefaultProps | BadgeRootAsChildProps;
+export type BadgeRootComponent = PolymorphicAsChildComponent<
+  BadgeRootDefaultProps,
+  BadgeRootAsChildProps,
+  HTMLDivElement,
+  HTMLElement
+>;
 
 /**
- * Properties for the strictly visual Badge Indicator component.
+ * Content props for the positioned Badge indicator.
  *
  * ### Notes
  * When the indicator contains a count, keep the value short and add a fuller
@@ -94,16 +90,34 @@ export interface BadgeIndicatorBaseProps {
 /**
  * Validates BadgeIndicator properties natively wrapping a span tag.
  */
-export type BadgeIndicatorProps = PrimitiveProps<'span', BadgeIndicatorBaseProps>;
+type BadgeIndicatorNativeProps = PrimitiveProps<'span', BadgeIndicatorBaseProps>;
+type BadgeIndicatorAsChildElement = ReactElement<
+  Record<string, unknown>,
+  'b' | 'em' | 'i' | 'small' | 'span' | 'strong'
+>;
+export type BadgeIndicatorDefaultProps = DefaultHostProps<BadgeIndicatorNativeProps>;
+export type BadgeIndicatorAsChildProps = RetargetedAsChildHostProps<
+  BadgeIndicatorNativeProps,
+  HTMLElement,
+  BadgeIndicatorAsChildElement
+>;
+/** Public props for BadgeIndicator. */
+export type BadgeIndicatorProps = BadgeIndicatorDefaultProps | BadgeIndicatorAsChildProps;
+export type BadgeIndicatorComponent = PolymorphicAsChildComponent<
+  BadgeIndicatorDefaultProps,
+  BadgeIndicatorAsChildProps,
+  HTMLSpanElement,
+  HTMLElement
+>;
 
 /**
- * Properties unifying Badge logic for the shorthand variation.
+ * Props for the Badge shorthand, which composes a root and optional indicator.
  *
  * @example
  * ```tsx
  * import { Badge, Avatar } from '@poffy-ui/react/data-display';
  *
- * <Badge content={3} intent="danger" placement="top-end">
+ * <Badge content={3} intent="danger" placement="top-right">
  *   <Avatar src="/user.jpg" alt="Jane Doe" name="Jane Doe" />
  * </Badge>
  * ```
@@ -118,13 +132,27 @@ export interface BadgeBaseProps extends BadgeRecipeVariants {
    */
   content?: ReactNode;
   /**
-   * The anchor element that the Badge applies to.
-   * If children exists, Badge wraps it.
+   * Anchor content. When present, the indicator is positioned relative to it;
+   * when omitted, `content` is rendered as a standalone badge.
    */
   children?: ReactNode;
 }
 
 /**
- * Type checks Badge instances evaluating both root mechanics and indicator data.
+ * Native props accepted by the shorthand's default `div` root.
  */
-export type BadgeProps = PrimitiveProps<'div', BadgeBaseProps>;
+type BadgeNativeProps = PrimitiveProps<'div', BadgeBaseProps>;
+export type BadgeDefaultProps = DefaultHostProps<BadgeNativeProps>;
+export type BadgeAsChildProps = RetargetedAsChildHostProps<
+  BadgeNativeProps,
+  HTMLElement,
+  ReactElement
+>;
+/** Public props for Badge. */
+export type BadgeProps = BadgeDefaultProps | BadgeAsChildProps;
+export type BadgeComponent = PolymorphicAsChildComponent<
+  BadgeDefaultProps,
+  BadgeAsChildProps,
+  HTMLDivElement,
+  HTMLElement
+>;

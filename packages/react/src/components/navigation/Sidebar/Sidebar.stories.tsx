@@ -1,8 +1,9 @@
-﻿import type { Meta, StoryObj } from '@storybook/react';
+import type { Meta, StoryObj } from '@storybook/react';
 import { Box } from '@/components/layout/Box';
 import { Flex } from '@/components/layout/Flex';
 import { HomeIcon, LockIcon, SettingsIcon, UserIcon } from '@/components/media/Icon/icons';
 import { Text } from '@/components/typography/Text';
+import { LocaleProvider } from '@/providers/LocaleProvider';
 import { css } from '@/styled-system/css';
 import {
   Sidebar,
@@ -13,14 +14,7 @@ import {
   SidebarItem,
 } from '@/components/navigation/Sidebar';
 
-/**
- * Storybook documentation and visual review surface for Sidebar.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta: Meta<typeof Sidebar> = {
   title: 'Navigation/Sidebar',
   component: Sidebar,
@@ -40,14 +34,16 @@ export default meta;
 type Story = StoryObj<typeof Sidebar>;
 
 const shellClass = css({
-  height: '100vh',
+  height: '[100vh]',
   display: 'flex',
 });
 
 const contentClass = css({
   flex: '1',
-  p: '5',
+  p: 'lg',
 });
+
+const constrainedSidebarClass = css({ width: '[8rem]' });
 
 export const Default: Story = {
   args: {
@@ -59,14 +55,20 @@ export const Default: Story = {
         <SidebarHeader>Logo</SidebarHeader>
         <SidebarContent>
           <SidebarGroup label="Main">
-            <SidebarItem isActive icon={<HomeIcon size="sm" />}>
+            <SidebarItem href="#dashboard" isActive icon={<HomeIcon size="sm" />}>
               Dashboard
             </SidebarItem>
-            <SidebarItem icon={<UserIcon size="sm" />}>Profile</SidebarItem>
+            <SidebarItem href="#profile" icon={<UserIcon size="sm" />}>
+              Profile
+            </SidebarItem>
           </SidebarGroup>
           <SidebarGroup label="Settings">
-            <SidebarItem icon={<SettingsIcon size="sm" />}>General</SidebarItem>
-            <SidebarItem icon={<LockIcon size="sm" />}>Security</SidebarItem>
+            <SidebarItem href="#general" icon={<SettingsIcon size="sm" />}>
+              General
+            </SidebarItem>
+            <SidebarItem href="#security" icon={<LockIcon size="sm" />}>
+              Security
+            </SidebarItem>
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>Footer Content</SidebarFooter>
@@ -95,14 +97,20 @@ export const Collapsed: Story = {
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarItem isActive icon={<HomeIcon size="sm" />}>
+            <SidebarItem href="#dashboard" isActive icon={<HomeIcon size="sm" />}>
               Dashboard
             </SidebarItem>
-            <SidebarItem icon={<UserIcon size="sm" />}>Profile</SidebarItem>
+            <SidebarItem href="#profile" icon={<UserIcon size="sm" />}>
+              Profile
+            </SidebarItem>
           </SidebarGroup>
           <SidebarGroup>
-            <SidebarItem icon={<SettingsIcon size="sm" />}>General</SidebarItem>
-            <SidebarItem icon={<LockIcon size="sm" />}>Security</SidebarItem>
+            <SidebarItem href="#general" icon={<SettingsIcon size="sm" />}>
+              General
+            </SidebarItem>
+            <SidebarItem href="#security" icon={<LockIcon size="sm" />}>
+              Security
+            </SidebarItem>
           </SidebarGroup>
         </SidebarContent>
         <SidebarFooter>
@@ -113,5 +121,62 @@ export const Collapsed: Story = {
         <Text>Main Content</Text>
       </Box>
     </Flex>
+  ),
+};
+
+export const ConstrainedWidth: Story = {
+  render: () => (
+    <div className={constrainedSidebarClass} aria-label="Constrained sidebar container">
+      <Sidebar>
+        <SidebarHeader>Workspace</SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup label="Navigationwithanunusuallylongunbrokenlocalizedheading">
+            <SidebarItem href="#dashboard" icon={<HomeIcon size="sm" />}>
+              Dashboard with a long label
+            </SidebarItem>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
+    </div>
+  ),
+};
+
+export const ScrollableItems: Story = {
+  render: () => (
+    <div className={shellClass}>
+      <Sidebar>
+        <SidebarHeader>Workspace</SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup label="Projects">
+            {Array.from({ length: 16 }, (_, index) => {
+              const item = index + 1;
+              return (
+                <SidebarItem key={item} href={`#project-${item}`} icon={<HomeIcon size="sm" />}>
+                  Project {item}
+                </SidebarItem>
+              );
+            })}
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter>Footer Content</SidebarFooter>
+      </Sidebar>
+    </div>
+  ),
+};
+
+export const JapaneseAccessibleName: Story = {
+  render: () => (
+    <LocaleProvider defaultLocale="ja-JP" global={false}>
+      <Sidebar>
+        <SidebarHeader>ワークスペース</SidebarHeader>
+        <SidebarContent>
+          <SidebarGroup label="ナビゲーション">
+            <SidebarItem href="#dashboard" isActive icon={<HomeIcon size="sm" />}>
+              ダッシュボード
+            </SidebarItem>
+          </SidebarGroup>
+        </SidebarContent>
+      </Sidebar>
+    </LocaleProvider>
   ),
 };

@@ -7,26 +7,16 @@ import { TreeViewAutoNode } from './TreeViewAutoNode';
 interface TreeViewAutoContentProps {
   nodes: TreeViewData[];
   renderLabel?: (node: TreeViewData) => ReactNode;
-  collectAllChildrenIds: (nodes?: TreeViewData[]) => string[];
 }
 
 /**
  * Recursively renders TreeView nodes for the auto-construction API.
  */
-export const TreeViewAutoContent = ({
-  nodes,
-  renderLabel,
-  collectAllChildrenIds,
-}: TreeViewAutoContentProps) => {
+export const TreeViewAutoContent = ({ nodes, renderLabel }: TreeViewAutoContentProps) => {
   return (
     <>
       {nodes.map((node) => (
-        <TreeViewAutoNode
-          key={node.id}
-          node={node}
-          renderLabel={renderLabel}
-          collectAllChildrenIds={collectAllChildrenIds}
-        />
+        <TreeViewAutoNode key={node.id} node={node} renderLabel={renderLabel} />
       ))}
     </>
   );

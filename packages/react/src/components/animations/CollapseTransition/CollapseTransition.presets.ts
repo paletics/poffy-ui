@@ -15,7 +15,11 @@ export const collapseVariants = {
   /** Animates block height without fading the content. */
   height: {
     initial: { height: 0, overflow: 'hidden' },
-    animate: { height: 'auto', overflow: 'hidden' },
+    animate: {
+      height: 'auto',
+      overflow: 'hidden',
+      transitionEnd: { overflow: 'visible' },
+    },
     exit: { height: 0, overflow: 'hidden' },
     transition: (custom?: CustomData) => ({
       height: {
@@ -29,7 +33,12 @@ export const collapseVariants = {
   /** Animates block height and opacity for standard disclosure panels. */
   'height-fade': {
     initial: { height: 0, opacity: 0, overflow: 'hidden' },
-    animate: { height: 'auto', opacity: 1, overflow: 'hidden' },
+    animate: {
+      height: 'auto',
+      opacity: 1,
+      overflow: 'hidden',
+      transitionEnd: { overflow: 'visible' },
+    },
     exit: { height: 0, opacity: 0, overflow: 'hidden' },
     transition: (custom?: CustomData) => {
       const duration = getCustomValue(custom, 'duration', baseTokens.motion.durations.base);

@@ -13,26 +13,26 @@ import {
   WarningIcon,
 } from '@/components/media/Icon/icons';
 import type { Meta, StoryObj } from '@storybook/react';
+import { useEffect, useRef } from 'react';
+import { AnimationProvider } from '@/providers/AnimationProvider';
 import { Button } from '../../inputs/Button';
 import { Puff } from './Puff';
 import { PuffProvider, usePuff } from './hooks/usePuffContext';
 import { PuffBaseProps } from './Puff.types';
 
-/**
- * Storybook documentation and visual review surface for Puff.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
 const meta: Meta<PuffBaseProps> = {
   title: 'Feedback/Puff',
   component: Puff,
   tags: ['autodocs'],
   decorators: [
     (Story) => (
-      <Flex minHeight="[400px]" justify="center" align="center" bg="layout.background" p="2xl">
+      <Flex
+        minHeight="[400px]"
+        justify="center"
+        align="center"
+        bg="layout.background"
+        p={{ base: 'md', md: '2xl' }}
+      >
         <Story />
       </Flex>
     ),
@@ -72,6 +72,65 @@ const PlaygroundTrigger = (args: PuffBaseProps) => {
       </Button>
     </Box>
   );
+};
+
+const CustomRenderTrigger = () => {
+  const { addPuff, removePuff } = usePuff();
+  const puffId = useRef('');
+  return (
+    <Button
+      size="sm"
+      appearance="solid"
+      intent="primary"
+      onClick={() => {
+        puffId.current = addPuff({
+          intent: 'primary',
+          render: () => (
+            <Flex
+              align="center"
+              gap="sm"
+              bg="variants.primary.main"
+              color="white"
+              p="md"
+              borderRadius="lg"
+              boxShadow="lg"
+            >
+              <InfoIcon />
+              <Box>
+                <Text weight="semibold">Custom Component</Text>
+                <Text variant="caption" opacity="0.9">
+                  Fully custom React Node
+                </Text>
+              </Box>
+              <Button
+                size="xs"
+                appearance="ghost"
+                onClick={() => removePuff(puffId.current)}
+                aria-label="Dismiss custom puff"
+              >
+                <CrossIcon />
+              </Button>
+            </Flex>
+          ),
+        });
+      }}
+    >
+      Custom Render
+    </Button>
+  );
+};
+
+const InitiallyVisiblePuff = ({ options }: { options: PuffBaseProps }) => {
+  const { addPuff } = usePuff();
+  const didAddPuff = useRef(false);
+
+  useEffect(() => {
+    if (didAddPuff.current) return;
+    didAddPuff.current = true;
+    addPuff(options);
+  }, [addPuff, options]);
+
+  return null;
 };
 
 export const Default: Story = {
@@ -122,6 +181,11 @@ export const Default: Story = {
     },
     duration: { control: { type: 'number', min: 1000, max: 20000, step: 1000 } },
     isSimple: { control: 'boolean' },
+    live: {
+      control: 'select',
+      options: ['polite', 'assertive', 'off'],
+    },
+    announcement: { control: 'text' },
   },
 };
 
@@ -137,7 +201,12 @@ export const Gallery: Story = {
         <Heading level={3} size="sm">
           Intents & Appearances
         </Heading>
-        <Grid gridTemplateColumns="repeat(4, 1fr)" gap="md">
+        <Grid
+          aria-label="Puff appearance gallery"
+          minChildWidth="160px"
+          gap="md"
+          width="[min(720px, calc(100vw - 2rem))]"
+        >
           <TriggerButton
             label="Primary Solid"
             options={{
@@ -158,20 +227,20 @@ export const Gallery: Story = {
             }}
           />
           <TriggerButton
-            label="Info Glass"
+            label="Info Outline"
             options={{
               title: 'Info',
-              children: 'Glass appearance',
+              children: 'Outline appearance',
               intent: 'info',
               appearance: 'outline',
               icon: <InfoIcon />,
             }}
           />
           <TriggerButton
-            label="Warning Neo"
+            label="Warning Outline"
             options={{
               title: 'Warning',
-              children: 'Neo-brutalism',
+              children: 'Outline appearance',
               intent: 'warning',
               appearance: 'outline',
               icon: <WarningIcon />,
@@ -188,20 +257,20 @@ export const Gallery: Story = {
             }}
           />
           <TriggerButton
-            label="Secondary Minimal"
+            label="Secondary Outline"
             options={{
               title: 'Secondary',
-              children: 'Minimal appearance',
+              children: 'Outline appearance',
               intent: 'secondary',
               appearance: 'outline',
               icon: <BellIcon />,
             }}
           />
           <TriggerButton
-            label="Dark Ghost"
+            label="Dark Outline"
             options={{
               title: 'Dark',
-              children: 'Ghost appearance',
+              children: 'Outline appearance',
               intent: 'dark',
               appearance: 'outline',
               icon: <PawIcon />,
@@ -254,42 +323,123 @@ export const UseCases: Story = {
               duration: 8000,
             }}
           />
-          <TriggerButton
-            label="Custom Render"
-            options={{
-              intent: 'primary',
-              render: (props) => (
-                <Flex
-                  align="center"
-                  gap="sm"
-                  bg="variants.primary.main"
-                  color="white"
-                  p="md"
-                  borderRadius="lg"
-                  boxShadow="lg"
-                >
-                  <InfoIcon />
-                  <Box>
-                    <Text weight="semibold">Custom Component</Text>
-                    <Text variant="caption" opacity="0.9">
-                      Fully custom React Node
-                    </Text>
-                  </Box>
-                  <Button
-                    size="xs"
-                    appearance="ghost"
-                    onClick={() => props.removePuff?.(props.id!)}
-                    aria-label="Dismiss custom puff"
-                  >
-                    <CrossIcon />
-                  </Button>
-                </Flex>
-              ),
-            }}
-          />
+          <CustomRenderTrigger />
         </Flex>
       </Stack>
     </PuffProvider>
+  ),
+};
+
+export const VisualMatrix: Story = {
+  render: () => (
+    <Stack gap="md" width="[min(520px, calc(100vw - 2rem))]">
+      <Puff intent="primary" appearance="solid" size="sm" title="Primary">
+        Compact notification
+      </Puff>
+      <Puff intent="success" appearance="soft" size="md" title="Saved">
+        Your workspace changes are now live.
+      </Puff>
+      <Puff intent="warning" appearance="outline" size="lg" title="Review required">
+        A long notification message demonstrates wrapping within the available width.
+      </Puff>
+      <Puff
+        isSimple
+        intent="danger"
+        appearance="solid"
+        size="md"
+        action={<Button size="xs">Undo</Button>}
+      >
+        File deleted
+      </Puff>
+    </Stack>
+  ),
+};
+
+export const TopLeftVisible: Story = {
+  render: () => (
+    <PuffProvider point="top-left">
+      <InitiallyVisiblePuff
+        options={{
+          title: 'Top left notification',
+          children: 'Provider-managed position is visible for visual review.',
+          intent: 'info',
+          appearance: 'soft',
+          duration: 60_000,
+        }}
+      />
+    </PuffProvider>
+  ),
+};
+
+export const BottomRightVisible: Story = {
+  render: () => (
+    <PuffProvider point="bottom-right">
+      <InitiallyVisiblePuff
+        options={{
+          title: 'Bottom right notification',
+          children: 'Provider-managed position is visible for visual review.',
+          intent: 'success',
+          appearance: 'solid',
+          duration: 60_000,
+        }}
+      />
+    </PuffProvider>
+  ),
+};
+
+const StackedPuffsWithActions = () => {
+  const { addPuff } = usePuff();
+  const didAddPuffs = useRef(false);
+
+  useEffect(() => {
+    if (didAddPuffs.current) return;
+    didAddPuffs.current = true;
+    Array.from({ length: 12 }, (_, index) => {
+      const item = index + 1;
+      addPuff({
+        title: `Queued item ${item}`,
+        children: 'A focusable action must remain fully visible at the scroll edge.',
+        action: <Button size="xs">Review item {item}</Button>,
+        duration: 60_000,
+      });
+    });
+  }, [addPuff]);
+
+  return null;
+};
+
+export const ScrollableActions: Story = {
+  render: () => (
+    <PuffProvider point="top-right">
+      <StackedPuffsWithActions />
+    </PuffProvider>
+  ),
+};
+
+export const ScrollableActionsBottom: Story = {
+  render: () => (
+    <PuffProvider point="bottom-right">
+      <StackedPuffsWithActions />
+    </PuffProvider>
+  ),
+};
+
+export const NoMotionVisible: Story = {
+  render: () => (
+    <AnimationProvider global={false} defaultAnimationEnabled={false}>
+      <PuffProvider point="top-center">
+        <InitiallyVisiblePuff
+          options={{
+            title: 'Motion disabled',
+            children: 'The provider notification remains visible without motion.',
+            intent: 'warning',
+            appearance: 'outline',
+            animationType: 'slide',
+            duration: 60_000,
+          }}
+        />
+      </PuffProvider>
+    </AnimationProvider>
   ),
 };
 
@@ -353,6 +503,35 @@ export const BottomRight: Story = {
   render: (args) => (
     <PuffProvider point="bottom-right">
       <PlaygroundTrigger {...args} title="Bottom Right" />
+    </PuffProvider>
+  ),
+};
+
+export const NarrowViewport: Story = {
+  render: () => (
+    <PuffProvider point="top-center">
+      <Stack gap="sm">
+        <TriggerButton
+          label="Show structured puff"
+          options={{
+            size: 'lg',
+            'aria-label': 'Structured narrow puff',
+            title: 'Notificationidentifierwithoutbreakopportunities',
+            children: 'Long content remains readable inside the available viewport width.',
+            duration: 60_000,
+          }}
+        />
+        <TriggerButton
+          label="Show simple puff"
+          options={{
+            size: 'lg',
+            isSimple: true,
+            'aria-label': 'Simple narrow puff',
+            children: 'Simplemessagewithoutbreakopportunities',
+            duration: 60_000,
+          }}
+        />
+      </Stack>
     </PuffProvider>
   ),
 };

@@ -1,14 +1,14 @@
-import type { KeyboardEvent } from 'react';
 import type { WheelPickerOption as WheelPickerOptionType } from './WheelPicker.types';
+import { useCallback, type KeyboardEvent } from 'react';
 
 interface WheelPickerOptionProps {
   className: string;
   columnId: string;
-  columnListId: string;
   commitValue: (columnId: string, nextOptionValue: string) => void;
   isSelected: boolean;
   option: WheelPickerOptionType;
-  setOptionRef: (key: string, node: HTMLDivElement | null) => void;
+  optionId: string;
+  setOptionRef: (columnId: string, optionValue: string, node: HTMLDivElement | null) => void;
 }
 
 /**
@@ -17,10 +17,10 @@ interface WheelPickerOptionProps {
 export const WheelPickerOption = ({
   className,
   columnId,
-  columnListId,
   commitValue,
   isSelected,
   option,
+  optionId,
   setOptionRef,
 }: WheelPickerOptionProps) => {
   const handleSelect = () => {
@@ -28,17 +28,17 @@ export const WheelPickerOption = ({
   };
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Enter' && event.key !== ' ') return;
-
     event.preventDefault();
     handleSelect();
   };
-
+  const optionRef = useCallback(
+    (node: HTMLDivElement | null) => setOptionRef(columnId, option.value, node),
+    [columnId, option.value, setOptionRef],
+  );
   return (
     <div
-      id={`${columnListId}-option-${option.value}`}
-      ref={(node) => {
-        setOptionRef(`${columnId}:${option.value}`, node);
-      }}
+      id={optionId}
+      ref={optionRef}
       className={className}
       role="option"
       tabIndex={-1}

@@ -1,3 +1,4 @@
+/** Layout primitives. They provide semantic/default hosts and Panda style props; they do not own application state. */
 export * from './AspectRatio';
 export * from './Box';
 export * from './Center';

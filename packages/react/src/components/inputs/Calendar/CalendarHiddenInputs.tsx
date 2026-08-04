@@ -2,6 +2,8 @@
 
 import { DateRange } from './Calendar.types';
 import { formatDateISO } from './Calendar.utils';
+import { isValidDate } from '@poffy-ui/behavior/date';
+import { normalizeCalendarSelection } from '@poffy-ui/behavior/calendar';
 
 interface CalendarHiddenInputsProps {
   name: string;
@@ -12,12 +14,11 @@ interface CalendarHiddenInputsProps {
 }
 
 /**
- * Renders hidden `<input type="hidden">` elements for native form integration.
- * Supports single date, multiple dates, and date ranges.
+ * Emits normalized Calendar selection values as native hidden form controls.
  *
- * ### AI Context & Architecture
- * - Extracted from Calendar to keep that file under 200 lines.
- * Only rendered when `name` prop is provided.
+ * Single values use `name`, multiple values use repeated `name[]`, and range edges use
+ * `name_from` / `name_to`. Invalid or incomplete selection parts emit no field; disabled Calendar
+ * values remain disabled so native form submission omits them.
  */
 export const CalendarHiddenInputs = ({
   name,
@@ -26,22 +27,25 @@ export const CalendarHiddenInputs = ({
   selected,
   disabled,
 }: CalendarHiddenInputsProps) => {
-  if (mode === 'single' && (selected as Date | undefined)) {
+  const normalizedSelected = normalizeCalendarSelection(mode, selected);
+
+  if (mode === 'single' && isValidDate(normalizedSelected as Date | undefined)) {
     return (
       <input
         type="hidden"
         name={name}
         form={form}
-        value={formatDateISO(selected as Date)}
+        value={formatDateISO(normalizedSelected as Date)}
         disabled={disabled}
       />
     );
   }
 
-  if (mode === 'multiple' && Array.isArray(selected)) {
+  if (mode === 'multiple' && Array.isArray(normalizedSelected)) {
+    const dates = normalizedSelected;
     return (
       <>
-        {selected.map((date) => (
+        {dates.map((date) => (
           <input
             key={formatDateISO(date)}
             type="hidden"
@@ -55,11 +59,11 @@ export const CalendarHiddenInputs = ({
     );
   }
 
-  if (mode === 'range' && (selected as DateRange | undefined)) {
-    const range = selected as DateRange;
+  if (mode === 'range' && (normalizedSelected as DateRange | undefined)) {
+    const range = normalizedSelected as DateRange;
     return (
       <>
-        {range.from && (
+        {isValidDate(range.from) && (
           <input
             type="hidden"
             name={`${name}_from`}
@@ -68,7 +72,7 @@ export const CalendarHiddenInputs = ({
             disabled={disabled}
           />
         )}
-        {range.to && (
+        {isValidDate(range.to) && (
           <input
             type="hidden"
             name={`${name}_to`}

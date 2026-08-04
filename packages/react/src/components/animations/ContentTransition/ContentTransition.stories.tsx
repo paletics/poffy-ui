@@ -5,13 +5,6 @@ import { ContentTransition } from './ContentTransition';
 import { useState } from 'react';
 import { css } from '@/styled-system/css';
 
-/**
- * Handles smooth content switching between two views with animated enter/exit transitions. Used wherever conditional rendering or tab-style content swaps require choreographed mount/unmount sequences.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (AnimatePresence), ContentTransition presets, Radix Slot
- */
 const meta: Meta<typeof ContentTransition> = {
   title: 'Animations/ContentTransition',
   component: ContentTransition,
@@ -24,7 +17,7 @@ type Story = StoryObj<typeof ContentTransition>;
 type ContentBoxColor = 'blue' | 'red' | 'purple' | 'green' | 'orange' | 'pink';
 
 const contentBoxBaseClass = css({
-  w: '[300px]',
+  w: '[min(300px, calc(100vw - 6rem))]',
   h: '[200px]',
   color: 'white',
   display: 'flex',
@@ -53,8 +46,8 @@ export const Default: Story = {
   render: function BasicStory() {
     const [isA, setIsA] = useState(true);
     return (
-      <div className={css({ p: '[32px]' })}>
-        <Button mb="[16px]" onClick={() => setIsA(!isA)}>
+      <div className={css({ p: { base: 'sm', md: 'xl' }, maxWidth: '[100vw]' })}>
+        <Button mb="base" onClick={() => setIsA(!isA)}>
           Toggle Content
         </Button>
         <div className={css({ position: 'relative' })}>
@@ -80,8 +73,8 @@ export const TrueCrossfade: Story = {
   render: function CrossfadeStory(args) {
     const [isA, setIsA] = useState(true);
     return (
-      <div className={css({ p: '[32px]' })}>
-        <Button mb="[16px]" onClick={() => setIsA(!isA)}>
+      <div className={css({ p: { base: 'sm', md: 'xl' }, maxWidth: '[100vw]' })}>
+        <Button mb="base" onClick={() => setIsA(!isA)}>
           Crossfade Toggle
         </Button>
         <div className={css({ position: 'relative', h: '[200px]' })}>
@@ -107,8 +100,8 @@ export const Flip3D: Story = {
   render: function Flip3DStory(args) {
     const [isA, setIsA] = useState(true);
     return (
-      <div className={css({ p: '[32px]' })}>
-        <Button mb="[16px]" onClick={() => setIsA(!isA)}>
+      <div className={css({ p: { base: 'sm', md: 'xl' }, maxWidth: '[100vw]' })}>
+        <Button mb="base" onClick={() => setIsA(!isA)}>
           Flip Transition
         </Button>
         <ContentTransition {...args} transitionKey={isA ? 'A' : 'B'}>
@@ -126,8 +119,8 @@ export const Morph: Story = {
   render: function MorphStory(args) {
     const [isA, setIsA] = useState(true);
     return (
-      <div className={css({ p: '[32px]' })}>
-        <Button mb="[16px]" onClick={() => setIsA(!isA)}>
+      <div className={css({ p: { base: 'sm', md: 'xl' }, maxWidth: '[100vw]' })}>
+        <Button mb="base" onClick={() => setIsA(!isA)}>
           Morph Toggle
         </Button>
         <ContentTransition {...args} transitionKey={isA ? 'A' : 'B'}>

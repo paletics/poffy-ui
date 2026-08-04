@@ -1,47 +1,33 @@
 'use client';
 
+import {
+  getFallbackChildrenForNativeContainer,
+  isNonVoidAsChildHost,
+  isPotentiallyInteractiveAsChildHost,
+} from '@/components/shared/asChild';
 import { cx } from '@/styled-system/css';
 import { directionalButton } from '@/styled-system/recipes';
-import { forwardRef } from 'react';
+import { Slot, Slottable } from '@radix-ui/react-slot';
+import { cloneElement, forwardRef, Fragment } from 'react';
+import type { ElementType, ReactElement, ReactNode } from 'react';
 import { DirectionalButton } from './DirectionalButton';
-import type { DirectionalButtonGroupProps } from './DirectionalButton.types';
+import type {
+  DirectionalButtonGroupComponent,
+  DirectionalButtonGroupProps,
+} from './DirectionalButton.types';
+import { getSafeInteractiveContent } from '@/components/shared/getSafeInteractiveContent';
 
-/**
- * Pairs two directional buttons into a previous/next or increment/decrement control group.
- * Keeps both buttons aligned, size-matched, and optionally visually connected as one control.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`directionalButton` slot recipe), `DirectionalButton`
- * - **Props**: `PrimitiveProps<'div'>`
- *
- * ### Design Tokens
- * - **spacing**: size-driven internal padding on child buttons
- * - **color**: shared semantic action tokens and border treatment for connected groups
- *
- * ### Variant Logic
- * - **orientation="horizontal"**: Use for previous/next pagination and calendar navigation.
- * - **orientation="vertical"**: Use for numeric steppers and compact increment/decrement controls.
- * - **connected={true}**: Renders as a single segmented control with shared border.
- *
- * ### Accessibility
- * - **Role**: group container (`div`)
- * - **Pattern**: WAI-ARIA Button group
- * - **Keyboard**: Tab stops remain on each inner button unless callers override `tabIndex`
- *
- * ### AI Usage
- * - **DO**: Use when the two actions are inverse or sequential pairs.
- * - **DON'T**: Do not use for unrelated icon actions; prefer `IconButton` or `ButtonGroup`.
- *
- * @example Connected previous / next pair
- * ```tsx
- * <DirectionalButtonGroup
- *   startButton={{ direction: 'left', 'aria-label': 'Previous' }}
- *   endButton={{ direction: 'right', 'aria-label': 'Next' }}
- * />
- * ```
- */
-export const DirectionalButtonGroup = forwardRef<HTMLDivElement, DirectionalButtonGroupProps>(
+const directionalButtonGroupAsChildHosts = new Set(['article', 'div', 'section']);
+const isDirectionalButtonGroupAsChildHost = (children: ReactNode): children is ReactElement => {
+  if (!isNonVoidAsChildHost(children)) return false;
+  return (
+    typeof children.type === 'string' &&
+    directionalButtonGroupAsChildHosts.has(children.type) &&
+    !isPotentiallyInteractiveAsChildHost(children)
+  );
+};
+
+const DirectionalButtonGroupImpl = forwardRef<HTMLElement, DirectionalButtonGroupProps>(
   (
     {
       orientation = 'horizontal',
@@ -54,20 +40,46 @@ export const DirectionalButtonGroup = forwardRef<HTMLDivElement, DirectionalButt
       endButton,
       className,
       buttonClassName,
+      asChild,
+      children,
       ...props
     },
     ref,
   ) => {
     const classes = directionalButton({ size, appearance, intent, shape, orientation, connected });
+    const asChildElement =
+      asChild && isDirectionalButtonGroupAsChildHost(children) ? children : null;
+    const canUseAsChild = asChildElement !== null;
+    const Component = (canUseAsChild ? Slot : 'div') as ElementType;
+    const slottableChildren =
+      canUseAsChild && asChildElement
+        ? cloneElement(
+            asChildElement as ReactElement<Record<string, unknown>>,
+            { role: 'group' },
+            <Fragment>{asChildElement.props.children}</Fragment>,
+          )
+        : children;
+    const fallbackChildren =
+      asChild && isNonVoidAsChildHost(children) && !canUseAsChild
+        ? isPotentiallyInteractiveAsChildHost(children)
+          ? getSafeInteractiveContent(children, { disallowActivationHandlers: true })
+          : getFallbackChildrenForNativeContainer(children)
+        : children;
 
     return (
-      <div
+      <Component
         ref={ref}
         className={cx(classes.group, className)}
         data-orientation={orientation}
         data-connected={connected ? '' : undefined}
         {...props}
+        role="group"
       >
+        {canUseAsChild ? (
+          <Slottable>{slottableChildren}</Slottable>
+        ) : asChild ? (
+          fallbackChildren
+        ) : null}
         <DirectionalButton
           size={size}
           appearance={appearance}
@@ -84,9 +96,20 @@ export const DirectionalButtonGroup = forwardRef<HTMLDivElement, DirectionalButt
           {...endButton}
           className={cx(buttonClassName, endButton.className)}
         />
-      </div>
+      </Component>
     );
   },
 );
 
-DirectionalButtonGroup.displayName = 'DirectionalButtonGroup';
+DirectionalButtonGroupImpl.displayName = 'DirectionalButtonGroup';
+
+/**
+ * Renders a labelled `role="group"` containing a start and end directional action.
+ *
+ * Both child configurations inherit the group's size and visual options. Supply an accessible
+ * group name when their relationship is not evident. `asChild` is limited to passive
+ * `article`, `div`, and `section` hosts; an unsupported host falls back to the default container.
+ */
+
+export const DirectionalButtonGroup =
+  DirectionalButtonGroupImpl as unknown as DirectionalButtonGroupComponent;

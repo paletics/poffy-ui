@@ -7,24 +7,33 @@ import {
   PrimitiveProps,
 } from '@poffy-ui/types';
 import { ReactNode } from 'react';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
+import type { DelegatedButtonHostProps } from '@/components/shared/buttonDelegation';
 
-/**
- * Base functional properties for the Button component.
- * Extends the Panda CSS recipe variant props (`intent`, `appearance`, `size`, `shape`, `glow`, `isGrow`)
- * and adds runtime-only props that are not part of the recipe.
- *
- * ### Formula
- * - Silver Ratio (1:1.414) is applied to all padding and gap tokens inside the `button` recipe.
- * ### AI Usage
- * - Internal building block; prefer `ButtonProps` when typing the full component.
- */
 export interface ButtonBaseProps extends Omit<
   ButtonVariantProps,
   'intent' | 'appearance' | 'shape'
 > {
+  /** Minimum hit-target and label size. @defaultValue `'md'` */
+  size?: ButtonVariantProps['size'];
+
+  /** Semantic purpose used to select the action color treatment. @defaultValue `'primary'` */
   intent?: ActionIntent;
+
+  /**
+   * Visual treatment for the action; it also selects the default press-motion preset.
+   * @defaultValue `'solid'`
+   */
   appearance?: ActionAppearance;
+
+  /** Outer geometry of the button. @defaultValue `'rounded'` */
   shape?: ActionShape;
+  /** Allows the button to grow within an eligible flex layout. @defaultValue `false` */
+  isGrow?: ButtonVariantProps['isGrow'];
   /**
    * Puts the button into a loading state.
    * Renders a spinner, sets `aria-busy="true"` and `aria-disabled="true"`,
@@ -45,16 +54,16 @@ export interface ButtonBaseProps extends Omit<
   loadingIcon?: ReactNode;
 
   /**
-   * Icon element rendered to the **left** of the label text.
+   * Icon element rendered at the logical inline start of the label text.
    * Hidden automatically while `loading` is active to avoid layout collision with the spinner.
    */
-  leftIcon?: ReactNode;
+  startIcon?: ReactNode;
 
   /**
-   * Icon element rendered to the **right** of the label text.
+   * Icon element rendered at the logical inline end of the label text.
    * Hidden automatically while `loading` is active to avoid layout collision with the spinner.
    */
-  rightIcon?: ReactNode;
+  endIcon?: ReactNode;
 
   /**
    * Physics preset applied via `ActionMotion` on press/hover.
@@ -71,31 +80,42 @@ export interface ButtonBaseProps extends Omit<
    * @defaultValue `false`
    */
   glow?: boolean;
+
+  /**
+   * State marker used by the Button recipe when `disabled` is true.
+   * The component owns this value while disabled.
+   */
+  'data-disabled'?: string;
+
+  /**
+   * State marker used by the Button recipe while `loading` is true.
+   * The component owns this value while loading.
+   */
+  'data-loading'?: string;
 }
 
+/** Native-button props used when `asChild` is omitted or cannot accept the supplied child. */
+type ButtonNativeProps = PrimitiveProps<'button', ButtonBaseProps>;
+/** Props for Button's owned native button, including form `type` and submit/reset attributes. */
+export type ButtonDefaultProps = DefaultHostProps<ButtonNativeProps>;
+
+/** Removes attributes that apply only to a native `<button>` from delegated hosts. */
+type ButtonDelegatedBaseProps = DelegatedButtonHostProps<ButtonNativeProps>;
+
 /**
- * Full props for the Button component, supporting polymorphic rendering via `asChild`.
- * Merges `ButtonBaseProps` with standard `<button>` HTML attributes through `PrimitiveProps`.
+ * Props for Button delegated with `asChild`.
  *
- * ### Notes
- * Use Button for actions, not navigation-only links unless `asChild` delegates
- * to an anchor. Icon-only buttons must provide `aria-label`. `loading` sets
- * busy/disabled semantics and suppresses interaction.
- *
- * Do: keep button text action-oriented and set `type="submit"` explicitly for
- * form submits.
- * Don't: attach both a visible loading label and unrelated `loadingIcon`
- * semantics; the loading icon should be decorative.
- *
- * @example
- * ```tsx
- * import { Button } from '@poffy-ui/react/inputs';
- *
- * <Button type="submit" loading={saving}>
- *   Save
- * </Button>
- * ```
- *
- * Related: SplitButtonProps for primary action plus related secondary actions.
+ * Native button-only form attributes are omitted. A passive compatible host receives button role,
+ * focusability, and Enter/Space activation; invalid hosts fall back to the owned native button.
  */
-export type ButtonProps = PrimitiveProps<'button', ButtonBaseProps>;
+export type ButtonAsChildProps = RetargetedAsChildHostProps<ButtonDelegatedBaseProps, HTMLElement>;
+
+/** Props accepted by Button's owned or delegated host. */
+export type ButtonProps = ButtonDefaultProps | ButtonAsChildProps;
+/** Ref-forwarding public component signature for Button. */
+export type ButtonComponent = PolymorphicAsChildComponent<
+  ButtonDefaultProps,
+  ButtonAsChildProps,
+  HTMLButtonElement,
+  HTMLElement
+>;

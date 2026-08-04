@@ -16,7 +16,11 @@ const treeViewParts = {
 };
 
 /**
- * Public TreeView namespace combining auto-construction and compound APIs.
+ * TreeView namespace combining data-driven construction and compound APIs.
+ *
+ * Calling `TreeView` uses the data-driven `TreeViewAuto` API. Use `.Root`,
+ * `.Item`, `.Trigger`, `.Content`, `.Label`, and `.Checkbox` when node markup
+ * or controls need custom composition.
  */
 export const TreeView = Object.assign(TreeViewAuto, treeViewParts);
 export {
@@ -30,6 +34,8 @@ export {
 };
 export type {
   TreeViewBuilderProps,
+  ControlledTreeViewExpandedProps,
+  ControlledTreeViewSelectedProps,
   TreeViewCheckboxOwnProps,
   TreeViewCheckboxProps,
   TreeViewContentOwnProps,
@@ -39,9 +45,16 @@ export type {
   TreeViewItemProps,
   TreeViewLabelOwnProps,
   TreeViewLabelProps,
+  TreeViewLabelAsChildProps,
+  TreeViewLabelComponent,
+  TreeViewLabelDefaultProps,
   TreeViewRootOwnProps,
   TreeViewRootProps,
+  TreeViewExpandedStateProps,
+  TreeViewSelectedStateProps,
   TreeViewTriggerOwnProps,
   TreeViewTriggerProps,
   TreeViewVariantSubset,
+  UncontrolledTreeViewExpandedProps,
+  UncontrolledTreeViewSelectedProps,
 } from './TreeView.types';

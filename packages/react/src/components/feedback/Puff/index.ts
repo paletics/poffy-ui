@@ -4,6 +4,8 @@ export type {
   PuffBaseProps,
   PuffContextType,
   PuffIntent,
+  PuffLive,
+  PuffOptions,
   PuffAppearance,
   PuffProps,
   PuffProviderProps,

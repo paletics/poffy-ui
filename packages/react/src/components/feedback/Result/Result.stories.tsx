@@ -1,16 +1,9 @@
-﻿import { Button } from '@/components/inputs/Button';
+import { Button } from '@/components/inputs/Button';
+import { Box } from '@/components/layout/Box';
 import { ErrorIcon, InfoIcon, SuccessIcon, WarningIcon } from '@/components/media/Icon/icons';
 import type { Meta, StoryObj } from '@storybook/react';
 import { Result, ResultIcon, ResultTitle, ResultDescription, ResultActions } from '.';
 
-/**
- * Page-level outcome display combining an icon, title, description, and actions to communicate the result of an operation.
- * Use after form submissions or multi-step flows to present success, error, warning, or info outcomes.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (result recipe), ResultContext
- */
 const meta = {
   title: 'Feedback/Result',
   component: Result,
@@ -23,6 +16,10 @@ const meta = {
     appearance: {
       control: 'select',
       options: ['soft', 'outline'],
+    },
+    live: {
+      control: 'select',
+      options: ['off', 'polite', 'assertive'],
     },
   },
 } satisfies Meta<typeof Result>;
@@ -97,5 +94,27 @@ export const Info: Story = {
         Your request is being processed. This may take a few moments.
       </ResultDescription>
     </Result>
+  ),
+};
+
+export const ConstrainedLongContent: Story = {
+  render: () => (
+    <Box width="[180px]" aria-label="Constrained result">
+      <Result intent="warning">
+        <ResultIcon>
+          <WarningIcon />
+        </ResultIcon>
+        <ResultTitle>Paymentverificationrequiresadditionalinformation</ResultTitle>
+        <ResultDescription>
+          https://example.com/verification/without-any-natural-break-opportunities
+        </ResultDescription>
+        <ResultActions>
+          <Button size="sm">Try again</Button>
+          <Button size="sm" appearance="outline">
+            Contact support
+          </Button>
+        </ResultActions>
+      </Result>
+    </Box>
   ),
 };

@@ -24,15 +24,22 @@ interface ComboBoxClasses {
 export interface ComboBoxContextValue {
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
+  isInteractionBlockedNow: () => boolean;
   inputValue: string;
   setInputValue: (value: string) => void;
+  isLoading: boolean;
   highlightedIndex: number;
-  setHighlightedIndex: (index: number | ((prev: number) => number)) => void;
+  setHighlightedIndex: (
+    options: ComboBoxOption[],
+    index: number | ((prev: number) => number),
+  ) => void;
   options: ComboBoxOption[];
   filteredOptions: ComboBoxOption[];
+  filterOptions: (inputValue: string) => ComboBoxOption[];
   value: string | null | undefined;
   onChange?: (value: string | null) => void;
   disabled?: boolean;
+  error?: boolean;
   readOnly?: boolean;
   required?: boolean;
   tabIndex?: number;
@@ -40,6 +47,8 @@ export interface ComboBoxContextValue {
   ariaLabelledBy?: string;
   ariaDescribedBy?: string;
   ariaErrorMessage?: string;
+  ariaInvalid?: boolean | 'true' | 'false';
+  locale?: string;
   size?: 'sm' | 'md' | 'lg';
   inputId: string;
   listId: string;

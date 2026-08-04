@@ -3,12 +3,7 @@
 import { useEffect, useLayoutEffect, useState, type RefObject } from 'react';
 import type { ChartDimensions, ChartMargin } from './useChartDimensions.types';
 
-/**
- * Default chart margin used when no margin override is provided.
- *
- * ### AI Usage
- * - Use as the baseline for chart layouts that need room for axes and labels.
- */
+/** Default chart margin used when no margin override is provided. */
 export const DEFAULT_CHART_MARGIN: ChartMargin = {
   top: 20,
   right: 30,
@@ -19,7 +14,6 @@ export const DEFAULT_CHART_MARGIN: ChartMargin = {
 /**
  * Shared ResizeObserver-based chart measurement hook.
  *
- * ### Notes
  * Returns zero dimensions before the container is mounted. `innerWidth` and
  * `innerHeight` are clamped to `0` after subtracting margins. Chart components
  * should use the returned inner size for scales and keep SVG accessibility,
@@ -58,6 +52,13 @@ export const useChartDimensions = (
       });
     };
 
+    const ResizeObserver = container.ownerDocument.defaultView?.ResizeObserver;
+    if (!ResizeObserver) {
+      updateDimensions();
+      const ownerWindow = container.ownerDocument.defaultView;
+      ownerWindow?.addEventListener('resize', updateDimensions);
+      return () => ownerWindow?.removeEventListener('resize', updateDimensions);
+    }
     const resizeObserver = new ResizeObserver(updateDimensions);
 
     resizeObserver.observe(container);

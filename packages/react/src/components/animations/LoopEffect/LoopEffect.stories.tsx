@@ -5,13 +5,6 @@ import { Button } from '@/components/inputs/Button';
 import { LoopEffect } from './LoopEffect';
 import { LoopEffectType, loopVariants } from './LoopEffect.presets';
 
-/**
- * Applies continuous, repeating ambient animations (float, pulse, spin, shake, bounce) to any child element. Used exclusively for decorative visual flair such as loaders, glowing badges, and floating hero images.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (infinite animations), LoopEffect presets, Radix Slot
- */
 const meta: Meta<typeof LoopEffect> = {
   title: 'Animations/LoopEffect',
   component: LoopEffect,
@@ -46,7 +39,7 @@ const boxBaseClass = css({
   alignItems: 'center',
   flexDirection: 'column',
   justifyContent: 'center',
-  gap: '2',
+  gap: 'sm',
   width: '[120px]',
   height: '[120px]',
   color: 'white',
@@ -70,18 +63,20 @@ const containerStyle = css({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '6',
-  p: '8',
-  border: '[1px dashed]',
-  borderColor: 'slate.200',
+  gap: 'lg',
+  p: { base: 'base', md: 'xl' },
+  borderWidth: 'thin',
+  borderStyle: 'dashed',
+  borderColor: 'layout.divider',
   borderRadius: 'xl',
-  minWidth: '[400px]',
+  width: '[min(400px, calc(100vw - 4rem))]',
+  maxWidth: '[100%]',
   minHeight: '[300px]',
 });
 
 const controlStyle = css({
   display: 'flex',
-  gap: '3',
+  gap: 'md',
   alignItems: 'center',
 });
 
@@ -319,9 +314,10 @@ export const Gallery: Story = {
         className={css({
           display: 'flex',
           flexDirection: 'column',
-          gap: '6',
-          p: '8',
+          gap: 'lg',
+          p: { base: 'base', md: 'xl' },
           maxWidth: '[1000px]',
+          width: '[min(1000px, calc(100vw - 4rem))]',
         })}
       >
         <div className={css({ display: 'flex', justifyContent: 'center' })}>
@@ -331,8 +327,8 @@ export const Gallery: Story = {
         <div
           className={css({
             display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: '6',
+            gridTemplateColumns: '[repeat(auto-fit, minmax(min(160px, 100%), 1fr))]',
+            gap: 'lg',
           })}
         >
           {allTypes.map((type) => (
@@ -342,12 +338,13 @@ export const Gallery: Story = {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                gap: '3',
-                p: '4',
+                gap: 'md',
+                p: 'base',
                 bg: 'slate.50',
                 borderRadius: 'lg',
-                border: '[1px solid]',
-                borderColor: 'slate.200',
+                borderWidth: 'thin',
+                borderStyle: 'solid',
+                borderColor: 'layout.divider',
               })}
             >
               <div

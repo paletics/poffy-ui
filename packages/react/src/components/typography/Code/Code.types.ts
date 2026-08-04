@@ -1,14 +1,9 @@
-import { CodeVariantProps } from '@/styled-system/recipes';
-import { JsxStyleProps } from '@/styled-system/types';
-import { PrimitiveProps } from '@poffy-ui/types';
+import type { CodeVariantProps } from '@/styled-system/recipes';
+import type { JsxStyleProps } from '@/styled-system/types';
+import type { PrimitiveProps } from '@poffy-ui/types';
+import type { ReactNode } from 'react';
 
-/**
- * Supported programming languages for syntax highlighting using Prism.js.
- *
- * ### Notes
- * Only languages imported by `Code.tsx` are listed here. Adding a language to
- * this type should be paired with importing the matching Prism component.
- */
+/** Supported Prism languages bundled by the block-code renderer. */
 export type SupportedLanguage =
   | 'javascript'
   | 'typescript'
@@ -20,39 +15,30 @@ export type SupportedLanguage =
   | 'markdown'
   | 'bash';
 
+/** DOM structure used to render code content. */
+export type CodeVariant = Exclude<NonNullable<CodeVariantProps['variant']>, object>;
+
 /**
- * Specific properties for the Code component.
- *
- * @example
- * ```tsx
- * import { Code } from '@poffy-ui/react/typography';
- * ```
- *
- * ### Notes
- * Inline code renders a `code` element. Block code renders `pre > code` unless
- * `asChild` is used; with `asChild`, the child must preserve a code-like element
- * so Prism can highlight it.
- *
- * ### AI Usage
- * - Do: pass a plain string for highlighted block snippets.
- * - Don't: put paragraphs, buttons, or other rich content inside `variant="inline"`.
+ * Code-specific props. Inline mode supports `asChild` only with a `code` host. Block mode always
+ * owns a `pre > code` structure, including when `asChild` is supplied.
  */
-export interface CodeOwnProps extends CodeVariantProps, Omit<JsxStyleProps, 'colorScheme'> {
+export interface CodeOwnProps
+  extends Omit<CodeVariantProps, 'variant'>, Omit<JsxStyleProps, 'colorScheme'> {
   /**
-   * The code content to display.
-   * ### Notes
-   * Must be a `string` when using `variant="block"` with `language` prop.
-   * Non-string children are accepted for inline use, but Prism.js syntax highlighting
-   * only triggers on string content; ReactNode refs are stable-compared by object
-   * identity, so highlighting will not re-run when non-string children change.
+   * Semantic code structure. It changes the rendered DOM from `code` to `pre > code`.
+   *
+   * @defaultValue `'inline'`
    */
-  children?: string;
+  variant?: CodeVariant;
+  /**
+   * Code content to display. Prefer a plain source string for block syntax highlighting.
+   */
+  children?: ReactNode;
 
   /**
-   * Programming language for syntax highlighting.
-   * If provided in 'block' variant, Prism.js will be used for highlighting.
+   * Programming language used by Prism in block mode. Inline mode only receives the language class.
    *
-   * @defaultValue undefined
+   * @defaultValue `undefined`
    */
   language?: SupportedLanguage;
 
@@ -60,12 +46,10 @@ export interface CodeOwnProps extends CodeVariantProps, Omit<JsxStyleProps, 'col
   className?: string;
 }
 
-/**
- * Props for the Code component.
- * Extends base props and standard HTML attributes via PrimitiveProps.
- * Defaults to 'code' element.
- *
- * ### Notes
- * Use this type for wrappers that forward all Code props.
- */
-export type CodeProps = PrimitiveProps<'code', CodeOwnProps>;
+/** Public Code props, including native inline-code attributes. */
+type CodePrimitiveProps = PrimitiveProps<'code', Omit<CodeOwnProps, 'variant'>>;
+
+/** Public props for Code. */
+export type CodeProps =
+  | (CodePrimitiveProps & { variant?: 'inline' })
+  | (Omit<CodePrimitiveProps, 'asChild' | 'role'> & { variant: 'block' });

@@ -1,25 +1,30 @@
-import { RecipeVariantProps } from '@/styled-system/types';
-import { PrimitiveProps } from '@poffy-ui/types';
-import { table } from '@/styled-system/recipes';
+import type { table } from '@/styled-system/recipes';
+import type { RecipeVariantProps } from '@/styled-system/types';
+import type { NativeProps, PrimitiveProps } from '@poffy-ui/types';
 
-/**
- * Extracted variant types from the Panda CSS table recipe.
- *
- * ### Notes
- * Prefer the component props for app code; use this type when extending
- * recipes or authoring wrappers.
- *
- * ### AI Usage
- * - Use when extending table styles.
- */
+/** Public type for `TableVariants`. */
 export type TableVariants = RecipeVariantProps<typeof table>;
 
 /**
- * Base properties for the Table root container.
- * ### Formula
- * - Silver Ratio (1:1.414) applied to padding/spacing tokens.
+ * Visual variants for the Table root.
  */
 export type TableBaseProps = TableVariants;
+
+/** Horizontal text alignment for table cells. */
+export type TableTextAlign = 'start' | 'center' | 'end';
+
+/** WAI-ARIA sort state for a column header. */
+export type TableSortDirection = 'ascending' | 'descending' | 'none' | 'other';
+
+/** Public props for TableCellDisplay. */
+export interface TableCellDisplayProps {
+  /** Visual text alignment within the cell. */
+  textAlign?: TableTextAlign;
+  /** Prevent wrapping and show an ellipsis when the cell has a constrained width. */
+  truncate?: boolean;
+  /** Pin a leading or trailing column while an enclosing scroll container scrolls horizontally. */
+  sticky?: 'start' | 'end';
+}
 
 /**
  * Props for the root semantic `table` element.
@@ -56,7 +61,20 @@ export type TableRowProps = PrimitiveProps<'tr'>;
 /**
  * Props for a table data cell. Use native `th` elements for column or row headers.
  */
-export type TableCellProps = PrimitiveProps<'td'>;
+export type TableCellProps = PrimitiveProps<'td', TableCellDisplayProps>;
+
+/** Props required to associate a header cell with its data cells. */
+export interface TableHeaderCellBaseProps {
+  scope: 'col' | 'colgroup' | 'row' | 'rowgroup';
+  /** Current sort state for this header. Sorting behavior remains application-owned. */
+  sortDirection?: TableSortDirection;
+}
+
+/** Props for a table header cell with an explicit association scope. */
+export type TableHeaderCellProps = PrimitiveProps<
+  'th',
+  TableHeaderCellBaseProps & TableCellDisplayProps
+>;
 
 /**
  * Props for the table caption. Add one concise caption for screen reader context.
@@ -67,3 +85,24 @@ export type TableCaptionProps = PrimitiveProps<'caption'>;
  * Props for the table footer section. Render as `tfoot`.
  */
 export type TableFooterProps = PrimitiveProps<'tfoot'>;
+
+/** A semantic empty-state cell spanning the supplied number of table columns. */
+export type TableEmptyStateProps = NativeProps<'td', { colSpan: number }>;
+
+/** Props for a native `colgroup` used to declare shared column dimensions. */
+export type TableColumnGroupProps = PrimitiveProps<'colgroup'>;
+
+/** Props for a native `col` used within `Table.ColumnGroup`. */
+export type TableColumnProps = NativeProps<'col'>;
+
+/**
+ * Props for the optional fixed `<div>` that owns horizontal table overflow.
+ *
+ * ### Notes
+ * The container intentionally does not support `asChild`, because it must remain
+ * the element that owns scrolling. It enters the tab order only when horizontal
+ * overflow is present, and exposes a localized fallback name. Use `aria-label` or
+ * `aria-labelledby` to provide table-specific context, or `tabIndex` to override
+ * the automatic focus behavior.
+ */
+export type TableScrollContainerProps = NativeProps<'div'>;

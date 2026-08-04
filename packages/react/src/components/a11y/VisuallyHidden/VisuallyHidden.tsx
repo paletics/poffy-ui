@@ -1,48 +1,47 @@
 import { css, cx } from '@/styled-system/css';
+import { isNonVoidAsChildHost } from '@/components/shared/asChild';
 import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
-import { VisuallyHiddenProps } from './VisuallyHidden.types';
+import { forwardRef, type ElementType } from 'react';
+import type { VisuallyHiddenComponent, VisuallyHiddenProps } from './VisuallyHidden.types';
 
-/**
- * A utility component that hides content visually while ensuring it remains accessible to screen readers.
- * Uses the `srOnly` utility from Panda CSS. Supports the `asChild` pattern for rendering as a different element.
- *
- * ### AI Context & Architecture
- * - Tier: Atoms
- * - Stack: Panda CSS `srOnly` utility, Radix Slot for `asChild`
- *
- * ### Design Tokens
- * - Uses the shared `srOnly` utility instead of component-specific color, spacing, or typography tokens.
- *
- * ### Variant Logic
- * - No visual variants. `asChild` only changes the rendered element while preserving screen-reader visibility.
- *
- * ### Accessibility
- * - Keeps content in the accessibility tree while removing it from visual layout.
- * - Use for non-visual labels, helper text, skip links, or context that visible UI already implies.
- *
- * ### AI Usage
- * - **DO**: Provide readable text that names an icon-only control or adds hidden context.
- * - **DON'T**: Hide interactive controls from sighted users unless the owning pattern explicitly supports it.
- *
- * @example
- * ```tsx
- * import { VisuallyHidden } from '@poffy-ui/react/a11y';
- *
- * <VisuallyHidden>Skip to main content</VisuallyHidden>
- * <VisuallyHidden asChild><div>Hidden div content</div></VisuallyHidden>
- * ```
- */
-export const VisuallyHidden = forwardRef<HTMLSpanElement, VisuallyHiddenProps>(
+const VisuallyHiddenImpl = forwardRef<Element, VisuallyHiddenProps>(
   ({ asChild, children, className, ...rest }, ref) => {
-    const Component = asChild ? Slot : 'span';
+    const canUseAsChild = Boolean(asChild && isNonVoidAsChildHost(children));
+    const Component = (canUseAsChild ? Slot : 'span') as ElementType;
 
     return (
-      <Component ref={ref} className={cx(css({ srOnly: true }), className)} {...rest}>
+      <Component
+        ref={ref}
+        className={cx(
+          css({
+            srOnly: true,
+            _focusWithin: {
+              clip: 'auto',
+              height: 'auto',
+              margin: '[0]',
+              overflow: 'visible',
+              position: 'static',
+              whiteSpace: 'normal',
+              width: 'auto',
+            },
+          }),
+          className,
+        )}
+        {...rest}
+      >
         {children}
       </Component>
     );
   },
 );
 
-VisuallyHidden.displayName = 'VisuallyHidden';
+VisuallyHiddenImpl.displayName = 'VisuallyHidden';
+/**
+ * Visually hides content while keeping it in the accessibility tree and reading order.
+ *
+ * Focusable descendants become visible while focus is within the wrapper, preserving a visible
+ * keyboard target. `asChild` delegates only to a non-void element; unsupported children use the
+ * default `<span>`. Use it for labels, descriptions, and status text—not as a general visibility
+ * toggle for interactive UI.
+ */
+export const VisuallyHidden = VisuallyHiddenImpl as VisuallyHiddenComponent;

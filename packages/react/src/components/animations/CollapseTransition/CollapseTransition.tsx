@@ -1,56 +1,41 @@
 'use client';
 
 import { Slot } from '@radix-ui/react-slot';
-import { AnimatePresence, type Variants } from 'motion/react';
-import { useOptionalAnimation } from '@/providers/AnimationProvider';
+import { mergeRefs } from '@poffy-ui/behavior/hooks';
+import { css, cx } from '@/styled-system/css';
+import { AnimatePresence, type MotionStyle, type Variants } from 'motion/react';
+import { applyMotionStyle } from '@/providers/motionStyle';
+import {
+  createNoMotionStyle,
+  defineMotionSlotComponent,
+  sanitizeControlledMotionProps,
+  sanitizeStaticStyle,
+} from '@/types/motion';
 import {
   forwardRef,
+  Fragment,
+  isValidElement,
   ReactNode,
-  useCallback,
   useLayoutEffect,
   useMemo,
   useRef,
-  useState,
 } from 'react';
-import { composeRefs, getMotionComponent } from '../utils';
+import { withNoMotionStyle } from '@/components/shared/withNoMotionStyle';
+import { getMotionComponent, resolvePresetKey } from '../utils';
+import { useHydratedAnimationPolicy } from '../useHydratedAnimationPolicy';
 import { collapseVariants } from './CollapseTransition.presets';
 import { CollapseAnimationType, CollapseTransitionProps } from './CollapseTransition.types';
 
-const getMeasurementElement = (node: HTMLElement): HTMLElement => {
-  const firstChild = node.firstElementChild;
-  return firstChild instanceof HTMLElement ? firstChild : node;
-};
+const heightCollapseClassName = css({
+  display: 'flow-root',
+  // Motion clips height transitions with an inline overflow style. A focused child needs its
+  // external ring immediately, even before the transition's overflow reset runs.
+  _focusWithin: {
+    overflow: 'visible !important',
+  },
+});
 
-/**
- * A controlled collapse wrapper for open/closed content regions.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Framer Motion (`AnimatePresence`), Radix Slot
- * ### Design Tokens
- * - transition: Uses Silver Ratio motion presets from `collapseVariants`.
- * ### Variant Logic
- * - `height`: animates only block height.
- * - `height-fade`: combines height and opacity for standard disclosure panels.
- * - `scale-y`: uses transform-based expansion for lightweight menus or indicators.
- * @example
- * ```tsx
- * import { CollapseTransition } from '@poffy-ui/react';
- *
- * <CollapseTransition isOpen={isExpanded}>
- *   <div id="details">Details</div>
- * </CollapseTransition>
- * ```
- * ### Notes
- * Use `keepMounted` when the controlled region must remain in the DOM for measurement
- * or parent exit propagation. Closed persistent content receives `aria-hidden`.
- * ### Accessibility
- * - Respects `prefers-reduced-motion`.
- * - Does not create disclosure semantics by itself; pair with a trigger that owns
- *   `aria-expanded` and, when applicable, `aria-controls`.
- * ### AI Usage
- * - Use for Accordion content, TreeView nested groups, Stepper bodies, and any vertical
- *   region whose height changes between open and closed states.
- */
-export const CollapseTransition = forwardRef<HTMLDivElement, CollapseTransitionProps>(
+const CollapseTransitionImpl = forwardRef<HTMLDivElement, CollapseTransitionProps>(
   (
     {
       asChild,
@@ -66,21 +51,26 @@ export const CollapseTransition = forwardRef<HTMLDivElement, CollapseTransitionP
     },
     ref,
   ) => {
-    const { isAnimating } = useOptionalAnimation();
-    const Component = useMemo(() => getMotionComponent(asChild ? Slot : 'div'), [asChild]);
-    const variants = collapseVariants[animationType as CollapseAnimationType];
-    const shouldMeasureHeight = ['height', 'height-fade'].includes(animationType);
+    const { resolvedMotionStyle, shouldAnimate } = useHydratedAnimationPolicy();
+    const canUseAsChild = Boolean(
+      asChild && isValidElement(children) && children.type !== Fragment,
+    );
+    const Component = useMemo(
+      () => getMotionComponent(canUseAsChild ? Slot : 'div'),
+      [canUseAsChild],
+    );
+    const animationKey = resolvePresetKey<typeof collapseVariants, CollapseAnimationType>(
+      collapseVariants,
+      animationType,
+      'height-fade',
+    );
+    const variants = collapseVariants[animationKey];
+    const animatesHeight = ['height', 'height-fade'].includes(animationKey);
+    const resolvedClassName = cx(animatesHeight && heightCollapseClassName, className);
     const nodeRef = useRef<HTMLElement | null>(null);
-    const [measuredHeight, setMeasuredHeight] = useState(0);
-    const measureNode = useCallback((node: HTMLElement | null) => {
-      nodeRef.current = node;
-      if (node) {
-        setMeasuredHeight(getMeasurementElement(node).scrollHeight);
-      }
-    }, []);
     const mergedRef = useMemo(
-      () => composeRefs<HTMLElement>(measureNode, ref as React.Ref<HTMLElement>),
-      [measureNode, ref],
+      () => mergeRefs<HTMLElement>(nodeRef, ref as React.Ref<HTMLElement>),
+      [ref],
     );
     const transition = useMemo(
       () =>
@@ -89,105 +79,85 @@ export const CollapseTransition = forwardRef<HTMLDivElement, CollapseTransitionP
           : variants.transition,
       [variants, customData],
     );
-    const reducedTransition = isAnimating ? transition : { duration: 0 };
-    const openTarget = useMemo(() => {
-      if (!shouldMeasureHeight) return variants.animate;
+    const reducedTransition = shouldAnimate
+      ? applyMotionStyle(transition, resolvedMotionStyle)
+      : { duration: 0 };
+    const openTarget = variants.animate;
+    const closedTarget = variants.exit;
 
-      return {
-        ...variants.animate,
-        height: measuredHeight > 0 ? measuredHeight : 'auto',
-        ...(animationType === 'height-fade' ? { opacity: 1 } : {}),
-      };
-    }, [animationType, measuredHeight, shouldMeasureHeight, variants]);
-    const closedTarget = useMemo(() => {
-      if (!shouldMeasureHeight) return variants.exit;
-
-      return {
-        ...variants.exit,
-        height: 0,
-        ...(animationType === 'height-fade' ? { opacity: 1 } : {}),
-      };
-    }, [animationType, shouldMeasureHeight, variants]);
-    const initialTarget = useMemo(
-      () =>
-        shouldMeasureHeight
-          ? {
-              ...variants.initial,
-              height: 0,
-              ...(animationType === 'height-fade' ? { opacity: 1 } : {}),
-            }
-          : variants.initial,
-      [animationType, shouldMeasureHeight, variants],
-    );
-
+    // AnimatePresence retains an exiting node after `isOpen` becomes false. Hide
+    // that interval from assistive technology and keyboard interaction immediately,
+    // rather than waiting for the visual exit animation to complete.
     useLayoutEffect(() => {
-      if (!shouldMeasureHeight) return;
+      if (keepMounted) return;
       const node = nodeRef.current;
       if (!node) return;
-      const measurementElement = getMeasurementElement(node);
 
-      const updateHeight = () => {
-        setMeasuredHeight(measurementElement.scrollHeight);
-      };
+      if (isOpen) {
+        node.removeAttribute('aria-hidden');
+        node.removeAttribute('inert');
+        return;
+      }
 
-      updateHeight();
+      node.setAttribute('aria-hidden', 'true');
+      node.setAttribute('inert', '');
+    }, [isOpen, keepMounted]);
 
-      if (typeof ResizeObserver === 'undefined') return;
-
-      const observer = new ResizeObserver(updateHeight);
-      observer.observe(measurementElement);
-
-      return () => {
-        observer.disconnect();
-      };
-    }, [children, shouldMeasureHeight]);
-
-    const motionVariants = shouldMeasureHeight
+    const motionVariants = animatesHeight
       ? undefined
-      : !isAnimating
+      : !shouldAnimate
         ? undefined
-        : (variants as unknown as Variants);
+        : (applyMotionStyle(variants, resolvedMotionStyle) as unknown as Variants);
+    const staticStyle = (
+      shouldAnimate ? sanitizeStaticStyle(style) : createNoMotionStyle(style)
+    ) as MotionStyle | undefined;
+    const staticChildren = withNoMotionStyle(
+      children as ReactNode,
+      !shouldAnimate && canUseAsChild,
+    );
 
     if (keepMounted) {
       return (
         // eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support.
         <Component
           ref={mergedRef}
-          className={className}
-          style={style}
+          className={resolvedClassName}
+          style={staticStyle}
+          {...sanitizeControlledMotionProps(rest)}
           data-state={isOpen ? 'open' : 'closed'}
           aria-hidden={!isOpen}
           inert={!isOpen ? true : undefined}
+          hidden={!shouldAnimate && !isOpen ? true : undefined}
           initial={false}
-          animate={isOpen ? openTarget : closedTarget}
-          variants={motionVariants}
-          transition={reducedTransition}
-          custom={customData}
-          {...rest}
+          animate={shouldAnimate ? (isOpen ? openTarget : closedTarget) : undefined}
+          variants={shouldAnimate ? motionVariants : undefined}
+          transition={shouldAnimate ? reducedTransition : undefined}
+          custom={shouldAnimate ? customData : undefined}
         >
-          {children as ReactNode}
+          {staticChildren as ReactNode}
         </Component>
       );
     }
 
     return (
-      <AnimatePresence initial={initial}>
+      <AnimatePresence initial={false}>
         {isOpen && (
           // eslint-disable-next-line react-hooks/static-components -- Component is resolved through the shared motion cache for polymorphic asChild support.
           <Component
+            key={shouldAnimate && initial ? 'collapse-entrance' : 'collapse-static'}
             ref={mergedRef}
-            className={className}
-            style={style}
+            className={resolvedClassName}
+            style={staticStyle}
             data-state="open"
-            initial={isAnimating ? initialTarget : false}
-            animate={openTarget}
-            exit={closedTarget}
-            variants={motionVariants}
-            transition={reducedTransition}
-            custom={customData}
-            {...rest}
+            initial={shouldAnimate ? closedTarget : false}
+            animate={shouldAnimate ? openTarget : undefined}
+            exit={shouldAnimate ? closedTarget : undefined}
+            variants={shouldAnimate ? motionVariants : undefined}
+            transition={shouldAnimate ? reducedTransition : undefined}
+            custom={shouldAnimate ? customData : undefined}
+            {...sanitizeControlledMotionProps(rest)}
           >
-            {children as ReactNode}
+            {staticChildren as ReactNode}
           </Component>
         )}
       </AnimatePresence>
@@ -195,4 +165,19 @@ export const CollapseTransition = forwardRef<HTMLDivElement, CollapseTransitionP
   },
 );
 
-CollapseTransition.displayName = 'CollapseTransition';
+CollapseTransitionImpl.displayName = 'CollapseTransition';
+
+/**
+ * Animates a caller-controlled open region without managing disclosure state.
+ *
+ * With `keepMounted={false}` (the default), closed content is removed after
+ * its exit animation; while exiting it is immediately inert and hidden from
+ * assistive technology. With `keepMounted`, the closed region remains mounted
+ * but is inert and `aria-hidden`. Motion policy can reduce this to an instant
+ * state change. `asChild` delegates to one non-Fragment child.
+ */
+
+export const CollapseTransition = defineMotionSlotComponent<
+  HTMLDivElement,
+  CollapseTransitionProps
+>(CollapseTransitionImpl);

@@ -13,6 +13,7 @@ interface CalendarHeaderProps {
   handleMonthChange: (date: Date) => void;
   canNavPrev: boolean;
   canNavNext: boolean;
+  canGoToToday: boolean;
   showYearMonthSelect: boolean;
   locale: string;
   minDate?: Date;
@@ -29,23 +30,15 @@ interface CalendarHeaderProps {
   monthFormatter: Intl.DateTimeFormat;
   labels: CalendarLabels;
   disabled: boolean;
+  isRtl: boolean;
 }
 
 /**
- * Sub-component for the Calendar's header/navigation area.
- * ### AI Context & Architecture
- * - Tier: Molecules (Internal Sub-component), Stack: React, ActionMotion, Select
- * ### Design Tokens
- * - spacing: silver.md (header margin), silver.xs (select gap)
- * ### Variant Logic
- * - N/A (Inherits from Calendar recipe)
- * @example <CalendarHeader {...props} />
- * ### Notes
- * Do not use independently. This is tightly coupled with `useCalendarNavigation`.
- * ### Accessibility
- * - Uses `aria-live` for month announcements and proper `aria-label` for navigation buttons.
- * ### AI Usage
- * - Internal component for Calendar to manage the header section and month/year dropdowns.
+ * Renders Calendar's month controls and localized heading.
+ *
+ * Previous/next controls use logical directions for RTL, and every navigation action is disabled
+ * when the month bound or Calendar disabled state disallows it. Enabling month/year selects
+ * replaces the visible heading while preserving an announced month label.
  */
 export const CalendarHeader = ({
   currentMonthDate,
@@ -54,6 +47,7 @@ export const CalendarHeader = ({
   handleMonthChange,
   canNavPrev,
   canNavNext,
+  canGoToToday,
   showYearMonthSelect,
   locale,
   minDate,
@@ -62,12 +56,18 @@ export const CalendarHeader = ({
   monthFormatter,
   labels,
   disabled,
+  isRtl,
 }: CalendarHeaderProps) => {
+  const previousDirection = isRtl ? 'right' : 'left';
+  const nextDirection = isRtl ? 'left' : 'right';
+
   return (
     <header className={classes.header}>
       <div className={classes.headerLeft}>
         <DirectionalButton
-          direction="left"
+          direction={previousDirection}
+          data-calendar-navigation-direction={previousDirection}
+          data-calendar-navigation-position="previous"
           className={classes.navButton}
           onClick={() => navMonth(-1)}
           disabled={!canNavPrev ? true : disabled}
@@ -104,7 +104,7 @@ export const CalendarHeader = ({
           <ButtonPrimitive
             className={classes.todayButton}
             onClick={goToToday}
-            disabled={disabled}
+            disabled={[!canGoToToday, disabled].some(Boolean)}
             aria-label={labels.goToToday}
           >
             {labels.today}
@@ -112,7 +112,9 @@ export const CalendarHeader = ({
         </ActionMotion>
 
         <DirectionalButton
-          direction="right"
+          direction={nextDirection}
+          data-calendar-navigation-direction={nextDirection}
+          data-calendar-navigation-position="next"
           className={classes.navButton}
           onClick={() => navMonth(1)}
           disabled={!canNavNext ? true : disabled}

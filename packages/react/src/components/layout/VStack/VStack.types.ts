@@ -1,10 +1,22 @@
+import type { StackAsChildProps, StackDefaultProps } from '../Stack/Stack.types';
+import type { ReactElement, RefAttributes } from 'react';
+
 /**
- * VStack Types
+ * Props for the fixed vertical Stack alias.
  *
- * VStack is a directional alias of Stack (direction="column").
- * VStackProps re-exports StackProps so consumers can type their props
- * without importing from the Stack internals directly.
- * ### AI Usage
- * - Use to type-check VStack components.
+ * Use `Stack` when the direction must be configurable or responsive.
  */
-export type { StackProps as VStackProps } from '../Stack/Stack.types';
+export type VStackDefaultProps = Omit<StackDefaultProps, 'direction'>;
+export type VStackAsChildProps = Omit<StackAsChildProps, 'direction'>;
+/** Public props for VStack. */
+export type VStackProps = VStackDefaultProps | VStackAsChildProps;
+
+export interface VStackComponent {
+  (props: VStackDefaultProps & RefAttributes<HTMLDivElement>): ReactElement | null;
+  (props: VStackAsChildProps & RefAttributes<Element>): ReactElement | null;
+  (
+    props:
+      | (VStackDefaultProps & RefAttributes<HTMLDivElement>)
+      | (VStackAsChildProps & RefAttributes<Element>),
+  ): ReactElement | null;
+}

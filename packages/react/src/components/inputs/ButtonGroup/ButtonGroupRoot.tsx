@@ -2,60 +2,16 @@
 
 import { cx } from '@/styled-system/css';
 import { buttonGroup } from '@/styled-system/recipes';
-import { forwardRef, useMemo } from 'react';
+import { getFallbackChildrenForNativeContainer } from '@/components/shared/asChild';
+import { type ElementType, forwardRef, isValidElement, useMemo } from 'react';
 import { Slot } from '@radix-ui/react-slot';
-import { ButtonGroupProps } from './ButtonGroup.types';
+import type { ButtonGroupComponent, ButtonGroupProps } from './ButtonGroup.types';
 import { ButtonGroupContext } from './ButtonGroupContext';
 import { ActionMotion } from '@/components/animations';
 
-/**
- * The internal root container for `ButtonGroup`. Manages layout context, spacing recipe,
- * and distributes orientation/connected state to child `Button` atoms via `ButtonGroupContext`.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`buttonGroup` recipe), Radix Slot, `ActionMotion`, `ButtonGroupContext`
- * - **Props**: `PrimitiveProps<'div'>`
- *
- * ### Design Tokens
- * - **spacing**: gap between buttons → `silver.{sm|md|lg|none}`
- * - **color**: no direct color tokens — inherits from child `Button` intents
- *
- * ### Variant Logic
- * - **orientation="horizontal"**: Default. Lays buttons in a row.
- * - **orientation="vertical"**: Stacks buttons in a column for sidebars or menus.
- * - **connected**: Collapses gaps and merges adjacent borders. Suppresses child `ActionMotion` to `subtle`.
- * - **fullWidth**: Stretches the group and all child buttons to fill the container.
- *
- * ### Accessibility
- * - **Role**: `group` (explicit via `role="group"`)
- * - **Pattern**: WAI-ARIA Toolbar (when used as toolbar)
- * - **Keyboard**: Tab / Arrow: navigate between buttons
- * - **Required**: Provide `aria-label` on the group to describe its purpose to screen readers
- *
- * ### AI Usage
- * - **DO**: Wrap 2+ related `Button` atoms that share a conceptual action group.
- * - **DON'T**: Nest `ButtonGroup` inside another `ButtonGroup`. Do not use for navigation — use `Tabs` instead.
- *
- * @example Standard grouping
- * ```tsx
- * <ButtonGroup connected>
- *   <Button>Left</Button>
- *   <Button>Center</Button>
- *   <Button>Right</Button>
- * </ButtonGroup>
- * ```
- *
- * @example Vertical toolbar
- * ```tsx
- * <ButtonGroup orientation="vertical" aria-label="Text alignment">
- *   <Button>Top</Button>
- *   <Button>Middle</Button>
- *   <Button>Bottom</Button>
- * </ButtonGroup>
- * ```
- */
-export const ButtonGroupRoot = forwardRef<HTMLDivElement, ButtonGroupProps>(
+const buttonGroupHostNames = new Set(['article', 'div', 'section']);
+
+const ButtonGroupRootImpl = forwardRef<HTMLElement, ButtonGroupProps>(
   (
     {
       children,
@@ -64,19 +20,30 @@ export const ButtonGroupRoot = forwardRef<HTMLDivElement, ButtonGroupProps>(
       spacing = 'md',
       connected = false,
       fullWidth = false,
+      wrap = false,
       className,
       asChild,
       ...props
     },
     ref,
   ) => {
+    const effectiveWrap = wrap && orientation === 'horizontal' && !connected;
     const classes = buttonGroup({
       orientation,
       spacing: connected ? 'none' : spacing,
       connected,
       fullWidth,
+      wrap: effectiveWrap,
     });
-    const Component = asChild ? Slot : 'div';
+    const canUseAsChild = Boolean(
+      asChild &&
+      isValidElement(children) &&
+      typeof children.type === 'string' &&
+      buttonGroupHostNames.has(children.type),
+    );
+    const Component = (canUseAsChild ? Slot : 'div') as ElementType;
+    const renderedChildren =
+      asChild && !canUseAsChild ? getFallbackChildrenForNativeContainer(children) : children;
 
     const contextValue = useMemo(
       () => ({ orientation, spacing, connected, fullWidth }),
@@ -89,11 +56,12 @@ export const ButtonGroupRoot = forwardRef<HTMLDivElement, ButtonGroupProps>(
           <Component
             ref={ref}
             className={cx(classes.root, className)}
+            {...props}
             role="group"
             data-orientation={orientation}
-            {...props}
+            data-wrap={effectiveWrap ? '' : undefined}
           >
-            {children}
+            {renderedChildren}
           </Component>
         </ActionMotion>
       </ButtonGroupContext.Provider>
@@ -101,4 +69,13 @@ export const ButtonGroupRoot = forwardRef<HTMLDivElement, ButtonGroupProps>(
   },
 );
 
-ButtonGroupRoot.displayName = 'ButtonGroup.Root';
+ButtonGroupRootImpl.displayName = 'ButtonGroup.Root';
+/**
+ * Groups related actions in a labelled `role="group"` region.
+ *
+ * Provide `aria-label` or `aria-labelledby` when the surrounding context does not name the
+ * group. `connected` removes inter-button spacing, so `wrap` is effective only for unconnected
+ * horizontal groups. `asChild` accepts only an `article`, `div`, or `section`; other children
+ * render inside the default `<div>`.
+ */
+export const ButtonGroupRoot = ButtonGroupRootImpl as ButtonGroupComponent;

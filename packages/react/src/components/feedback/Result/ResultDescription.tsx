@@ -1,39 +1,15 @@
 'use client';
 
-import { cx } from '@/styled-system/css';
-import { result } from '@/styled-system/recipes';
-import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
-import { useResultContext } from './ResultContext';
-import { ResultDescriptionProps } from './Result.types';
+import { createFeedbackDescription } from '@/components/feedback/shared/createFeedbackParts';
+import { useResultContext } from '@/components/feedback/Result/ResultContext';
 
 /**
- * ResultDescription - Description text for Result
+ * Semantic explanatory-text slot for a `Result` root.
  *
- * @example
- * ```tsx
- * import { Result, ResultDescription, ResultTitle } from '@poffy-ui/react/feedback';
- *
- * <Result intent="success">
- *   <ResultTitle>Success</ResultTitle>
- *   <ResultDescription>
- *     Your changes have been saved successfully.
- *   </ResultDescription>
- * </Result>
- * ```
+ * The default host is `p`; `asChild` accepts one native paragraph with phrasing content and falls
+ * back to textual content for unsupported composition.
  */
-export const ResultDescription = forwardRef<HTMLParagraphElement, ResultDescriptionProps>(
-  ({ asChild, className, children, ...rest }, ref) => {
-    const Component = asChild ? Slot : 'p';
-    const { status } = useResultContext();
-    const classes = result({ status });
-
-    return (
-      <Component ref={ref} className={cx(classes.description, className)} {...rest}>
-        {children}
-      </Component>
-    );
-  },
-);
-
-ResultDescription.displayName = 'ResultDescription';
+export const ResultDescription = createFeedbackDescription({
+  displayName: 'ResultDescription',
+  useClasses: () => useResultContext().classes,
+});

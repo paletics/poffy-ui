@@ -8,6 +8,7 @@ export const flexRecipe = defineRecipe({
   description: 'Flex layout styling for direction, alignment, wrapping, and gap variants',
   base: {
     display: 'flex',
+    minInlineSize: 0,
   },
   variants: {
     direction: {

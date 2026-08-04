@@ -2,8 +2,11 @@ import { cx } from '@/styled-system/css';
 import { forwardRef, type Ref } from 'react';
 import { AvatarGroupExcessProps } from './AvatarGroup.types';
 import { useAvatarGroupContext } from './AvatarGroupContext';
+import { getAvatarGroupLabels } from './AvatarGroup.locales';
 import { Avatar } from '../Avatar/Avatar';
 import { ButtonPrimitive } from '@/components/inputs/ButtonPrimitive';
+import { VisuallyHidden } from '@/components/a11y/VisuallyHidden';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
 
 /**
  * Internal props used while mapping through AvatarGroup.
@@ -13,25 +16,21 @@ export interface InternalExcessProps extends AvatarGroupExcessProps {
 }
 
 /**
- * The excess indicator component for AvatarGroup (`+X`).
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: avatar), React Context
- * ### Design Tokens
- * - spacing/size: silver-ratio tokens inherited from AvatarGroup context
- * ### Variant Logic
- * - N/A
- * ### Notes
- * This component is automatically injected by AvatarRoot when children exceed `max`.
- * ### Accessibility
- * - Uses `asChild` to wrap an accessible button. Focus visible is imperative if `onClick` is provided.
- * ### AI Usage
- * - Do not use this directly. Manage via `AvatarGroup` props (`max`, `total`).
+ * Shows the count of AvatarGroup members omitted from view.
+ *
+ * It inherits the group's size and localizes its accessible text. With
+ * `onClick` it renders a labelled button; otherwise the visible `+count` is
+ * paired with visually hidden text. Non-finite and negative counts become zero.
  */
 export const AvatarGroupExcess = forwardRef<HTMLSpanElement, InternalExcessProps>((props, ref) => {
   const { count, onClick, className, index, ...rest } = props;
   const context = useAvatarGroupContext();
+  const locale = useOptionalLocale()?.locale;
   const size = context?.size ?? 'md';
-  const excessLabel = count === 1 ? 'Show 1 more avatar' : `Show ${count} more avatars`;
+  const normalizedCount = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  const excessLabel =
+    context?.showMoreLabel?.(normalizedCount) ??
+    getAvatarGroupLabels(locale).showMore(normalizedCount);
 
   if (onClick) {
     return (
@@ -45,7 +44,7 @@ export const AvatarGroupExcess = forwardRef<HTMLSpanElement, InternalExcessProps
         {...rest}
       >
         <ButtonPrimitive aria-label={excessLabel} onClick={onClick}>
-          <Avatar.Fallback>+{count}</Avatar.Fallback>
+          <Avatar.Fallback>+{normalizedCount}</Avatar.Fallback>
         </ButtonPrimitive>
       </Avatar.Root>
     );
@@ -59,7 +58,10 @@ export const AvatarGroupExcess = forwardRef<HTMLSpanElement, InternalExcessProps
       data-index={index}
       {...rest}
     >
-      <Avatar.Fallback>+{count}</Avatar.Fallback>
+      <Avatar.Fallback>
+        <span aria-hidden="true">+{normalizedCount}</span>
+        <VisuallyHidden>{excessLabel}</VisuallyHidden>
+      </Avatar.Fallback>
     </Avatar.Root>
   );
 });

@@ -2,26 +2,12 @@ import type { MotionPrimitiveProps } from '@/types/motion';
 import { CustomData } from '../types';
 import { LayoutTransitionType } from './LayoutTransition.presets';
 
-/**
- * Layout Transition Type Definitions
- *
- * ### AI Context & Architecture
- * Defines prop interfaces and component types for `LayoutTransition`.
- * Extends `MotionProps` and integrates with `LayoutTransitionType` presets.
- */
-
+/** Named layout-transition preset. */
 export type LayoutAnimationType = LayoutTransitionType;
 
 /**
- * Base props for LayoutTransition.
- *
- * ### Notes
- * Uses Framer Motion layout measurement. The parent controls whether
- * the layout changes; this component only animates the geometry delta.
- *
- * ### AI Usage
- * - **DO**: Wrap elements whose size or position changes in response to React state.
- * - **DON'T**: Use for enter/exit mounting animation; use `ContentTransition` or `ReorderTransition`.
+ * Props for a transition that animates layout changes caused by its parent.
+ * @typeParam C - Custom data accepted by the selected preset.
  */
 export interface LayoutTransitionBaseProps<C extends CustomData = CustomData> {
   /**
@@ -35,6 +21,12 @@ export interface LayoutTransitionBaseProps<C extends CustomData = CustomData> {
    * Custom values passed to the animation variants.
    */
   customData?: C;
+
+  /** Layout measurement mode. Defaults to `true` while motion is enabled. */
+  layout?: true | false | 'position' | 'size' | 'preserve-aspect';
+
+  /** Shared layout identity for coordinating a transition between elements. */
+  layoutId?: string;
 }
 
 /**

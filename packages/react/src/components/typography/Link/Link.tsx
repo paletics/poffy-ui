@@ -1,66 +1,81 @@
 import { cx } from '@/styled-system/css';
 import { link } from '@/styled-system/recipes';
-import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
-import type { LinkProps } from './Link.types';
+import { Slot, Slottable } from '@radix-ui/react-slot';
+import { cloneElement, forwardRef } from 'react';
+import type { AnchorHTMLAttributes, ElementType, ReactElement } from 'react';
+import { getFallbackChildrenForNativeAnchor } from '@/components/shared/asChild';
+import {
+  resolveDelegatedLinkDestination,
+  resolveSafeLinkRel,
+} from '@/components/shared/linkTarget';
+import { omitNativeAnchorOnlyProps } from '@/components/shared/linkDelegation';
+import type { LinkComponent, LinkProps } from './Link.types';
+import {
+  getLinkFallbackAttributes,
+  getLinkFallbackChildren,
+  isLinkAsChildHost,
+} from './Link.utils';
 
+
+const LinkImpl = forwardRef<HTMLElement, LinkProps>((rawProps, ref) => {
+  const {
+    variant,
+    colorScheme,
+    external = false,
+    asChild = false,
+    className,
+    children,
+    href,
+    target: targetProp,
+    rel: relProp,
+    ...props
+  } = rawProps as LinkProps & AnchorHTMLAttributes<HTMLAnchorElement>;
+  const asChildHost = asChild && isLinkAsChildHost(children) ? children : null;
+  const destination = resolveDelegatedLinkDestination(href, asChildHost);
+  const canUseAsChild = asChildHost !== null && destination.hasDestination;
+  const child = canUseAsChild ? asChildHost : null;
+  const childTarget = child?.props.target;
+  const childRel = child?.props.rel;
+  const { effectiveHref, hasDestination, hasHref } = destination;
+  const target = hasDestination ? (external ? '_blank' : (targetProp ?? childTarget)) : undefined;
+  const rel = hasDestination ? resolveSafeLinkRel(target, relProp ?? childRel) : undefined;
+  const Component = (canUseAsChild ? Slot : hasDestination ? 'a' : 'span') as ElementType;
+  const slottedChild = canUseAsChild
+    ? cloneElement(child as ReactElement<{ href?: string; rel?: string; target?: string }>, {
+        ...(hasHref ? { href: effectiveHref } : {}),
+        rel,
+        target,
+      })
+    : null;
+  const renderedChildren = canUseAsChild
+    ? null
+    : asChild
+      ? hasDestination
+        ? getFallbackChildrenForNativeAnchor(children)
+        : getLinkFallbackChildren(children)
+      : children;
+  const fallbackAttributes = asChild && !canUseAsChild ? getLinkFallbackAttributes(children) : {};
+  const hostProps = hasDestination ? props : omitNativeAnchorOnlyProps(props);
+
+  return (
+    <Component
+      ref={ref}
+      className={cx(link({ variant, colorScheme }), className)}
+      {...fallbackAttributes}
+      {...hostProps}
+      {...(hasDestination ? { target, rel } : {})}
+      {...(hasHref ? { href: effectiveHref } : {})}
+    >
+      {canUseAsChild ? <Slottable>{slottedChild}</Slottable> : renderedChildren}
+    </Component>
+  );
+});
+
+LinkImpl.displayName = 'Link';
 /**
- * Polymorphic anchor component for navigational links.
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS (Recipe: link), Radix Slot
- * ### Design Tokens
- * - colors: brand.main / danger / success semantic tokens
- * ### Variant Logic
- * - underline: persistent decoration for inline body links. hover: subtle for nav contexts. plain: least intrusive.
- * @example
- * ```tsx
- * <Link href="/docs">Documentation</Link>
- * <Link href="https://example.com" target="_blank">External Site</Link>
- * <Link asChild variant="plain"><NextLink href="/about">About</NextLink></Link>
- * ```
- * ### Notes
- * `rel="noopener noreferrer"` is automatically merged whenever `target="_blank"` is present,
- *          regardless of how it was set — via prop, `external`, or spread. The consumer's explicit
- *          `rel` value is preserved and the security tokens are appended only if not already included.
- * ### Notes
- * **`external` takes precedence over `target`** — passing both `external={true}` and
- *          `target="_self"` will result in `target="_blank"`. Use `target` directly (without `external`)
- *          when you need explicit control over the target value.
- * ### Accessibility
- * - Inherits native <a> semantics. Use aria-label when link text is non-descriptive (e.g. "click here").
- * ### AI Usage
- * - Use for any navigational or inline hyperlink. Use asChild with Next.js Link.
+ * Renders a navigation link with managed external-link behavior. Unsafe navigation URLs are
+ * omitted; callers must provide an accessible name through content or ARIA labeling. Without a
+ * usable destination it renders a `span`, not a clickable anchor. `asChild` delegates to a router
+ * component or native anchor only when it can provide a destination and forwarded anchor props.
  */
-export const Link = forwardRef<HTMLAnchorElement, LinkProps>(
-  (
-    { variant, colorScheme, external = false, asChild = false, className, children, ...props },
-    ref,
-  ) => {
-    const Component = asChild ? Slot : 'a';
-
-    // Merge target: external shorthand sets _blank, but consumer's explicit target wins after spread.
-    const target = external ? '_blank' : props.target;
-
-    // Automatically enforce noopener noreferrer for any _blank target to prevent reverse tabnapping.
-    // Preserve any consumer-provided rel values and only append the missing tokens.
-    let rel = props.rel ?? '';
-    if (target === '_blank') {
-      if (!rel.includes('noopener')) rel = `${rel} noopener`.trimStart();
-      if (!rel.includes('noreferrer')) rel = `${rel} noreferrer`.trimStart();
-    }
-
-    return (
-      <Component
-        ref={ref}
-        className={cx(link({ variant, colorScheme }), className)}
-        {...props}
-        target={target}
-        rel={rel === '' ? undefined : rel}
-      >
-        {children}
-      </Component>
-    );
-  },
-);
-
-Link.displayName = 'Link';
+export const Link = LinkImpl as LinkComponent;

@@ -25,6 +25,7 @@ export const MotionTrail = ({
   radius,
   circumference,
   classes,
+  motionStyle,
 }: SpinnerInternalProps) => {
   const cx = size / 2;
   const cy = size / 2;
@@ -41,6 +42,7 @@ export const MotionTrail = ({
           r={radius}
           strokeWidth={thickness * config.strokeScale}
           className={classes.indicator}
+          motionStyle={motionStyle}
         />
       ))}
     </>

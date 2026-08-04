@@ -30,20 +30,32 @@ export const listboxSelectRecipe = defineSlotRecipe({
       minInlineSize: 0,
       maxWidth: '100%',
       maxInlineSize: '100%',
+      containerType: 'inline-size',
+      containerName: 'listbox-select-control',
     },
     field: {
       ...inputBaseStyles,
       display: 'flex',
       alignItems: 'center',
       cursor: 'pointer',
-      paddingRight: inputEndDecoratorPadding.md,
+      paddingInlineEnd: inputEndDecoratorPadding.md,
+      '& [data-listbox-select-value]': {
+        flex: '1 1 0',
+        minWidth: 0,
+        minInlineSize: 0,
+        overflow: 'hidden',
+        textOverflow: 'ellipsis',
+        whiteSpace: 'nowrap',
+      },
     },
     icon: {
       ...inputEndDecoratorStyles,
-      right: inputEndDecoratorOffsets.md,
-      top: '50%',
+      insetInlineEnd: inputEndDecoratorOffsets.md,
+      insetBlockStart: '50%',
       transform: 'translateY(-50%)',
       transition: 'transform 160ms ease',
+      _motionSubtle: { transition: 'transform {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'transform {durations.standard} {easings.bounce}' },
       pointerEvents: 'none',
       fontSize: inputEndDecoratorIconSizes.md,
       '&[data-state="open"]': {
@@ -92,7 +104,7 @@ export const listboxSelectRecipe = defineSlotRecipe({
       flushed: {
         field: {
           ...inputVisualVariants.flushed,
-          paddingRight: inputEndDecoratorPadding.md,
+          paddingInlineEnd: inputEndDecoratorPadding.md,
         },
       },
     },
@@ -100,23 +112,62 @@ export const listboxSelectRecipe = defineSlotRecipe({
       sm: {
         field: {
           ...inputSizeVariants.sm,
-          paddingRight: inputEndDecoratorPadding.sm,
+          paddingInlineEnd: inputEndDecoratorPadding.sm,
+          '@container listbox-select-control (max-width: 7rem)': {
+            paddingInlineStart: '{spacing.2xs}',
+            paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.2xs})',
+          },
+          '@container listbox-select-control (max-width: 4rem)': {
+            paddingInlineEnd: '{spacing.2xs}',
+          },
         },
-        icon: { fontSize: inputEndDecoratorIconSizes.sm, right: inputEndDecoratorOffsets.sm },
+        icon: {
+          fontSize: inputEndDecoratorIconSizes.sm,
+          insetInlineEnd: inputEndDecoratorOffsets.sm,
+          '@container listbox-select-control (max-width: 4rem)': {
+            display: 'none',
+          },
+        },
       },
       md: {
         field: {
           ...inputSizeVariants.md,
-          paddingRight: inputEndDecoratorPadding.md,
+          paddingInlineEnd: inputEndDecoratorPadding.md,
+          '@container listbox-select-control (max-width: 7rem)': {
+            paddingInlineStart: '{spacing.2xs}',
+            paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.2xs})',
+          },
+          '@container listbox-select-control (max-width: 4rem)': {
+            paddingInlineEnd: '{spacing.2xs}',
+          },
         },
-        icon: { fontSize: inputEndDecoratorIconSizes.md, right: inputEndDecoratorOffsets.md },
+        icon: {
+          fontSize: inputEndDecoratorIconSizes.md,
+          insetInlineEnd: inputEndDecoratorOffsets.md,
+          '@container listbox-select-control (max-width: 4rem)': {
+            display: 'none',
+          },
+        },
       },
       lg: {
         field: {
           ...inputSizeVariants.lg,
-          paddingRight: inputEndDecoratorPadding.lg,
+          paddingInlineEnd: inputEndDecoratorPadding.lg,
+          '@container listbox-select-control (max-width: 7rem)': {
+            paddingInlineStart: '{spacing.2xs}',
+            paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.2xs})',
+          },
+          '@container listbox-select-control (max-width: 4rem)': {
+            paddingInlineEnd: '{spacing.2xs}',
+          },
         },
-        icon: { fontSize: inputEndDecoratorIconSizes.lg, right: inputEndDecoratorOffsets.lg },
+        icon: {
+          fontSize: inputEndDecoratorIconSizes.lg,
+          insetInlineEnd: inputEndDecoratorOffsets.lg,
+          '@container listbox-select-control (max-width: 4rem)': {
+            display: 'none',
+          },
+        },
       },
     },
     error: {

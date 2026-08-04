@@ -4,15 +4,9 @@ import { Flex } from '@/components/layout/Flex';
 import { Stack } from '@/components/layout/Stack';
 import { Text } from '@/components/typography/Text';
 import { Spinner } from '@/components/feedback/Spinner';
+import { AnimationProvider } from '@/providers/AnimationProvider';
+import { css } from '@/styled-system/css';
 
-/**
- * Indeterminate circular loading indicator that signals an ongoing operation with no known completion time.
- * Use when content or data is loading and the duration cannot be expressed as a percentage.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (spinner recipe), Radix Slot, motion/react (lazy-loaded animations)
- */
 const meta: Meta<typeof Spinner> = {
   title: 'Feedback/Spinner',
   component: Spinner,
@@ -42,6 +36,7 @@ const meta: Meta<typeof Spinner> = {
     },
     size: { control: 'number' },
     thickness: { control: 'number' },
+    decorative: { control: 'boolean' },
   },
 };
 
@@ -58,6 +53,14 @@ const renderSpinnerItem = (label: string, children: ReactNode, loose = false) =>
 );
 
 export const Default: Story = {};
+
+export const NoAnimation: Story = {
+  args: { animation: 'none' },
+};
+
+export const Dash: Story = {
+  args: { animation: 'dash', 'data-testid': 'dash-spinner' },
+};
 
 export const Playground: Story = {
   args: Default.args,
@@ -139,5 +142,68 @@ export const SilverRatio: Story = {
       {renderSpinnerItem('light', <Spinner animation="silver" size={72} intent="light" />)}
       {renderSpinnerItem('dark', <Spinner animation="silver" size={72} intent="dark" />)}
     </Flex>
+  ),
+};
+
+export const MotionDisabled: Story = {
+  render: () => (
+    <AnimationProvider global={false} defaultAnimationEnabled={false}>
+      <Flex gap="lg" align="center">
+        <Spinner animation="spin" />
+        <Spinner animation="trail" />
+        <Spinner animation="orbit-glow" />
+      </Flex>
+    </AnimationProvider>
+  ),
+};
+
+const constrainedSpinnerGrid = css({
+  display: 'grid',
+  gap: 'md',
+  justifyItems: 'start',
+  width: '100%',
+  maxWidth: '100%',
+  minWidth: 0,
+});
+
+const constrainedSpinnerCell = css({
+  inlineSize: '160px',
+  minInlineSize: 0,
+});
+
+const wideSpinnerCell = css({
+  inlineSize: '[min(360px,100%)]',
+  maxWidth: '100%',
+});
+
+const spinnerAnimations = [
+  'spin',
+  'dash',
+  'breathe',
+  'pop-spin',
+  'refined-dash',
+  'trail',
+  'elastic',
+  'orbit-glow',
+  'silver',
+  'none',
+] as const;
+
+export const PreferredMaximum: Story = {
+  render: () => (
+    <div className={constrainedSpinnerGrid} data-testid="spinner-constrained-parent">
+      {spinnerAnimations.map((animation) => (
+        <div
+          className={constrainedSpinnerCell}
+          data-testid="spinner-constrained-cell"
+          key={animation}
+        >
+          <Spinner animation={animation} size={300} aria-label={`${animation} loading`} />
+        </div>
+      ))}
+      <div className={wideSpinnerCell} data-testid="spinner-wide-cell">
+        <Spinner animation="spin" size={300} aria-label="Wide loading" />
+      </div>
+    </div>
   ),
 };

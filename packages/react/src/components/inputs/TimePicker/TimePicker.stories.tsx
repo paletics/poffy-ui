@@ -1,17 +1,10 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { TimePicker } from '@/components/inputs/TimePicker';
-import { Stack } from '@/components/layout';
+import { Box, Stack } from '@/components/layout';
 import { Text } from '@/components/typography';
 import { useState } from 'react';
 
-/**
- * Storybook documentation and visual review surface for TimePicker.
- * Covers representative usage, controls, and fixed review examples.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS recipe, Radix Slot
- */
+
 const meta = {
   title: 'Inputs/TimePicker',
   component: TimePicker,
@@ -25,11 +18,13 @@ const meta = {
     },
   },
   argTypes: {
-    appearance: { control: 'select', options: ['outline', 'soft'] },
+    appearance: { control: 'select', options: ['outline', 'soft', 'flushed'] },
     size: { control: 'select', options: ['sm', 'md', 'lg'] },
     inputMode: { control: 'select', options: ['segments', 'clock', 'wheel'] },
     format: { control: 'select', options: ['24h', '12h'] },
     withSeconds: { control: 'boolean' },
+    minTime: { control: 'text' },
+    maxTime: { control: 'text' },
     hourStep: { control: 'number' },
     minuteStep: { control: 'number' },
     secondStep: { control: 'number' },
@@ -99,6 +94,24 @@ export const SteppedMinutes: Story = {
   },
 };
 
+export const Constrained: Story = {
+  args: {
+    defaultValue: '09:30',
+    minTime: '09:00',
+    maxTime: '17:00',
+    minuteStep: 15,
+    isTimeDisabled: (parts) => parts.hour === 12,
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Rejects unavailable changes outside the configured time range or predicate. Unavailable segment, clock, and wheel values are not visually marked in this mode.',
+      },
+    },
+  },
+};
+
 export const ClockInput: Story = {
   args: {
     defaultValue: '09:30',
@@ -122,8 +135,7 @@ export const ClockInput24Hour: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          'Shows the clock input in 24-hour value mode with a 12-hour clock face and AM/PM controls.',
+        story: 'Shows all 24 hours on outer and inner clock rings without meridiem controls.',
       },
     },
   },
@@ -171,6 +183,28 @@ export const WithSeconds: Story = {
     defaultValue: '09:30:45',
     withSeconds: true,
   },
+  parameters: {
+    layout: 'padded',
+    docs: {
+      description: {
+        story: 'Three fixed-width time segments scroll locally when the available width is constrained.',
+      },
+    },
+  },
+};
+
+export const ConstrainedFullSegments: Story = {
+  render: () => (
+    <Box aria-label="Constrained time container" w="[300px]" maxW="100%">
+      <TimePicker
+        aria-label="Constrained time"
+        defaultValue="09:30:45"
+        format="12h"
+        size="lg"
+        withSeconds
+      />
+    </Box>
+  ),
 };
 
 export const ErrorState: Story = {

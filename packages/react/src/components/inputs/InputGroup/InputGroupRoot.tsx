@@ -2,44 +2,50 @@
 
 import { cx } from '@/styled-system/css';
 import { inputGroup } from '@/styled-system/recipes';
-import { Children, forwardRef, isValidElement, useMemo } from 'react';
-import type { ReactNode } from 'react';
+import {
+  getFallbackChildrenForNativeContainer,
+  isContainerAsChildHost,
+} from '@/components/shared/asChild';
+import { flattenFragmentChildren } from '@/components/shared/flattenFragmentChildren';
+import { cloneElement, forwardRef, isValidElement, useMemo } from 'react';
+import type { ElementType, ReactNode } from 'react';
+import { Slot } from '@radix-ui/react-slot';
 import { InputGroupContext } from './InputGroupContext';
 import { INPUT_GROUP_SLOT, type InputGroupSlotComponent } from './InputGroupSlot';
-import type { InputGroupProps } from './InputGroup.types';
+import type { InputGroupComponent, InputGroupProps } from './InputGroup.types';
 
 const getSlot = (child: unknown) =>
   isValidElement(child) ? (child.type as InputGroupSlotComponent)[INPUT_GROUP_SLOT] : undefined;
 
-const partitionChildren = (children: ReactNode) => {
+const partitionChildren = (children: ReactNode[]) => {
   const slots: {
-    leftAddon?: ReactNode;
-    rightAddon?: ReactNode;
-    leftElement?: ReactNode;
-    rightElement?: ReactNode;
+    startAddon?: ReactNode;
+    endAddon?: ReactNode;
+    startElement?: ReactNode;
+    endElement?: ReactNode;
     fieldChildren: ReactNode[];
   } = { fieldChildren: [] };
 
-  Children.forEach(children, (child) => {
+  children.forEach((child) => {
     const slot = getSlot(child);
 
-    if (slot === 'leftAddon') {
-      slots.leftAddon = child;
+    if (slot === 'startAddon') {
+      slots.startAddon = child;
       return;
     }
 
-    if (slot === 'rightAddon') {
-      slots.rightAddon = child;
+    if (slot === 'endAddon') {
+      slots.endAddon = child;
       return;
     }
 
-    if (slot === 'leftElement') {
-      slots.leftElement = child;
+    if (slot === 'startElement') {
+      slots.startElement = child;
       return;
     }
 
-    if (slot === 'rightElement') {
-      slots.rightElement = child;
+    if (slot === 'endElement') {
+      slots.endElement = child;
       return;
     }
 
@@ -49,88 +55,72 @@ const partitionChildren = (children: ReactNode) => {
   return slots;
 };
 
-/**
- * Layout wrapper that connects an input field with prefix/suffix addons and inline elements.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`inputGroup` slot recipe), React context, marker-based slot parsing
- * - **Props**: PrimitiveProps<'div'>
- *
- * ### Design Tokens
- * - **spacing**: input padding, addon padding, and inline element width use size-based recipe tokens
- * - **color**: input/addon borders and decoration text use semantic input tokens
- *
- * ### Variant Logic
- * - **size="sm"**: Compact search bars or dense filters.
- * - **size="md"**: Default form fields and settings pages.
- * - **size="lg"**: Prominent fields with larger hit targets.
- *
- * ### Accessibility
- * - **Role**: generic `div`; the nested `InputGroup.Input` provides textbox semantics.
- * - **Pattern**: Grouped form field with visual decorations.
- * - **Keyboard**: Focus moves to the inner input; addons/elements do not add keyboard stops.
- * - **Required**: Provide `aria-label`, `aria-labelledby`, or a `FormLabel` for the inner input.
- *
- * ### AI Usage
- * - **DO**: Use for single fields with static prefixes, suffixes, or decorative icons.
- * - **DON'T**: Do not use to group unrelated form controls or action buttons.
- *
- * @example Addon composition
- * ```tsx
- * <InputGroup>
- *   <InputGroup.LeftAddon>https://</InputGroup.LeftAddon>
- *   <InputGroup.Input aria-label="Website" />
- * </InputGroup>
- * ```
- *
- * @example Inline icon composition
- * ```tsx
- * <InputGroup size="sm">
- *   <InputGroup.LeftElement aria-hidden="true"><SearchIcon /></InputGroup.LeftElement>
- *   <InputGroup.Input aria-label="Search" />
- * </InputGroup>
- * ```
- */
-export const InputGroupRoot = forwardRef<HTMLDivElement, InputGroupProps>(
-  ({ size = 'md', className, children, ...props }, ref) => {
-    const childArray = Children.toArray(children);
 
-    const hasLeftAddon = childArray.some((c) => getSlot(c) === 'leftAddon');
-    const hasRightAddon = childArray.some((c) => getSlot(c) === 'rightAddon');
-    const hasLeftElement = childArray.some((c) => getSlot(c) === 'leftElement');
-    const hasRightElement = childArray.some((c) => getSlot(c) === 'rightElement');
-    const { leftAddon, rightAddon, leftElement, rightElement, fieldChildren } =
-      partitionChildren(children);
+const InputGroupRootImpl = forwardRef<Element, InputGroupProps>(
+  ({ size = 'md', className, children, asChild, ...props }, ref) => {
+    const asChildElement = asChild && isContainerAsChildHost(children) ? children : null;
+    const rootChildren =
+      asChild && !asChildElement
+        ? getFallbackChildrenForNativeContainer(children)
+        : (asChildElement?.props.children ?? children);
+    const childArray = flattenFragmentChildren(rootChildren);
 
-    const styles = inputGroup({ size });
+    const hasStartAddon = childArray.some((c) => getSlot(c) === 'startAddon');
+    const hasEndAddon = childArray.some((c) => getSlot(c) === 'endAddon');
+    const hasStartElement = childArray.some((c) => getSlot(c) === 'startElement');
+    const hasEndElement = childArray.some((c) => getSlot(c) === 'endElement');
+    const { startAddon, endAddon, startElement, endElement, fieldChildren } =
+      partitionChildren(childArray);
+
+    const classes = useMemo(() => inputGroup({ size }), [size]);
     const contextValue = useMemo(
-      () => ({ size, hasLeftAddon, hasRightAddon, hasLeftElement, hasRightElement }),
-      [size, hasLeftAddon, hasRightAddon, hasLeftElement, hasRightElement],
+      () => ({ size, classes, hasStartAddon, hasEndAddon, hasStartElement, hasEndElement }),
+      [size, classes, hasStartAddon, hasEndAddon, hasStartElement, hasEndElement],
     );
+
+    const content = (
+      <>
+        {startAddon}
+        <div className={classes.field}>
+          {startElement}
+          {fieldChildren}
+          {endElement}
+        </div>
+        {endAddon}
+      </>
+    );
+    const rootProps = {
+      ref,
+      className: cx(classes.root, className),
+      'data-has-start-addon': hasStartAddon ? '' : undefined,
+      'data-has-end-addon': hasEndAddon ? '' : undefined,
+      'data-has-start-element': hasStartElement ? '' : undefined,
+      'data-has-end-element': hasEndElement ? '' : undefined,
+      ...props,
+    };
+
+    const Component = (asChildElement ? Slot : 'div') as ElementType;
+    const renderedContent = asChildElement
+      ? cloneElement(asChildElement, undefined, content)
+      : content;
 
     return (
       <InputGroupContext.Provider value={contextValue}>
-        <div
-          ref={ref}
-          className={cx(styles.root, className)}
-          data-has-left-addon={hasLeftAddon ? '' : undefined}
-          data-has-right-addon={hasRightAddon ? '' : undefined}
-          data-has-left-element={hasLeftElement ? '' : undefined}
-          data-has-right-element={hasRightElement ? '' : undefined}
-          {...props}
-        >
-          {leftAddon}
-          <div className={styles.field}>
-            {leftElement}
-            {fieldChildren}
-            {rightElement}
-          </div>
-          {rightAddon}
-        </div>
+        <Component {...rootProps}>{renderedContent}</Component>
       </InputGroupContext.Provider>
     );
   },
 );
 
-InputGroupRoot.displayName = 'InputGroup';
+InputGroupRootImpl.displayName = 'InputGroup';
+
+/**
+ * Root layout for a single field and its InputGroup slots.
+ *
+ * Slot children are partitioned by type, with at most the last supplied slot occupying each
+ * position. `asChild` accepts an `article`, `div`, `section`, or a custom component that forwards
+ * its ref and DOM props, and replaces that host's children with the arranged group content;
+ * unsupported hosts render inside the default `<div>`.
+ */
+
+export const InputGroupRoot = InputGroupRootImpl as InputGroupComponent;

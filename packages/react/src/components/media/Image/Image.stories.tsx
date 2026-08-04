@@ -1,15 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/react';
+import { useState } from 'react';
+import { Button } from '@/components/inputs/Button';
+import { AspectRatio } from '@/components/layout/AspectRatio';
 import { Center } from '@/components/layout/Center';
+import { Stack } from '@/components/layout/Stack';
 import { Image } from '@/components/media/Image';
 
-/**
- * A resilient image primitive with load-state awareness that automatically renders a URL or React node fallback when the source fails.
- * Use as the standard image component throughout the design system whenever graceful error handling or aspect-ratio control is needed.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS recipe (`image` - variants: `fit`, `aspectRatio`, `radius`), `useImage` hook
- */
+
 const meta = {
   title: 'Media/Image',
   component: Image,
@@ -25,6 +22,10 @@ const meta = {
     aspectRatio: {
       control: 'select',
       options: ['square', 'video', 'auto'],
+    },
+    sizing: {
+      control: 'select',
+      options: ['intrinsic', 'fluid', 'fill'],
     },
     radius: {
       control: 'select',
@@ -95,5 +96,41 @@ export const Circular: Story = {
     aspectRatio: 'square',
     radius: 'full',
     fit: 'cover',
+  },
+};
+
+const StableFallbackFrameExample = () => {
+  const [src, setSrc] = useState(sampleImageSrc);
+
+  return (
+    <Stack gap="md" alignItems="center">
+      <AspectRatio ratio={16 / 9} w="[320px]" aria-label="Stable image frame">
+        <Image
+          src={src}
+          alt="Framed preview"
+          fallback={
+            <Center bg="layout.background" color="text.secondary">
+              Preview unavailable
+            </Center>
+          }
+          loading="lazy"
+          sizing="fill"
+          fit="cover"
+        />
+      </AspectRatio>
+      <Button onClick={() => setSrc('/missing-framed-preview.png')}>Break image source</Button>
+    </Stack>
+  );
+};
+
+export const StableFallbackFrame: Story = {
+  render: () => <StableFallbackFrameExample />,
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'AspectRatio owns the frame while sizing="fill" keeps the image and a React-node fallback at identical dimensions.',
+      },
+    },
   },
 };

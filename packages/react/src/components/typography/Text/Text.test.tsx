@@ -9,6 +9,16 @@ describe('Text', () => {
     expect(getByText('Test Content')).toBeInTheDocument();
   });
 
+  it('preserves element children during normal rendering', () => {
+    const { getByRole } = render(
+      <Text>
+        <a href="/docs">Documentation</a>
+      </Text>,
+    );
+
+    expect(getByRole('link', { name: 'Documentation' })).toHaveAttribute('href', '/docs');
+  });
+
   it('renders as paragraph by default', () => {
     const { container } = render(<Text>Content</Text>);
     const element = container.firstChild as HTMLElement;
@@ -54,6 +64,26 @@ describe('Text', () => {
     const element = container.firstChild as HTMLElement;
     expect(element.tagName).toBe('SPAN');
     expect(element).toHaveClass('poffy-text');
+  });
+
+  it('falls back to a paragraph for invalid asChild hosts', () => {
+    const { container } = render(
+      <Text asChild>
+        <>Content</>
+      </Text>,
+    );
+
+    expect(container.querySelector('p')).toHaveTextContent('Content');
+  });
+
+  it('preserves a void asChild host inside the fallback paragraph', () => {
+    const { container } = render(
+      <Text asChild>
+        <img alt="Status" />
+      </Text>,
+    );
+
+    expect(container.querySelector('p img')).toHaveAttribute('alt', 'Status');
   });
 
   it('forwards ref correctly', () => {

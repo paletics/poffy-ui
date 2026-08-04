@@ -1,17 +1,4 @@
-/**
- * Panda static CSS generation matrix for recipe variant combinations.
- *
- * ### Notes
- * Panda only emits CSS for variants it can discover statically. Keep
- * this matrix in sync with public recipe variant props whenever a component
- * accepts dynamic variant names from runtime code or documentation examples.
- *
- * ### AI Usage
- * - **DO**: Add new public recipe variant axes here when components expose them as props.
- * - **DON'T**: Add component-local animation or state values that are not Panda recipe variants.
- *
- * Related APIs: `recipes`, `slotRecipes`.
- */
+
 export const staticCss = {
   recipes: {
     button: [
@@ -62,14 +49,28 @@ export const staticCss = {
     ],
     gridStyle: [{ ratio: ['*'] }, { gap: ['*'] }],
     simpleGrid: [{ columns: ['*'] }, { gap: ['*'] }],
-    badge: [{ intent: ['*'] }, { size: ['*'] }, { placement: ['*'] }],
-    icon: [{ size: ['*'] }],
+    text: [{ variant: ['*'] }, { weight: ['*'] }, { align: ['*'] }, { transform: ['*'] }],
+    heading: [{ level: ['*'] }, { weight: ['*'] }],
+    link: [{ variant: ['*'] }, { colorScheme: ['*'] }],
+    kbd: [{ size: ['*'] }, { overflow: ['*'] }],
+    blockquote: [{ tone: ['*'] }],
+    badge: [
+      { intent: ['*'], appearance: ['*'] },
+      { size: ['*'] },
+      { placement: ['*'] },
+      { shape: ['*'] },
+    ],
+    icon: [{ size: ['*'] }, { variant: ['*'] }, { disabled: ['*'] }],
     alert: [{ status: ['*'] }, { variant: ['*'] }, { closable: ['*'] }],
-    circleProgress: [{ variant: ['*'] }, { animation: ['*'] }],
-    spinner: [{ variant: ['*'] }, { animation: ['*'] }],
+    circleProgress: [
+      { variant: ['primary', 'secondary', 'info', 'success', 'warning', 'danger'] },
+      { appearance: ['*'] },
+      { animation: ['*'] },
+    ],
+    spinner: [{ variant: ['*'], animation: ['*'], conditions: ['motionSubtle', 'motionPop'] }],
     puff: [{ intent: ['*'] }, { appearance: ['*'] }, { point: ['*'] }, { size: ['*'] }],
     progressBar: [
-      { variant: ['*'] },
+      { intent: ['primary', 'secondary', 'info', 'success', 'warning', 'danger', 'light', 'dark'] },
       { appearance: ['*'] },
       { shape: ['*'] },
       { pattern: ['*'] },
@@ -88,29 +89,67 @@ export const staticCss = {
       { fullWidth: ['*'] },
     ],
     avatar: [{ size: ['*'] }, { shape: ['*'] }],
+    avatarGroup: [{ size: ['*'] }, { spacing: ['*'] }],
     skeleton: [{ variant: ['*'] }, { shape: ['*'] }, { animation: ['*'] }],
     stat: [{ size: ['*'] }, { type: ['*'] }, { intent: ['*'] }],
+    image: [{ sizing: ['*'] }, { fit: ['*'] }, { aspectRatio: ['*'] }, { radius: ['*'] }],
+    picture: [{ sizing: ['*'] }, { fit: ['*'] }],
+    emptyState: [{ size: ['*'] }, { appearance: ['*'] }, { intent: ['*'] }],
+    breadcrumbs: [{ size: ['*'] }, { variant: ['*'] }],
+    list: [{ variant: ['*'] }],
+    table: [
+      { variant: ['*'] },
+      { layout: ['*'] },
+      { stickyHeader: ['*'] },
+      { headerTone: ['*'] },
+      { size: ['*'] },
+    ],
+    reference: [{ appearance: ['*'] }, { size: ['*'] }, { overflow: ['*'] }],
+    diffViewer: [{ mode: ['*'] }, { size: ['*'] }],
+    code: [{ variant: ['*'] }, { colorScheme: ['*'] }],
+    codeViewer: [{ size: ['*'] }, { wrap: ['*'] }],
+    keyValueViewer: [{ size: ['*'] }, { columns: ['*'] }],
+    markdownViewer: [{ size: ['*'] }],
     input: [{ variant: ['*'] }, { size: ['*'] }, { error: ['*'] }],
     textarea: [{ variant: ['*'] }, { size: ['*'] }, { error: ['*'] }],
     select: [{ variant: ['*'] }, { size: ['*'] }, { error: ['*'] }],
     comboBox: [{ variant: ['*'] }, { size: ['*'] }, { error: ['*'] }],
     multiSelect: [{ variant: ['*'] }, { size: ['*'] }, { error: ['*'] }],
     numberInput: [{ variant: ['*'] }, { size: ['*'] }, { error: ['*'] }],
+    inputGroup: [{ size: ['*'] }],
     otpInput: [{ appearance: ['*'] }, { size: ['*'] }],
     fileUploader: [{ appearance: ['*'] }, { intent: ['*'] }],
     switchControl: [{ size: ['*'] }, { intent: ['*'] }],
     checkbox: [{ size: ['*'] }, { intent: ['*'] }, { error: ['*'] }],
     radioGroup: [{ orientation: ['*'] }],
+    radio: [{ size: ['*'] }, { intent: ['*'] }, { error: ['*'] }],
+    rangeSlider: [{ size: ['*'] }, { intent: ['*'] }, { error: ['*'] }],
     slider: [{ size: ['*'] }, { intent: ['*'] }],
+    listboxSelect: [{ variant: ['*'] }, { size: ['*'] }, { error: ['*'] }],
+    wheelPicker: [{ size: ['*'] }, { error: ['*'] }],
+    calendar: [{ size: ['*'] }],
     timePicker: [{ size: ['*'] }],
-    navbar: [{ appearance: ['*'] }, { sticky: ['*'] }, { justify: ['*'] }],
+    timeClock: [{ size: ['*'] }],
+    commandMenu: [{ size: ['*'] }],
+    navbar: [{ appearance: ['*'] }, { sticky: ['*'] }, { narrowLayout: ['*'] }, { justify: ['*'] }],
     pagination: [{ appearance: ['*'] }, { size: ['*'] }],
-    sidebar: [{ appearance: ['*'] }, { collapsed: ['*'] }, { variant: ['*'] }],
-    tabs: [{ size: ['*'] }, { variant: ['*'] }],
+    sidebar: [{ appearance: ['*'] }, { collapsed: ['*'] }],
+    stepper: [{ appearance: ['*'] }, { intent: ['*'] }, { orientation: ['*'] }, { size: ['*'] }],
+    tabs: [{ size: ['*'] }, { variant: ['*'] }, { orientation: ['*'] }],
+    scrollArea: [{ size: ['*'] }],
     dropdown: [{ appearance: ['*'] }, { size: ['*'] }],
+    tooltip: [{ theme: ['*'] }],
     drawer: [{ appearance: ['*'] }, { placement: ['*'] }, { size: ['*'] }],
+    hoverCard: [{ appearance: ['*'] }, { size: ['*'] }],
     modal: [{ appearance: ['*'] }, { size: ['*'] }, { scrollBehavior: ['*'] }],
+    alertDialog: [
+      { appearance: ['*'] },
+      { intent: ['*'] },
+      { size: ['*'] },
+      { scrollBehavior: ['*'] },
+    ],
     accordion: [{ appearance: ['*'] }],
+    collapsible: [{ appearance: ['*'] }],
     treeView: [{ appearance: ['*'] }],
   },
 };

@@ -1,26 +1,15 @@
 'use client';
 
-import { cx } from '@/styled-system/css';
-import { Slot } from '@radix-ui/react-slot';
-import { forwardRef } from 'react';
+import { createFeedbackTitle } from '@/components/feedback/shared/createFeedbackParts';
 import { useEmptyStateClasses } from './EmptyStateContext';
-import type { EmptyStateTitleProps } from './EmptyState.types';
 
 /**
- * Heading text for EmptyState.
+ * Semantic heading slot for an `EmptyState` root.
+ *
+ * The default host is `h3`; `asChild` accepts one native heading with phrasing content. Invalid
+ * hosts or block content fall back to textual content in the default heading.
  */
-export const EmptyStateTitle = forwardRef<HTMLHeadingElement, EmptyStateTitleProps>(
-  (props, ref) => {
-    const { asChild, children, className, ...rest } = props;
-    const Component = asChild ? Slot : 'h3';
-    const classes = useEmptyStateClasses();
-
-    return (
-      <Component ref={ref} className={cx(classes.title, className)} {...rest}>
-        {children}
-      </Component>
-    );
-  },
-);
-
-EmptyStateTitle.displayName = 'EmptyStateTitle';
+export const EmptyStateTitle = createFeedbackTitle({
+  displayName: 'EmptyStateTitle',
+  useClasses: useEmptyStateClasses,
+});

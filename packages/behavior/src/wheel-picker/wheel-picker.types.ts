@@ -1,7 +1,6 @@
 /**
  * Option record shared by wheel-style pickers.
  *
- * ### Notes
  * `value` must be unique within a column. Disabled options may be rendered but
  * are skipped by navigation and normalization fallbacks.
  */
@@ -9,12 +8,16 @@ export interface WheelPickerOption {
   value: string;
   label: string;
   disabled?: boolean;
+  /**
+   * Marks the option as an incomplete selection for native required validation.
+   * Empty string values remain complete unless this flag is set.
+   */
+  placeholder?: boolean;
 }
 
 /**
  * Column record for multi-column wheel selection.
  *
- * ### Notes
  * `id` is the key used in `WheelPickerValue`; keep it stable across renders.
  */
 export interface WheelPickerColumn {
@@ -26,7 +29,6 @@ export interface WheelPickerColumn {
 /**
  * Selected value map keyed by column id.
  *
- * ### Notes
  * Values are normalized by column. Missing or disabled selections fall back to
  * the first enabled option, then the first option.
  */

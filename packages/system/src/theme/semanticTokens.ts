@@ -1,21 +1,8 @@
 import type { SemanticTokens } from '@pandacss/dev';
 
 /**
- * Semantic Tokens
- *
- * ### AI Context & Architecture
- * This file defines the semantic layer of the design system.
- * It maps high-level intents (e.g., "brand.main", "text.primary") to primitive values.
- *
- * Brand Logic:
- * - Supports 'blue' and 'pome' brands via Panda CSS conditions (`_pome`, `_pomeDark`).
- * - Automatically handles light/dark mode transitions.
- *
- * Condition Mapping:
- * - base: Default (Blue/Light)
- * - _dark: Blue/Dark
- * - _pome: Pome/Light
- * - _pomeDark: Pome/Dark
+ * Maps semantic color intents to blue, pome, and CSS-variable-backed custom brands across light and
+ * dark conditions.
  */
 export const semanticTokens = {
   colors: {
@@ -25,7 +12,7 @@ export const semanticTokens = {
         value: {
           base: '{colors.blue.600}',
           _dark: '{colors.blue.400}',
-          _pome: '{colors.pome.700}',
+          _pome: '{colors.pome.500}',
           _pomeDark: '{colors.pome.400}',
           _custom: 'var(--poffy-custom-main, {colors.blue.500})',
           _customDark: 'var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400}))',
@@ -34,7 +21,7 @@ export const semanticTokens = {
       contrast: {
         value: {
           base: '#FFFFFF',
-          _pome: '#FFFFFF',
+          _pome: '{colors.slate.950}',
           _dark: '{colors.slate.950}',
           _pomeDark: '{colors.slate.950}',
           _custom: 'var(--poffy-custom-contrast, #FFFFFF)',
@@ -48,9 +35,10 @@ export const semanticTokens = {
           _dark: 'color-mix(in srgb, {colors.blue.400} 15%, transparent)',
           _pome: '{colors.pome.50}',
           _pomeDark: 'color-mix(in srgb, {colors.pome.400} 15%, transparent)',
-          _custom: 'color-mix(in srgb, var(--poffy-custom-main) 15%, transparent)',
+          _custom:
+            'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}) 15%, transparent)',
           _customDark:
-            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main)) 15%, transparent)',
+            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})) 15%, transparent)',
         },
       },
       tint: {
@@ -59,9 +47,10 @@ export const semanticTokens = {
           _dark: 'color-mix(in srgb, {colors.blue.400} 25%, transparent)',
           _pome: '{colors.pome.100}',
           _pomeDark: 'color-mix(in srgb, {colors.pome.400} 25%, transparent)',
-          _custom: 'color-mix(in srgb, var(--poffy-custom-main) 25%, transparent)',
+          _custom:
+            'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}) 25%, transparent)',
           _customDark:
-            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main)) 25%, transparent)',
+            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})) 25%, transparent)',
         },
       },
       border: {
@@ -70,31 +59,31 @@ export const semanticTokens = {
           _dark: 'color-mix(in srgb, {colors.blue.400}, white 30%)',
           _pome: 'color-mix(in srgb, {colors.brand.main}, black 40%)',
           _pomeDark: 'color-mix(in srgb, {colors.pome.400}, white 30%)',
-          _custom: 'color-mix(in srgb, var(--poffy-custom-main), black 40%)',
+          _custom: 'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}), black 40%)',
           _customDark:
-            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main)), white 30%)',
+            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})), white 30%)',
         },
       },
       hover: {
         value: {
           base: 'color-mix(in srgb, {colors.blue.600}, black 10%)',
           _dark: 'color-mix(in srgb, {colors.blue.400}, white 10%)',
-          _pome: 'color-mix(in srgb, {colors.pome.700}, black 10%)',
+          _pome: 'color-mix(in srgb, {colors.pome.500}, black 10%)',
           _pomeDark: 'color-mix(in srgb, {colors.pome.400}, white 10%)',
-          _custom: 'color-mix(in srgb, var(--poffy-custom-main), black 10%)',
+          _custom: 'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}), black 10%)',
           _customDark:
-            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main)), white 10%)',
+            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})), white 10%)',
         },
       },
       active: {
         value: {
           base: 'color-mix(in srgb, {colors.blue.600}, black 20%)',
           _dark: 'color-mix(in srgb, {colors.blue.400}, white 20%)',
-          _pome: 'color-mix(in srgb, {colors.pome.700}, black 20%)',
+          _pome: 'color-mix(in srgb, {colors.pome.500}, black 20%)',
           _pomeDark: 'color-mix(in srgb, {colors.pome.400}, white 20%)',
-          _custom: 'color-mix(in srgb, var(--poffy-custom-main), black 20%)',
+          _custom: 'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}), black 20%)',
           _customDark:
-            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main)), white 20%)',
+            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})), white 20%)',
         },
       },
       accent: {
@@ -103,9 +92,9 @@ export const semanticTokens = {
           _dark: 'color-mix(in srgb, {colors.blue.400}, white 40%)',
           _pome: 'color-mix(in srgb, {colors.pome.500}, white 30%)',
           _pomeDark: 'color-mix(in srgb, {colors.pome.400}, white 40%)',
-          _custom: 'color-mix(in srgb, var(--poffy-custom-main), white 30%)',
+          _custom: 'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}), white 30%)',
           _customDark:
-            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main)), white 40%)',
+            'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})), white 40%)',
         },
       },
     },
@@ -166,7 +155,7 @@ export const semanticTokens = {
       },
       berry: {
         main: { value: { base: '{colors.pink.500}', _dark: '{colors.pink.400}' } },
-        contrast: { value: { base: '{colors.white}', _dark: '{colors.zinc.950}' } },
+        contrast: { value: { base: '{colors.zinc.950}', _dark: '{colors.zinc.950}' } },
         surface: {
           value: {
             base: '{colors.pink.50}',
@@ -195,7 +184,7 @@ export const semanticTokens = {
       },
       plum: {
         main: { value: { base: '{colors.violet.500}', _dark: '{colors.violet.400}' } },
-        contrast: { value: { base: '{colors.white}', _dark: '{colors.white}' } },
+        contrast: { value: { base: '{colors.zinc.950}', _dark: '{colors.zinc.950}' } },
         surface: {
           value: {
             base: '{colors.violet.50}',
@@ -224,7 +213,7 @@ export const semanticTokens = {
       },
       mint: {
         main: { value: { base: '{colors.teal.500}', _dark: '{colors.teal.400}' } },
-        contrast: { value: { base: '{colors.white}', _dark: '{colors.zinc.950}' } },
+        contrast: { value: { base: '{colors.zinc.950}', _dark: '{colors.zinc.950}' } },
         surface: {
           value: {
             base: '{colors.teal.50}',
@@ -253,7 +242,7 @@ export const semanticTokens = {
       },
       soda: {
         main: { value: { base: '{colors.sky.500}', _dark: '{colors.sky.400}' } },
-        contrast: { value: { base: '{colors.white}', _dark: '{colors.zinc.950}' } },
+        contrast: { value: { base: '{colors.zinc.950}', _dark: '{colors.zinc.950}' } },
         surface: {
           value: {
             base: '{colors.sky.50}',
@@ -311,7 +300,7 @@ export const semanticTokens = {
       },
       marmalade: {
         main: { value: { base: '{colors.orange.500}', _dark: '{colors.orange.400}' } },
-        contrast: { value: { base: '{colors.white}', _dark: '{colors.zinc.950}' } },
+        contrast: { value: { base: '{colors.zinc.950}', _dark: '{colors.zinc.950}' } },
         surface: {
           value: {
             base: '{colors.orange.50}',
@@ -349,6 +338,9 @@ export const semanticTokens = {
             _pome: '{colors.brand.main}',
             _dark: '{colors.brand.main}',
             _pomeDark: '{colors.brand.main}',
+            _custom: 'var(--poffy-custom-main, {colors.blue.500})',
+            _customDark:
+              'var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400}))',
           },
         },
         contrast: {
@@ -357,6 +349,9 @@ export const semanticTokens = {
             _pome: '{colors.brand.contrast}',
             _dark: '{colors.brand.contrast}',
             _pomeDark: '{colors.brand.contrast}',
+            _custom: 'var(--poffy-custom-contrast, #FFFFFF)',
+            _customDark:
+              'var(--poffy-custom-contrast-dark, var(--poffy-custom-contrast, {colors.slate.950}))',
           },
         },
         hover: {
@@ -365,6 +360,9 @@ export const semanticTokens = {
             _pome: '{colors.brand.hover}',
             _dark: '{colors.brand.hover}',
             _pomeDark: '{colors.brand.hover}',
+            _custom: 'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}), black 10%)',
+            _customDark:
+              'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})), white 10%)',
           },
         },
         active: {
@@ -373,6 +371,9 @@ export const semanticTokens = {
             _pome: '{colors.brand.active}',
             _dark: '{colors.brand.active}',
             _pomeDark: '{colors.brand.active}',
+            _custom: 'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}), black 20%)',
+            _customDark:
+              'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})), white 20%)',
           },
         },
         surface: {
@@ -381,6 +382,10 @@ export const semanticTokens = {
             _pome: '{colors.brand.surface}',
             _dark: '{colors.brand.surface}',
             _pomeDark: '{colors.brand.surface}',
+            _custom:
+              'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}) 15%, transparent)',
+            _customDark:
+              'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})) 15%, transparent)',
           },
         },
         tint: {
@@ -389,6 +394,10 @@ export const semanticTokens = {
             _pome: '{colors.brand.tint}',
             _dark: '{colors.brand.tint}',
             _pomeDark: '{colors.brand.tint}',
+            _custom:
+              'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}) 25%, transparent)',
+            _customDark:
+              'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})) 25%, transparent)',
           },
         },
         border: {
@@ -397,6 +406,9 @@ export const semanticTokens = {
             _pome: '{colors.brand.border}',
             _dark: '{colors.brand.border}',
             _pomeDark: '{colors.brand.border}',
+            _custom: 'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}), black 40%)',
+            _customDark:
+              'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})), white 30%)',
           },
         },
         accent: {
@@ -405,6 +417,9 @@ export const semanticTokens = {
             _pome: '{colors.brand.accent}',
             _dark: '{colors.brand.accent}',
             _pomeDark: '{colors.brand.accent}',
+            _custom: 'color-mix(in srgb, var(--poffy-custom-main, {colors.blue.500}), white 30%)',
+            _customDark:
+              'color-mix(in srgb, var(--poffy-custom-main-dark, var(--poffy-custom-main, {colors.blue.400})), white 40%)',
           },
         },
       },
@@ -440,7 +455,7 @@ export const semanticTokens = {
       },
       info: {
         main: { value: { base: '{colors.cyan.500}', _dark: '{colors.cyan.400}' } },
-        contrast: { value: { base: '#FFFFFF', _dark: '#0F172A' } },
+        contrast: { value: { base: '{colors.slate.950}', _dark: '#0F172A' } },
         hover: {
           value: {
             base: 'color-mix(in srgb, {colors.cyan.500}, black 10%)',
@@ -475,7 +490,7 @@ export const semanticTokens = {
       },
       success: {
         main: { value: { base: '{colors.emerald.500}', _dark: '{colors.emerald.400}' } },
-        contrast: { value: { base: '#FFFFFF', _dark: '{colors.emerald.900}' } },
+        contrast: { value: { base: '{colors.slate.950}', _dark: '{colors.emerald.900}' } },
         hover: {
           value: {
             base: 'color-mix(in srgb, {colors.emerald.500}, black 10%)',
@@ -547,7 +562,7 @@ export const semanticTokens = {
       },
       danger: {
         main: { value: { base: '{colors.rose.500}', _dark: '{colors.rose.400}' } },
-        contrast: { value: { base: '#FFFFFF', _dark: '{colors.rose.900}' } },
+        contrast: { value: { base: '{colors.slate.950}', _dark: '{colors.rose.900}' } },
         hover: {
           value: {
             base: 'color-mix(in srgb, {colors.rose.500}, black 10%)',

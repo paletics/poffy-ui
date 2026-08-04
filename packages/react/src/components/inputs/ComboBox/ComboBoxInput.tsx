@@ -1,13 +1,6 @@
 'use client';
 
 import {
-  filterListboxOptions,
-  getFirstEnabledListboxIndex,
-  getLastEnabledListboxIndex,
-  getNextEnabledListboxIndex,
-  getPreviousEnabledListboxIndex,
-} from '@poffy-ui/behavior/listbox';
-import {
   cloneElement,
   forwardRef,
   isValidElement,
@@ -22,14 +15,45 @@ import { Slot } from '@radix-ui/react-slot';
 import { useMergeRefs } from '@floating-ui/react';
 import { DisclosureIconButton } from '@/components/inputs/DisclosureIconButton';
 import { ListboxPopoverAnchor } from '@/components/overlay/ListboxPopover';
+import { isInputAsChildHost } from '@/components/shared/asChild';
+import { getCommonMessages } from '@/components/shared/common.locales';
+import { resolveComboBoxInputAria } from './comboBoxInputAria';
+import { useComboBoxInputInteractions } from './useComboBoxInputInteractions';
+import { cx } from '@/styled-system/css';
 
 /**
  * Props for the editable input and disclosure control inside ComboBox.
  */
-export interface ComboBoxInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface ComboBoxInputProps extends Omit<
+  React.InputHTMLAttributes<HTMLInputElement>,
+  | 'aria-activedescendant'
+  | 'aria-autocomplete'
+  | 'aria-controls'
+  | 'aria-disabled'
+  | 'aria-expanded'
+  | 'aria-haspopup'
+  | 'aria-readonly'
+  | 'aria-required'
+  | 'defaultValue'
+  | 'disabled'
+  | 'id'
+  | 'onChange'
+  | 'readOnly'
+  | 'role'
+  | 'type'
+  | 'value'
+> {
+  /**
+   * Delegates the managed input to one native input or a custom component that
+   * forwards input props and an HTMLInputElement ref.
+   */
   asChild?: boolean;
+  /** Visible native label for this input; use root ARIA naming when composing another label. */
   label?: ReactNode;
+  /** Placeholder for the managed text input. It is not an accessible name. */
   placeholder?: string;
+  /** Accessible label for the disclosure control, which deliberately has `tabIndex={-1}`. */
+  toggleLabel?: string;
 }
 
 interface ComboBoxInputGuardProps {
@@ -67,46 +91,12 @@ const guardInputActivationHandlers = (children: ReactNode, shouldGuard: boolean)
 };
 
 /**
- * Text input and disclosure control for a ComboBox listbox.
+ * Editable combobox input and disclosure affordance for a `ComboBox.Root`.
  *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`comboBox` slot recipe), Radix Slot, `DisclosureIconButton`
- * - **Props**: native input props plus optional `asChild` and inline `label`
- *
- * ### Design Tokens
- * - **spacing**: field height, input padding, and trigger size inherit from `ComboBoxRoot`
- * - **color**: focus, disabled, invalid, and placeholder colors come from the recipe
- *
- * ### Variant Logic
- * - **size**: Inherited from `ComboBoxRoot`.
- * - **appearance/variant**: Inherited from `ComboBoxRoot`.
- *
- * ### Accessibility
- * - **Role**: `combobox` with `aria-autocomplete="list"`.
- * - **Pattern**: WAI-ARIA editable combobox with `aria-activedescendant`.
- * - **Keyboard**: Arrow Up/Down moves highlight, Enter selects, Escape closes.
- * - **Required**: Provide `label`, `aria-label`, or `aria-labelledby`.
- *
- * ### AI Usage
- * - **DO**: Use inside `ComboBox.Root` as the single text entry control.
- * - **DON'T**: Do not pair multiple inputs with one `ComboBox.List`.
- *
- * @example With visible label
- * ```tsx
- * <ComboBox.Root options={options}>
- *   <ComboBox.Input label="Country" />
- *   <ComboBox.List>{items}</ComboBox.List>
- * </ComboBox.Root>
- * ```
- *
- * @example With external label
- * ```tsx
- * <ComboBox.Root options={options} aria-labelledby="country-label">
- *   <ComboBox.Input />
- *   <ComboBox.List>{items}</ComboBox.List>
- * </ComboBox.Root>
- * ```
+ * It owns combobox ARIA state, filters on unprevented input changes, and delegates keyboard
+ * navigation to the root model. Consumer change, key, and pointer handlers run first and may
+ * prevent the default model action. `asChild` requires an input-compatible host; disabled or
+ * read-only delegated hosts block edits while preserving Tab navigation.
  */
 export const ComboBoxInput = forwardRef<HTMLInputElement, ComboBoxInputProps>((props, ref) => {
   const {
@@ -114,16 +104,33 @@ export const ComboBoxInput = forwardRef<HTMLInputElement, ComboBoxInputProps>((p
     children,
     label,
     placeholder,
+    toggleLabel,
+    className,
     onChange: onInputChange,
     onChangeCapture: onInputChangeCapture,
     onKeyDown: onInputKeyDown,
     onKeyDownCapture: onInputKeyDownCapture,
     onPointerDown: onInputPointerDown,
     onPointerDownCapture: onInputPointerDownCapture,
+    tabIndex: inputTabIndex,
+    id: _idProp,
+    value: _valueProp,
+    defaultValue: _defaultValueProp,
+    type: _typeProp,
+    role: _roleProp,
+    required: _requiredProp,
     disabled: _disabledProp,
     readOnly: _readOnlyProp,
+    'aria-activedescendant': _ariaActiveDescendant,
+    'aria-autocomplete': _ariaAutoComplete,
+    'aria-controls': _ariaControls,
+    'aria-disabled': _ariaDisabled,
+    'aria-expanded': _ariaExpanded,
+    'aria-haspopup': _ariaHasPopup,
+    'aria-readonly': _ariaReadOnly,
+    'aria-required': _ariaRequired,
     ...rest
-  } = props;
+  } = props as ComboBoxInputProps & React.InputHTMLAttributes<HTMLInputElement>;
   const {
     isOpen,
     setIsOpen,
@@ -133,81 +140,68 @@ export const ComboBoxInput = forwardRef<HTMLInputElement, ComboBoxInputProps>((p
     setHighlightedIndex,
     options,
     filteredOptions,
+    filterOptions,
     onChange,
     disabled,
+    error,
     readOnly,
     required,
-    tabIndex,
+    tabIndex: rootTabIndex,
     ariaLabel,
     ariaLabelledBy,
     ariaDescribedBy,
     ariaErrorMessage,
+    ariaInvalid,
+    locale,
+    size,
     inputId,
     listId,
     classes,
   } = useComboBoxContext();
+  const resolvedTabIndex = inputTabIndex ?? rootTabIndex;
+  const messages = getCommonMessages(locale);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const mergedRef = useMergeRefs([inputRef, ref]);
-  const openIfClosed = () => {
-    if (disabled || readOnly) return;
-    if (!isOpen) setIsOpen(true);
-  };
+  const { activeOptionId, handleModelInputChange, handleModelKeyDown, openIfClosed } =
+    useComboBoxInputInteractions({
+      disabled,
+      filteredOptions,
+      filterOptions,
+      highlightedIndex,
+      isOpen,
+      listId,
+      onChange,
+      options,
+      readOnly,
+      setHighlightedIndex,
+      setInputValue,
+      setIsOpen,
+    });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (disabled || readOnly) return;
-    const nextInputValue = e.target.value;
-    const nextFilteredOptions = filterListboxOptions(options, nextInputValue);
-    setInputValue(nextInputValue);
-    openIfClosed();
-    setHighlightedIndex(getFirstEnabledListboxIndex(nextFilteredOptions));
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (disabled || readOnly) return;
-
-    switch (e.key) {
-      case 'ArrowDown':
-        e.preventDefault();
-        openIfClosed();
-        setHighlightedIndex((prev) =>
-          prev < 0
-            ? getFirstEnabledListboxIndex(filteredOptions)
-            : getNextEnabledListboxIndex(filteredOptions, prev),
-        );
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        openIfClosed();
-        setHighlightedIndex((prev) =>
-          prev < 0
-            ? getLastEnabledListboxIndex(filteredOptions)
-            : getPreviousEnabledListboxIndex(filteredOptions, prev),
-        );
-        break;
-      case 'Enter':
-        e.preventDefault();
-        if (isOpen && highlightedIndex >= 0 && highlightedIndex < filteredOptions.length) {
-          const option = filteredOptions[highlightedIndex];
-          if (!option.disabled) {
-            onChange?.(option.value);
-            setInputValue(option.label);
-            setIsOpen(false);
-          }
-        }
-        break;
-      case 'Escape':
-        setIsOpen(false);
-        break;
-    }
-  };
-
-  const Component = asChild ? Slot : 'input';
-  const activeOption =
-    isOpen && highlightedIndex >= 0 ? filteredOptions[highlightedIndex] : undefined;
-  const activeOptionId = activeOption ? `${listId}-option-${activeOption.value}` : undefined;
+  const asChildElement = asChild && isInputAsChildHost(children) ? children : null;
+  const canUseAsChild = Boolean(asChildElement);
+  const childProps = (asChildElement?.props ?? {}) as React.InputHTMLAttributes<HTMLInputElement>;
+  const {
+    ariaDescribedBy: resolvedAriaDescribedBy,
+    ariaErrorMessage: resolvedAriaErrorMessage,
+    ariaInvalid: resolvedAriaInvalid,
+    ariaLabel: resolvedAriaLabel,
+    ariaLabelledBy: resolvedAriaLabelledBy,
+  } = resolveComboBoxInputAria({
+    childProps,
+    context: {
+      ariaDescribedBy,
+      ariaErrorMessage,
+      ariaInvalid,
+      ariaLabel,
+      ariaLabelledBy,
+      error,
+    },
+    wrapperProps: rest,
+  });
   const blockAsChildActivation = (e: React.SyntheticEvent<HTMLInputElement>) => {
-    if (!asChild || (!disabled && !readOnly)) return false;
+    if (!canUseAsChild || (!disabled && !readOnly)) return false;
     e.preventDefault();
     e.stopPropagation();
     return true;
@@ -218,8 +212,91 @@ export const ComboBoxInput = forwardRef<HTMLInputElement, ComboBoxInputProps>((p
   };
   const guardedChildren = guardInputActivationHandlers(
     children,
-    asChild === true && [disabled, readOnly].some(Boolean),
+    canUseAsChild && [disabled, readOnly].some(Boolean),
   );
+  const ownedChildren =
+    canUseAsChild && isValidElement<Record<string, unknown>>(guardedChildren)
+      ? cloneElement(guardedChildren, {
+          id: inputId,
+          type: 'text',
+          role: 'combobox',
+          value: inputValue,
+          defaultValue: undefined,
+          'aria-autocomplete': 'list',
+          'aria-controls': isOpen ? listId : undefined,
+          'aria-expanded': isOpen,
+          'aria-haspopup': undefined,
+          'aria-activedescendant': activeOptionId,
+          'aria-label': resolvedAriaLabel,
+          'aria-labelledby': resolvedAriaLabelledBy,
+          'aria-describedby': resolvedAriaDescribedBy,
+          'aria-errormessage': resolvedAriaErrorMessage,
+          'aria-invalid': resolvedAriaInvalid,
+          'aria-required': required ? true : undefined,
+          'aria-disabled': disabled ? true : undefined,
+          'aria-readonly': readOnly ? true : undefined,
+          disabled,
+          readOnly,
+          tabIndex: resolvedTabIndex ?? 0,
+        })
+      : guardedChildren;
+  const handleChangeCapture: ChangeEventHandler<HTMLInputElement> = (event) => {
+    if (blockAsChildActivation(event)) return;
+    onInputChangeCapture?.(event);
+  };
+  const handleChange: ChangeEventHandler<HTMLInputElement> = (event) => {
+    if (disabled || readOnly) return;
+    onInputChange?.(event);
+    if (!event.defaultPrevented) handleModelInputChange(event);
+  };
+  const handleInputKeyDownCapture: KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (blockAsChildKeyboardActivation(event)) return;
+    onInputKeyDownCapture?.(event);
+  };
+  const handleInputKeyDown: KeyboardEventHandler<HTMLInputElement> = (event) => {
+    if (disabled) return;
+    onInputKeyDown?.(event);
+    if (!event.defaultPrevented) handleModelKeyDown(event);
+  };
+  const handlePointerDownCapture: PointerEventHandler<HTMLInputElement> = (event) => {
+    if (blockAsChildActivation(event)) return;
+    onInputPointerDownCapture?.(event);
+  };
+  const handlePointerDown: PointerEventHandler<HTMLInputElement> = (event) => {
+    if (disabled) return;
+    onInputPointerDown?.(event);
+    if (!event.defaultPrevented && !readOnly && event.button === 0) openIfClosed();
+  };
+  const inputControlProps: React.InputHTMLAttributes<HTMLInputElement> = {
+    ...rest,
+    id: inputId,
+    type: 'text',
+    role: 'combobox',
+    className: cx(classes.input, className),
+    value: inputValue,
+    onChangeCapture: handleChangeCapture,
+    onChange: handleChange,
+    onKeyDownCapture: handleInputKeyDownCapture,
+    onKeyDown: handleInputKeyDown,
+    onPointerDownCapture: handlePointerDownCapture,
+    onPointerDown: handlePointerDown,
+    placeholder,
+    'aria-autocomplete': 'list',
+    'aria-controls': isOpen ? listId : undefined,
+    'aria-expanded': isOpen,
+    'aria-activedescendant': activeOptionId,
+    'aria-label': resolvedAriaLabel,
+    'aria-labelledby': resolvedAriaLabelledBy,
+    'aria-describedby': resolvedAriaDescribedBy,
+    'aria-errormessage': resolvedAriaErrorMessage,
+    'aria-invalid': resolvedAriaInvalid,
+    'aria-required': required ? true : undefined,
+    disabled,
+    readOnly,
+    'aria-disabled': disabled ? true : undefined,
+    'aria-readonly': readOnly ? true : undefined,
+    tabIndex: resolvedTabIndex,
+  };
 
   return (
     <>
@@ -230,124 +307,36 @@ export const ComboBoxInput = forwardRef<HTMLInputElement, ComboBoxInputProps>((p
       )}
       <ListboxPopoverAnchor asChild>
         <div className={classes.control}>
-          {asChild ? (
-            <Component
-              ref={mergedRef}
-              id={inputId}
-              type="text"
-              role="combobox"
-              className={classes.input}
-              value={inputValue}
-              onChangeCapture={(e) => {
-                if (blockAsChildActivation(e)) return;
-                onInputChangeCapture?.(e);
-              }}
-              onChange={(e) => {
-                if (disabled || readOnly) return;
-                onInputChange?.(e);
-                if (e.defaultPrevented) return;
-                handleInputChange(e);
-              }}
-              onKeyDownCapture={(e) => {
-                if (blockAsChildKeyboardActivation(e)) return;
-                onInputKeyDownCapture?.(e);
-              }}
-              onKeyDown={(e) => {
-                if (disabled) return;
-                onInputKeyDown?.(e);
-                if (e.defaultPrevented) return;
-                handleKeyDown(e);
-              }}
-              onPointerDownCapture={(e) => {
-                if (blockAsChildActivation(e)) return;
-                onInputPointerDownCapture?.(e);
-              }}
-              onPointerDown={(e) => {
-                if (disabled) return;
-                onInputPointerDown?.(e);
-                if (e.defaultPrevented) return;
-                if (!readOnly && e.button === 0) openIfClosed();
-              }}
-              placeholder={placeholder}
-              aria-autocomplete="list"
-              aria-controls={listId}
-              aria-expanded={isOpen}
-              aria-activedescendant={activeOptionId}
-              aria-label={rest['aria-label'] ?? ariaLabel}
-              aria-labelledby={rest['aria-labelledby'] ?? ariaLabelledBy}
-              aria-describedby={rest['aria-describedby'] ?? ariaDescribedBy}
-              aria-errormessage={rest['aria-errormessage'] ?? ariaErrorMessage}
-              aria-required={required ? true : undefined}
-              aria-disabled={disabled ? true : undefined}
-              tabIndex={tabIndex}
-              {...rest}
-            >
-              {guardedChildren}
-            </Component>
+          {canUseAsChild ? (
+            <Slot ref={mergedRef} {...inputControlProps}>
+              {ownedChildren}
+            </Slot>
           ) : (
-            <Component
-              ref={mergedRef}
-              id={inputId}
-              type="text"
-              role="combobox"
-              className={classes.input}
-              value={inputValue}
-              onChangeCapture={onInputChangeCapture}
-              onChange={(e) => {
-                if (disabled || readOnly) return;
-                onInputChange?.(e);
-                if (e.defaultPrevented) return;
-                handleInputChange(e);
-              }}
-              onKeyDownCapture={onInputKeyDownCapture}
-              onKeyDown={(e) => {
-                if (disabled) return;
-                onInputKeyDown?.(e);
-                if (e.defaultPrevented) return;
-                handleKeyDown(e);
-              }}
-              onPointerDownCapture={onInputPointerDownCapture}
-              onPointerDown={(e) => {
-                if (disabled) return;
-                onInputPointerDown?.(e);
-                if (e.defaultPrevented) return;
-                if (!readOnly && e.button === 0) openIfClosed();
-              }}
-              placeholder={placeholder}
-              aria-autocomplete="list"
-              aria-controls={listId}
-              aria-expanded={isOpen}
-              aria-activedescendant={activeOptionId}
-              aria-label={rest['aria-label'] ?? ariaLabel}
-              aria-labelledby={rest['aria-labelledby'] ?? ariaLabelledBy}
-              aria-describedby={rest['aria-describedby'] ?? ariaDescribedBy}
-              aria-errormessage={rest['aria-errormessage'] ?? ariaErrorMessage}
-              aria-required={required ? true : undefined}
-              disabled={disabled}
-              readOnly={readOnly}
-              aria-disabled={disabled ? true : undefined}
-              tabIndex={tabIndex}
-              {...rest}
-            />
+            <input ref={mergedRef} {...inputControlProps} />
           )}
 
           <DisclosureIconButton
             className={classes.trigger}
+            data-combobox-trigger=""
+            size={size}
             open={isOpen}
             onOpenChange={(nextOpen) => {
               if (nextOpen === isOpen || readOnly) return;
               setIsOpen(nextOpen);
             }}
-            onMouseDown={(e) => {
+            onPointerDown={(e) => {
+              // The disclosure is a pointer affordance for the input, not a
+              // separate tab stop. Keep focus on the input so its ring owns
+              // the field boundary instead of the circular icon button.
               e.preventDefault();
             }}
             onClick={(e) => {
               e.stopPropagation();
             }}
             disabled={disabled}
-            aria-label="Toggle options"
+            aria-label={toggleLabel?.trim() || messages.toggleOptions}
             aria-haspopup="listbox"
-            aria-controls={listId}
+            aria-controls={isOpen ? listId : undefined}
             tabIndex={-1}
           />
         </div>

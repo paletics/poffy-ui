@@ -94,7 +94,7 @@ base: {
 
 ```
 baseTokens (src/theme/tokens.ts)
-  └─ primitive values, Silver Ratio scale
+  └─ primitive values (Silver Ratio for spacing/sizing; readability scale for typography)
        ↓  mapped via defineTokens()
 tokens (src/theme/tokensConfig.ts)
   └─ Panda CSS format → generates CSS variables
@@ -121,6 +121,10 @@ tokens (src/theme/tokensConfig.ts)
 | `3xl`     | 4rem (64px)        | `var(--poffy-spacing-3xl)`  |
 
 The multiplier between adjacent steps is **√2 ≈ 1.414** (Silver Ratio).
+
+Typography is intentionally independent of the spacing scale. Use `2xs` (12px)
+for compact metadata, `xs` (13px) for captions, `sm` (14px) for secondary text,
+`md` (16px) for body text, and `lg`–`4xl` (18–36px) for headings and display text.
 
 ## 3.1 Sizing Scale
 
@@ -162,6 +166,12 @@ typography semantically distinct for future brand overrides.
 | --------- | ---------------------------- |
 | `body`    | `var(--poffy-fonts-body)`    |
 | `heading` | `var(--poffy-fonts-heading)` |
+
+The default stack includes common Japanese system fonts and Noto Sans CJK JP
+fallbacks. Consumers that render CJK text must make at least one matching font
+available in their runtime environment. Poffy UI does not bundle font files.
+The repository browser-test environment installs `fonts-noto-cjk` so localized
+stories fail visibly if the fallback contract regresses.
 
 ---
 
@@ -213,3 +223,80 @@ token reference was not resolved — the recipe value syntax is wrong.
 When checking package builds, remember that package-local Panda config writes to
 `packages/react/src/styled-system/` or `packages/system/src/styled-system/`.
 These generated directories are build artifacts and must not be edited by hand.
+
+## 6. Consumer Theme Customization
+
+### Set runtime CSS custom-property values
+
+`ThemeProvider` and `ThemeBoundary` accept `tokenOverrides` for
+`--poffy-*` custom-property values. This includes existing Poffy token
+variables and application-defined values such as `--poffy-app-sidebar`.
+At the application root, the provider applies the values to
+`document.documentElement`; `global={false}` scopes them to the provider
+boundary and its Poffy portals instead. Nested global providers restore the
+previous owner when they unmount. `--poffy-custom-*` remains reserved for
+`customBrand`.
+
+Use `--poffy-app-*` for application-owned runtime variables. Other
+`--poffy-*` names may be introduced by Poffy in a future release, so they
+should be used only to override an existing Poffy token.
+
+```tsx
+<ThemeProvider
+  tokenOverrides={{
+    '--poffy-spacing-md': '0.75rem',
+    '--poffy-radii-md': '0.625rem',
+    '--poffy-fonts-body': 'Inter, sans-serif',
+  }}
+>
+  <App />
+</ThemeProvider>
+```
+
+`customBrand` exclusively owns `--poffy-custom-*`; use that API for a runtime
+brand palette rather than including those variables in `tokenOverrides`.
+
+For server-rendered application roots, pass the same values to
+`getInitialThemeAttributes` so the initial `<html>` style matches the hydrated
+`ThemeProvider`.
+
+```tsx
+const tokenOverrides = { '--poffy-spacing-md': '0.75rem' } as const;
+
+<html {...getInitialThemeAttributes({ tokenOverrides })}>
+  <body>
+    <ThemeProvider tokenOverrides={tokenOverrides}>
+      <App />
+    </ThemeProvider>
+  </body>
+</html>;
+```
+
+### Register an application-specific Panda token at build time
+
+New tokens that must work with Panda recipes, utilities, and TypeScript types
+must be added to the consuming application's Panda configuration.
+`tokenOverrides` can set a custom property value, but does not register a new
+Panda token or generate any CSS that consumes it.
+`--poffy-app-*` values must be consumed explicitly through `var()` in
+application CSS or recipes. For example, extending `sizes.sidebar` generates
+the Panda token and CSS variable `--poffy-sizes-sidebar`, which can then be
+used by generated Panda utilities.
+
+```ts
+// panda.config.ts
+export default defineConfig({
+  // Keep generated application tokens compatible with Poffy's CSS variable prefix.
+  prefix: 'poffy',
+  presets: [poffyPreset],
+  theme: {
+    extend: {
+      tokens: {
+        sizes: {
+          sidebar: { value: '18rem' },
+        },
+      },
+    },
+  },
+});
+```

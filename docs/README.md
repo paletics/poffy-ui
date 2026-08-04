@@ -5,7 +5,9 @@ This folder contains documentation for **OSS users and contributors**.
 ## Getting Started
 
 - Setup: `docs/setup.md`
+- 0.2 migration: `docs/0.2-migration.md`
 - Architecture: `docs/architecture.md`
+- Screen Composer contract: `docs/screen-composer.md`
 - Tech stack: `docs/tech-stack.md`
 
 ## Contributing

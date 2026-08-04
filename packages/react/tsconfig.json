@@ -9,8 +9,8 @@
     "paths": {
       "@poffy-ui/behavior": ["../behavior/dist/index.d.ts"],
       "@poffy-ui/behavior/calendar": ["../behavior/dist/calendar/index.d.ts"],
+      "@poffy-ui/behavior/date": ["../behavior/dist/date/index.d.ts"],
       "@poffy-ui/behavior/hooks": ["../behavior/dist/hooks/index.d.ts"],
-      "@poffy-ui/behavior/logic": ["../behavior/dist/logic/index.d.ts"],
       "@poffy-ui/behavior/pagination": ["../behavior/dist/pagination/index.d.ts"],
       "@poffy-ui/behavior/*": ["../behavior/dist/*"],
       "@/styled-system/*": ["./src/styled-system/*"],
@@ -25,6 +25,7 @@
     "src/**/*.test.ts",
     "src/**/*.spec.ts",
     "src/**/*.visual.spec.ts",
-    "src/components/e2e"
+    "src/components/e2e",
+    "src/testing"
   ]
 }

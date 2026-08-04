@@ -2,27 +2,12 @@ import type { MotionPrimitiveProps } from '@/types/motion';
 import { CustomData } from '../types';
 import { ActionMotionType } from './ActionMotion.presets';
 
-/**
- * Action Motion Type Definitions
- *
- * ### AI Context & Architecture
- * Defines prop interfaces and component types for `ActionMotion`.
- * Extends `MotionProps` and integrates with `ActionMotionType` presets.
- */
-
+/** Named interaction-motion preset. */
 export type ActionAnimationType = ActionMotionType | 'none' | false;
 
 /**
- * Base props for `ActionMotion`.
- *
- * ### Notes
- * `ActionMotion` is uncontrolled. It reacts to hover/tap/focus gesture
- * state emitted by Framer Motion and does not store pressed or hovered state in React.
- *
- * ### AI Usage
- * - **DO**: Keep business events on the semantic child, especially when using `asChild`.
- * - **DON'T**: Use `disabled` alone to communicate native button disabled semantics;
- *   prefer a disabled child button when the element is a button.
+ * Props for `ActionMotion`; gesture state is handled by Motion rather than React state.
+ * @typeParam C - Custom data accepted by the selected preset.
  */
 export interface ActionMotionBaseProps<C extends CustomData = CustomData> {
   /**

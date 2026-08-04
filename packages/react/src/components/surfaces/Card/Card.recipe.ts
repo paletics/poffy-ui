@@ -49,6 +49,7 @@ export const cardRecipe = defineSlotRecipe({
     root: {
       display: 'flex',
       flexDirection: 'column',
+      minInlineSize: 0,
       borderRadius: '{radii.lg}',
       overflow: 'hidden',
       borderWidth: '{borderWidths.thin}',
@@ -58,19 +59,29 @@ export const cardRecipe = defineSlotRecipe({
       color: '{colors.text.primary}',
       boxShadow: '{shadows.sm}',
       position: 'relative',
+      // Preserve rounded media clipping normally, but do not clip an edge-aligned child focus ring.
+      _focusWithin: {
+        overflow: 'visible',
+      },
     },
     header: {
+      minInlineSize: 0,
       p: '{spacing.base}',
       fontWeight: 'semibold',
+      overflowWrap: 'anywhere',
       borderBottomWidth: '1px',
       borderColor: 'inherit',
     },
     body: {
+      minInlineSize: 0,
       p: '{spacing.base}',
       flex: '1',
+      overflowWrap: 'anywhere',
     },
     footer: {
+      minInlineSize: 0,
       p: '{spacing.base}',
+      overflowWrap: 'anywhere',
       borderTopWidth: '1px',
       borderColor: 'inherit',
     },

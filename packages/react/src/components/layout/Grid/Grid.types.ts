@@ -2,39 +2,47 @@ import { gridStyle } from '@/styled-system/recipes';
 import { JsxStyleProps, RecipeVariantProps } from '@/styled-system/types';
 import { PrimitiveProps } from '@poffy-ui/types';
 import { ReactNode } from 'react';
+import type {
+  AsChildHostProps,
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Extracted variant types from the Panda CSS recipe.
- * ### AI Usage
- * - Use this when extending Grid styles.
- */
+/** Recipe-backed explicit grid layout options. */
 export type GridVariants = RecipeVariantProps<typeof gridStyle>;
 
 /**
- * Own props for Grid.
+ * Props for a two-dimensional layout with explicit or ratio-based tracks.
  *
- * @example
- * ```tsx
- * import { Grid } from '@poffy-ui/react/layout';
- * ```
- *
- * ### Notes
- * Do: use Grid for two-dimensional layout and use semantic children inside it.
- * Don't: use Grid to represent tabular data; use Table from `@poffy-ui/react/data-display`.
+ * Ratio variants describe their larger track using physical `left`/`right` or logical `start`/`end`
+ * naming. A ratio variant overrides `columns` and `minChildWidth`.
  */
 export type GridOwnProps = GridVariants &
-  JsxStyleProps & {
+  Omit<JsxStyleProps, 'columns' | 'gap'> & {
     children?: ReactNode;
     className?: string;
-    /** Shorthand prop for gridTemplateColumns. */
+    /** Explicit number of equal tracks, ignored when `ratio` or `minChildWidth` is supplied. */
     columns?: number;
-    /** Minimum width of a child, used for auto-fit responsive grids. */
+    /**
+     * Minimum child width used by the auto-fit layout. Accepts a CSS
+     * length-percentage; finite positive numeric values are converted to pixels.
+     * Invalid values are ignored, allowing a valid `columns` value to apply. A `ratio` variant
+     * takes precedence over this prop.
+     */
     minChildWidth?: string | number;
   };
 
-/**
- * Comprehensive properties for the core Grid component.
- * ### AI Usage
- * - Use this to type-check Grid components.
- */
-export type GridProps = PrimitiveProps<'div', GridOwnProps>;
+
+type GridNativeProps = PrimitiveProps<'div', GridOwnProps>;
+/** Props for Grid rendered with its default host. */
+export type GridDefaultProps = DefaultHostProps<GridNativeProps>;
+/** Props for Grid delegated to an asChild host. */
+export type GridAsChildProps = AsChildHostProps<GridNativeProps>;
+/** Public props for Grid. */
+export type GridProps = GridDefaultProps | GridAsChildProps;
+/** Polymorphic component call signatures for Grid. */
+export type GridComponent = PolymorphicAsChildComponent<
+  GridDefaultProps,
+  GridAsChildProps,
+  HTMLDivElement
+>;

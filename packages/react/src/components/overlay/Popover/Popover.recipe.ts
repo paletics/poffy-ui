@@ -1,5 +1,10 @@
 ﻿import { defineSlotRecipe } from '@pandacss/dev';
 import { overlayInternalStyles, pomeAesthetics } from '../overlay.shared';
+import {
+  floatingAvailableHeight,
+  floatingAvailableWidth,
+  floatingViewportFallbackStyles,
+} from '@/components/shared/floatingViewportFallback';
 
 /**
  * Slot recipe for the Popover component.
@@ -21,18 +26,20 @@ export const popoverRecipe = defineSlotRecipe({
   ],
   base: {
     content: {
-      bg: '{colors.layout.surface}',
-      color: '{colors.text.primary}',
-      borderRadius: '{radii.md}',
-      boxShadow: '{shadows.md}',
-      borderWidth: '1px',
-      borderColor: '{colors.layout.divider}',
-      maxWidth: '{sizes.ratio.md}',
+      ...floatingViewportFallbackStyles,
+      boxSizing: 'border-box',
+      minWidth: 0,
+      maxWidth: `min({sizes.ratio.md}, ${floatingAvailableWidth})`,
+      maxHeight: floatingAvailableHeight,
+      overflow: 'auto',
       zIndex: 'popover',
       outline: 'none',
       display: 'flex',
       flexDirection: 'column',
-      ...pomeAesthetics,
+      '&:has([data-popover-close]) [data-popover-title]': {
+        minInlineSize: 0,
+        paddingInlineEnd: 'calc({sizes.control.minimumTarget} + {spacing.xs})',
+      },
     },
     arrow: {
       width: '{sizes.root.1}',
@@ -56,16 +63,20 @@ export const popoverRecipe = defineSlotRecipe({
       py: '{spacing.xs}',
     },
     title: {
-      fontSize: 'sm',
+      fontSize: 'md',
       fontWeight: 'semibold',
       color: '{colors.text.primary}',
+      overflowWrap: 'anywhere',
     },
     description: {
-      fontSize: 'xs',
+      fontSize: 'sm',
       color: '{colors.text.secondary}',
+      overflowWrap: 'anywhere',
     },
     body: {
       ...overlayInternalStyles.body,
+      minHeight: 0,
+      overflowWrap: 'anywhere',
       px: '{spacing.sm}',
       py: '{spacing.xs}',
     },
@@ -77,8 +88,10 @@ export const popoverRecipe = defineSlotRecipe({
     },
     close: {
       position: 'absolute',
-      top: '{spacing.xs}',
-      right: '{spacing.xs}',
+      insetBlockStart: '{spacing.xs}',
+      insetInlineEnd: '{spacing.xs}',
+      minInlineSize: '{sizes.control.minimumTarget}',
+      minBlockSize: '{sizes.control.minimumTarget}',
       p: '{spacing.2xs}',
       color: '{colors.text.secondary}',
       cursor: 'pointer',
@@ -94,6 +107,36 @@ export const popoverRecipe = defineSlotRecipe({
       },
     },
   },
-  variants: {},
-  defaultVariants: {},
+  variants: {
+    surface: {
+      default: {
+        content: {
+          bg: '{colors.layout.surface}',
+          color: '{colors.text.primary}',
+          borderRadius: '{radii.md}',
+          boxShadow: '{shadows.md}',
+          borderWidth: '1px',
+          borderColor: '{colors.layout.divider}',
+          // Content is a public scrollport and can contain focusable children
+          // directly. Reserve the complete external ring at every scroll edge.
+          p: 'calc({focusRing.width} + {focusRing.offset})',
+          scrollPadding: 'calc({focusRing.width} + {focusRing.offset})',
+          ...pomeAesthetics,
+        },
+      },
+      none: {
+        content: {
+          bg: '[transparent]',
+          borderWidth: '[0]',
+          borderRadius: '[0]',
+          boxShadow: '[none]',
+          p: 'none',
+          scrollPadding: 'none',
+        },
+      },
+    },
+  },
+  defaultVariants: {
+    surface: 'default',
+  },
 });

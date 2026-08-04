@@ -8,37 +8,39 @@ export const headingRecipe = defineRecipe({
   description: 'Semantic heading component with level-based typography',
   base: {
     margin: 0,
+    minInlineSize: 0,
+    overflowWrap: 'anywhere',
     fontFamily: '{fonts.heading}',
   },
   variants: {
     level: {
       '1': {
-        fontSize: '3xl',
+        fontSize: '4xl',
         fontWeight: 'bold',
         lineHeight: 'tight',
       },
       '2': {
-        fontSize: '2xl',
+        fontSize: '3xl',
         fontWeight: 'bold',
         lineHeight: 'snug',
       },
       '3': {
-        fontSize: 'xl',
+        fontSize: '2xl',
         fontWeight: 'semibold',
         lineHeight: 'snug',
       },
       '4': {
-        fontSize: 'lg',
+        fontSize: 'xl',
         fontWeight: 'semibold',
         lineHeight: 'normal',
       },
       '5': {
-        fontSize: 'md',
+        fontSize: 'lg',
         fontWeight: 'semibold',
         lineHeight: 'relaxed',
       },
       '6': {
-        fontSize: 'xs',
+        fontSize: 'md',
         fontWeight: 'semibold',
         lineHeight: 'relaxed',
       },

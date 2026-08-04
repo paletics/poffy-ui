@@ -1,5 +1,5 @@
 import { m, MotionProps } from 'motion/react';
-import { ComponentType, ElementType, RefObject, Ref, RefCallback } from 'react';
+import { ComponentType, ElementType } from 'react';
 
 /**
  * Extracts a typed value from a `CustomData` record with a fallback.
@@ -13,6 +13,13 @@ export const getCustomValue = <T>(
   const value = custom?.[key];
   return typeof value === typeof defaultValue ? (value as T) : defaultValue;
 };
+
+/** Resolves a runtime preset value to a known key without exposing the helper publicly. */
+export const resolvePresetKey = <T extends Record<string, unknown>, K extends keyof T & string>(
+  presets: T,
+  value: unknown,
+  fallback: K,
+): K => (typeof value === 'string' && Object.hasOwn(presets, value) ? (value as K) : fallback);
 
 type MotionComponentType = ComponentType<MotionProps & Record<string, unknown>>;
 
@@ -47,23 +54,3 @@ export const getMotionComponent = <T extends ElementType>(Component: T): MotionC
 
   return cached;
 };
-
-/**
- * Composes multiple refs into a single RefCallback.
- * Handles function refs, object refs, and null/undefined.
- *
- * @param refs - List of refs to compose
- * @returns A stable RefCallback that updates all provided refs
- */
-export const composeRefs =
-  <T>(...refs: (Ref<T> | RefObject<T | null> | null | undefined)[]): RefCallback<T> =>
-  (node) => {
-    refs.forEach((ref) => {
-      if (!ref) return;
-      if (typeof ref === 'function') {
-        ref(node);
-      } else {
-        (ref as RefObject<T | null>).current = node;
-      }
-    });
-  };

@@ -5,11 +5,6 @@ import { buildCalendarGrid, type CalendarGrid } from '@poffy-ui/behavior/calenda
  */
 type UseCalendarGridResult = CalendarGrid;
 
-/**
- * Hook to compute the calendar grid and weekday names.
- * ### AI Usage
- * - Internal logic for the Calendar component.
- */
 export const useCalendarGrid = (
   currentMonthDate: Date,
   weekStartsOn: number,

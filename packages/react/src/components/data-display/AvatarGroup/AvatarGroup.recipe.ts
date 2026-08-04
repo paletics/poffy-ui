@@ -8,20 +8,34 @@ export const avatarGroupRecipe = defineRecipe({
   description: 'Avatar group styling for overlapping stacks and excess indicators',
   base: {
     display: 'inline-flex',
+    maxWidth: '100%',
+    minWidth: 0,
     alignItems: 'center',
     flexDirection: 'row',
+    overflowX: 'auto',
+    overflowY: 'hidden',
+    _focusVisible: {
+      outline: '2px solid {colors.brand.main}',
+      outlineOffset: '-2px',
+    },
     '--avatar-group-spacing': 'calc({spacing.sm} * -1)',
     '& > .avatar': {
       borderWidth: '2px',
       borderColor: 'layout.background',
       boxSizing: 'content-box', // Ensure border doesn't shrink avatar if size is fixed content
       position: 'relative',
+      flexShrink: 0,
     },
     '& > .avatar:not(:first-child)': {
-      marginLeft: 'var(--avatar-group-spacing)',
+      marginInlineStart: 'var(--avatar-group-spacing)',
     },
     '& > .avatar-excess[data-clickable]': {
       cursor: 'pointer',
+    },
+    '& > .avatar-excess[data-clickable]:focus-visible': {
+      outline: '2px solid {colors.brand.main}',
+      outlineOffset: '-2px',
+      zIndex: 1,
     },
   },
   defaultVariants: {

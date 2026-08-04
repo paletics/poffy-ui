@@ -4,13 +4,7 @@ import { Box } from '@/components/layout/Box';
 import { Stack } from '@/components/layout/Stack';
 import { css } from '@/styled-system/css';
 
-/**
- * The foundational flex-layout primitive that stacks children along a configurable axis with Silver Ratio spacing, serving as the base for HStack and VStack.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (Recipe: stackStyle, splitCssProps), Radix Slot
- */
+
 const meta: Meta<typeof Stack> = {
   title: 'Layout/Stack',
   component: Stack,
@@ -183,7 +177,7 @@ export const Alignment: Story = {
 
 export const Justification: Story = {
   render: () => (
-    <Stack gap="lg" width="[600px]">
+    <Stack gap="lg" width="[min(600px,calc(100vw - 3rem))]">
       <Stack
         direction="row"
         justify="flex-start"

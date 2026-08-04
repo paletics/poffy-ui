@@ -19,6 +19,14 @@ export const switchRecipe = defineSlotRecipe({
       gap: 'md',
       '--switch-border-width': '2px',
       '--switch-travel-distance': 'var(--switch-thumb-size)',
+      '--switch-checked-translate': 'var(--switch-travel-distance)',
+      '--switch-active-translate':
+        'calc(var(--switch-travel-distance) - (var(--switch-thumb-size) * 0.3))',
+      '&:dir(rtl)': {
+        '--switch-checked-translate': 'calc(0px - var(--switch-travel-distance))',
+        '--switch-active-translate':
+          'calc(0px - var(--switch-travel-distance) + (var(--switch-thumb-size) * 0.3))',
+      },
     },
     input: hiddenInputStyles,
     control: {
@@ -37,6 +45,12 @@ export const switchRecipe = defineSlotRecipe({
       bg: 'brand.surface',
 
       transition: 'background-color 0.3s, border-color 0.3s',
+      _motionSubtle: {
+        transition: 'background-color {durations.fast}, border-color {durations.fast}',
+      },
+      _motionPop: {
+        transition: 'background-color {durations.complex}, border-color {durations.complex}',
+      },
       cursor: 'inherit',
       ...peerFocusWithRing,
       '--thumb-w': 'var(--switch-thumb-size)',
@@ -45,7 +59,7 @@ export const switchRecipe = defineSlotRecipe({
         bg: 'var(--switch-main, {colors.brand.main})',
         borderColor: 'var(--switch-main, {colors.brand.main})',
         '& > span': {
-          transform: 'translateX(var(--switch-travel-distance)) !important',
+          transform: 'translateX(var(--switch-checked-translate)) !important',
         },
       },
       _peerActive: {
@@ -55,8 +69,7 @@ export const switchRecipe = defineSlotRecipe({
       },
       '.peer:checked:active ~ & > span, .peer:is([data-state="checked"]):active ~ & > span': {
         width: 'calc(var(--switch-thumb-size) * 1.3) !important',
-        transform:
-          'translateX(calc(var(--switch-travel-distance) - (var(--switch-thumb-size) * 0.3))) !important',
+        transform: 'translateX(var(--switch-active-translate)) !important',
       },
       _dark: {
         bg: 'slate.800',
@@ -78,6 +91,14 @@ export const switchRecipe = defineSlotRecipe({
       transitionProperty: 'transform, width, background-color',
       transitionDuration: '{durations.standard}',
       transitionTimingFunction: '{easings.bounce}',
+      _motionSubtle: {
+        transitionDuration: '{durations.fast}',
+        transitionTimingFunction: '{easings.soft}',
+      },
+      _motionPop: {
+        transitionDuration: '{durations.complex}',
+        transitionTimingFunction: '{easings.bounce}',
+      },
     },
     label: labelStyles,
   },

@@ -3,16 +3,9 @@ import { expect, within } from 'storybook/test';
 import { RadioGroup } from './RadioGroup';
 import { Radio } from './Radio';
 import { useState } from 'react';
+import { Box } from '@/components/layout';
 
-/**
- * A container for mutually exclusive radio options.
- * Supports controlled/uncontrolled patterns, `vertical` and `horizontal` orientations,
- * and distributes `size` and `disabled` props to child `Radio` atoms.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Panda CSS (`radioGroup` recipe), React Context (`RadioGroupContext`)
- */
+
 const meta: Meta<typeof RadioGroup> = {
   title: 'Inputs/RadioGroup',
   component: RadioGroup,
@@ -87,6 +80,18 @@ export const Horizontal: Story = {
       },
     },
   },
+};
+
+export const NarrowLocalizedHorizontal: Story = {
+  render: () => (
+    <Box width="[160px]" maxWidth="100%" dir="rtl">
+      <RadioGroup orientation="horizontal" defaultValue="standard" aria-label="表示密度">
+        <Radio value="comfortable">ゆったり表示</Radio>
+        <Radio value="standard">標準的な表示</Radio>
+        <Radio value="compact">非常にコンパクトな表示</Radio>
+      </RadioGroup>
+    </Box>
+  ),
 };
 
 export const Animated: Story = {

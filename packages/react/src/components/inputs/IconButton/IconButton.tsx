@@ -1,63 +1,38 @@
 'use client';
 
 import { ActionMotion } from '@/components/animations';
+import {
+  hasAsChildLinkDestination,
+  isButtonAsChildHost,
+  isButtonCompatibleAsChildHost,
+  shouldEmulateButtonHost,
+} from '@/components/shared/asChild';
+import { omitNativeButtonOnlyProps } from '@/components/shared/buttonDelegation';
 import { cx } from '@/styled-system/css';
 import { iconButton } from '@/styled-system/recipes';
-import { guardActivationHandlers } from '@poffy-ui/behavior/activation';
+import {
+  createDisabledActivationHandlers,
+  guardDisabledActivationHandlers,
+  useButtonKeyboardActivation,
+} from '@poffy-ui/behavior/activation';
 import { Slot, Slottable } from '@radix-ui/react-slot';
-import { cloneElement, forwardRef, type ReactElement } from 'react';
-import type { KeyboardEvent, MouseEvent } from 'react';
-import type { IconButtonProps } from './IconButton.types';
+import { cloneElement, forwardRef, isValidElement, type ReactElement } from 'react';
+import type { ElementType, MouseEvent, ReactNode } from 'react';
+import type { IconButtonComponent, IconButtonOwnProps, IconButtonProps } from './IconButton.types';
+import type { PrimitiveProps } from '@poffy-ui/types';
 
 interface IconA11yProps {
   'aria-hidden'?: true;
   focusable?: 'false';
 }
 
-/**
- * An icon-only button for toolbars, menus, and compact action surfaces.
- * Clones the `icon` element to inject `aria-hidden="true"` and `focusable="false"`.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`iconButton` recipe), Radix Slot, `ActionMotion`
- * - **Props**: `PrimitiveProps<'button'>`
- *
- * ### Design Tokens
- * - **sizing**: width / height follow the Silver Ratio size scale for icon actions.
- * - **color**: semantic tokens are selected from the shared `intent` x `appearance` matrix.
- * - **duration**: `bouncy` preset via `ActionMotion`
- *
- * ### Variant Logic
- * - **appearance="ghost"**: Default. No background and low visual weight.
- * - **appearance="outline"**: Bordered transparent fill for secondary icon actions.
- * - **appearance="solid"**: Filled background for higher emphasis.
- * - **shape="pill"**: Default full-radius silhouette for icon-only buttons.
- * - **shape="square"**: Square shape for grid or tile contexts.
- *
- * ### Accessibility
- * - **Role**: `button` (implicit)
- * - **Keyboard**: Tab: focus | Enter / Space: activate
- * - **Required**: `aria-label` is mandatory. Do not rely on tooltip text as an accessible label.
- *
- * @example Ghost icon button
- * ```tsx
- * <IconButton icon={<EditIcon />} aria-label="Edit item" />
- * ```
- *
- * @example Solid icon button with loading state
- * ```tsx
- * <IconButton icon={<SaveIcon />} aria-label="Save" appearance="solid" loading />
- * ```
- *
- * @example Polymorphic anchor
- * ```tsx
- * <IconButton asChild icon={<LinkIcon />} aria-label="Open link">
- *   <a href="/profile" />
- * </IconButton>
- * ```
- */
-export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
+
+type IconButtonRuntimeProps = Omit<
+  PrimitiveProps<'button', IconButtonOwnProps>,
+  'aria-busy' | 'aria-disabled' | 'type'
+>;
+
+const IconButtonImpl = forwardRef<HTMLElement, IconButtonProps>(
   (
     {
       icon,
@@ -69,85 +44,103 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       disabled = false,
       loading = false,
       'aria-label': ariaLabel,
+      'aria-disabled': _ariaDisabled,
+      'aria-busy': _ariaBusy,
       animationType = 'bouncy',
       asChild,
       children,
+      onAuxClick,
+      onAuxClickCapture,
       onClick,
       onClickCapture,
       onKeyDown,
       onKeyDownCapture,
+      onKeyUp,
+      onKeyUpCapture,
+      onBlur,
+      onPointerDown,
+      onPointerDownCapture,
+      onPointerUp,
+      onPointerUpCapture,
+      type: _type,
       ...props
+    }: IconButtonRuntimeProps & {
+      'aria-busy'?: unknown;
+      'aria-disabled'?: unknown;
+      type?: unknown;
     },
     ref,
   ) => {
     const recipeClass = iconButton({ size, intent, appearance, shape });
-    const Component = asChild ? Slot : 'button';
     const isDisabled = [disabled, loading].includes(true);
-    const shouldGuardAsChildActivation = Boolean(asChild && isDisabled);
+    const asChildCandidate = asChild && isButtonAsChildHost(children) ? children : null;
+    const shouldFallbackDisabledCustomLink = Boolean(
+      isDisabled &&
+      asChildCandidate &&
+      typeof asChildCandidate.type !== 'string' &&
+      hasAsChildLinkDestination(asChildCandidate),
+    );
+    const asChildElement = shouldFallbackDisabledCustomLink ? null : asChildCandidate;
+    const canUseAsChild = Boolean(asChildElement);
+    const isButtonCompatibleHost = isButtonCompatibleAsChildHost(asChildElement);
+    const needsButtonSemantics = Boolean(canUseAsChild && shouldEmulateButtonHost(asChildElement));
+    const Component = (canUseAsChild ? Slot : 'button') as ElementType;
+    const shouldGuardAsChildActivation = Boolean(canUseAsChild && isDisabled);
+    const hostProps = asChild ? omitNativeButtonOnlyProps(props) : props;
 
     const iconWithProps = cloneElement(icon as ReactElement<IconA11yProps>, {
       'aria-hidden': true,
       focusable: 'false',
     });
 
-    const blockAsChildActivation = (event: MouseEvent<HTMLElement>) => {
-      if (asChild !== true || !isDisabled) {
-        return false;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      return true;
-    };
-
-    const blockAsChildKeyboardActivation = (event: KeyboardEvent<HTMLElement>) => {
-      if (asChild !== true || !isDisabled || !['Enter', ' '].includes(event.key)) {
-        return false;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      return true;
-    };
-
-    const handleClickCapture = (event: MouseEvent<HTMLElement>) => {
-      if (blockAsChildActivation(event)) {
-        return;
-      }
-
-      onClickCapture?.(event as MouseEvent<HTMLButtonElement>);
-    };
-
     const handleClick = (event: MouseEvent<HTMLElement>) => {
-      if (blockAsChildActivation(event)) {
-        return;
-      }
-
       onClick?.(event as MouseEvent<HTMLButtonElement>);
     };
 
-    const handleKeyDownCapture = (event: KeyboardEvent<HTMLElement>) => {
-      if (blockAsChildKeyboardActivation(event)) {
-        return;
-      }
-
-      onKeyDownCapture?.(event as KeyboardEvent<HTMLButtonElement>);
-    };
-
-    const handleKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-      if (blockAsChildKeyboardActivation(event)) {
-        return;
-      }
-
-      onKeyDown?.(event as KeyboardEvent<HTMLButtonElement>);
-    };
-
-    const guardedChildren = guardActivationHandlers(children, shouldGuardAsChildActivation, {
-      onClickCapture: handleClickCapture,
-      onClick: handleClick,
-      onKeyDownCapture: handleKeyDownCapture,
-      onKeyDown: handleKeyDown,
+    const keyboardActivation = useButtonKeyboardActivation<HTMLButtonElement>({
+      enabled: needsButtonSemantics && !isDisabled,
+      onBlur,
+      onKeyDown,
+      onKeyUp,
     });
+
+    const guardedChildren = guardDisabledActivationHandlers(children, shouldGuardAsChildActivation);
+    const activationHandlers = createDisabledActivationHandlers(shouldGuardAsChildActivation, {
+      onAuxClick,
+      onAuxClickCapture,
+      onClick: handleClick,
+      onClickCapture,
+      onKeyDown: keyboardActivation.onKeyDown,
+      onKeyDownCapture,
+      onKeyUp: keyboardActivation.onKeyUp,
+      onKeyUpCapture,
+      onPointerDown,
+      onPointerDownCapture,
+      onPointerUp,
+      onPointerUpCapture,
+    });
+    const slottableChildren: ReactNode =
+      canUseAsChild &&
+      isValidElement<Record<string, unknown> & { children?: ReactNode }>(guardedChildren)
+        ? cloneElement(
+            guardedChildren,
+            {
+              'aria-disabled': isDisabled ? true : undefined,
+              'aria-busy': loading ? true : undefined,
+              'aria-label': ariaLabel,
+              disabled: isButtonCompatibleHost ? isDisabled : undefined,
+              ...(isDisabled && asChildElement?.type === 'a'
+                ? {
+                    href: undefined,
+                    role: asChildElement.props.role ?? 'link',
+                  }
+                : {}),
+              ...(isButtonCompatibleHost ? { type: 'button' } : {}),
+              ...(needsButtonSemantics ? { role: 'button', tabIndex: 0 } : {}),
+            },
+            guardedChildren.props.children,
+          )
+        : guardedChildren;
 
     return (
       <ActionMotion
@@ -159,18 +152,17 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       >
         <Component
           ref={ref}
-          type={asChild ? undefined : 'button'}
           className={cx(recipeClass, className)}
-          disabled={asChild ? undefined : isDisabled}
+          disabled={canUseAsChild ? undefined : isDisabled}
+          {...hostProps}
+          type={canUseAsChild ? undefined : 'button'}
           aria-disabled={isDisabled ? true : undefined}
+          aria-busy={loading ? true : undefined}
           data-disabled={isDisabled && !loading ? '' : undefined}
-          {...props}
-          onClickCapture={handleClickCapture}
-          onClick={handleClick}
-          onKeyDownCapture={handleKeyDownCapture}
-          onKeyDown={handleKeyDown}
+          onBlur={keyboardActivation.onBlur}
+          {...activationHandlers}
         >
-          {asChild && <Slottable>{guardedChildren}</Slottable>}
+          {canUseAsChild && <Slottable>{slottableChildren}</Slottable>}
           {loading ? (
             <span className="ti ti-loader animate-spin" aria-hidden="true" />
           ) : (
@@ -183,4 +175,15 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
   },
 );
 
-IconButton.displayName = 'IconButton';
+IconButtonImpl.displayName = 'IconButton';
+
+/**
+ * Triggers an icon-only action.
+ *
+ * `aria-label` is required because the supplied icon is always decorative. `loading` replaces it
+ * with a decorative spinner and disables activation. With `asChild`, a compatible passive host
+ * receives button semantics; a disabled delegated anchor loses its destination to prevent
+ * navigation.
+ */
+
+export const IconButton = IconButtonImpl as unknown as IconButtonComponent;

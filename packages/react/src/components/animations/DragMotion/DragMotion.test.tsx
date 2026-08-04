@@ -23,6 +23,17 @@ describe('DragMotion', () => {
     expect(container.firstChild).toBeInTheDocument();
   });
 
+  it('falls back to a div for invalid asChild children', () => {
+    const { container } = render(
+      <DragMotion asChild>
+        <>Fragment content</>
+      </DragMotion>,
+    );
+
+    expect(container.firstElementChild).toBeInstanceOf(HTMLDivElement);
+    expect(container).toHaveTextContent('Fragment content');
+  });
+
   it('has no accessibility violations', async () => {
     const { container } = render(
       <DragMotion>

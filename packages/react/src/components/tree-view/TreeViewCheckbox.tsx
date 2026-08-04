@@ -1,84 +1,101 @@
 'use client';
 
-import { forwardRef } from 'react';
+import { forwardRef, useLayoutEffect, useMemo, useRef } from 'react';
 import { cx } from '@/styled-system/css';
 import { TreeViewCheckboxProps } from './TreeView.types';
 import { useTreeViewContext, useTreeViewItemContext } from './TreeViewContext';
 import { Checkbox } from '../inputs/Checkbox';
 
 /**
- * A specialized checkbox for TreeViewItems that integrates with the TreeView context
- * to support cascading selection logic and indeterminate states automatically.
+ * Reflects selection state owned by its TreeViewItem.
  *
- * ### Notes
- * Use only in selectable trees. Provide `childrenIds` when a parent checkbox
- * should select or clear all descendants; otherwise only the current item ID is
- * affected.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Checkbox, TreeView context
- * - **Props**: TreeViewCheckboxProps
- *
- * ### Design Tokens
- * - **layout**: inherits row alignment from the tree item and checkbox sizing from `Checkbox`.
- * - **color**: uses standard checkbox checked and indeterminate state tokens.
- *
- * ### Variant Logic
- * - Tree selection state is contextual; do not pass independent `checked` state.
- *
- * ### Accessibility
- * - **Role**: checkbox.
- * - **Keyboard**: Space toggles selection when the checkbox is focused.
- * - **Required**: provide `childrenIds` for parent nodes when selection should cascade to descendants.
- *
- * ### AI Usage
- * - Do: place near the label inside the item trigger/content composition.
- * - Don't: use for non-tree forms; use the standard Checkbox component.
- *
- * @example Cascading selection
- * ```tsx
- * import { TreeViewCheckbox } from '@poffy-ui/react/tree-view';
- *
- * <TreeViewCheckbox childrenIds={['child-1', 'child-2']} aria-label="Select folder" />
- * ```
+ * Provide `childrenIds` when a parent toggle should cascade to descendants;
+ * this component does not accept independent checked state. Its native input
+ * is hidden from assistive technology and removed from tab order because the
+ * owning treeitem exposes the selection state. Pointer interaction restores
+ * focus to that item.
  */
 export const TreeViewCheckbox = forwardRef<HTMLInputElement, Omit<TreeViewCheckboxProps, 'size'>>(
-  ({ className, childrenIds, onClick, onChange, ...props }, ref) => {
-    const { selectedIds, toggleSelection } = useTreeViewContext();
-    const { id, childrenIds: contextChildrenIds } = useTreeViewItemContext();
+  ({ className, childrenIds, disabled = false, onClick, onChange, onMouseDown, ...props }, ref) => {
+    const { selectedIds, toggleSelection, registerCheckboxItem } = useTreeViewContext();
+    const {
+      id,
+      childrenIds: contextChildrenIds,
+      isAmbiguous,
+      setSelectable,
+    } = useTreeViewItemContext();
+    const isDisabled = disabled || isAmbiguous;
 
-    const resolvedChildrenIds = childrenIds ?? contextChildrenIds ?? [];
+    const resolvedChildrenIds = useMemo(
+      () => childrenIds ?? contextChildrenIds ?? [],
+      [childrenIds, contextChildrenIds],
+    );
 
-    const isChecked = selectedIds.has(id);
-    let isIndeterminate = false;
+    useLayoutEffect(() => {
+      const unregisterCheckboxItem = registerCheckboxItem();
+      setSelectable(resolvedChildrenIds, isDisabled);
+      return () => {
+        unregisterCheckboxItem();
+        setSelectable(null);
+      };
+    }, [isDisabled, registerCheckboxItem, resolvedChildrenIds, setSelectable]);
 
-    if (!isChecked && resolvedChildrenIds.length > 0) {
-      const someChildrenSelected = resolvedChildrenIds.some((childId: string) =>
-        selectedIds.has(childId),
-      );
-      isIndeterminate = someChildrenSelected;
-    }
+    const selectedChildCount = resolvedChildrenIds.filter((childId) =>
+      selectedIds.has(childId),
+    ).length;
+    const isParent = resolvedChildrenIds.length > 0;
+    const isChecked =
+      !isAmbiguous &&
+      (isParent ? selectedChildCount === resolvedChildrenIds.length : selectedIds.has(id));
+    const isIndeterminate = !isAmbiguous && isParent && selectedChildCount > 0 && !isChecked;
+    const renderedStateRef = useRef({ checked: isChecked, indeterminate: isIndeterminate });
+    useLayoutEffect(() => {
+      renderedStateRef.current = { checked: isChecked, indeterminate: isIndeterminate };
+    }, [isChecked, isIndeterminate]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      toggleSelection(id, e.target.checked, resolvedChildrenIds);
+      if (isDisabled) return;
       onChange?.(e);
+      if (e.defaultPrevented) {
+        const input = e.currentTarget;
+        queueMicrotask(() => {
+          if (!input.isConnected) return;
+          input.checked = renderedStateRef.current.checked;
+          input.indeterminate = renderedStateRef.current.indeterminate;
+        });
+        return;
+      }
+      toggleSelection(id, e.target.checked, resolvedChildrenIds);
     };
 
     const handleCheckboxClick = (e: React.MouseEvent<HTMLInputElement>) => {
       e.stopPropagation();
       onClick?.(e);
+      if (isDisabled || e.defaultPrevented) return;
+      e.currentTarget.closest<HTMLElement>('[role="treeitem"]')?.focus();
+    };
+
+    const handleCheckboxMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
+      onMouseDown?.(e);
+      if (isDisabled || e.defaultPrevented) return;
+      // The native input is intentionally aria-hidden and excluded from the
+      // roving tab order. Keep pointer focus on its owning tree item instead.
+      e.preventDefault();
     };
 
     return (
       <Checkbox
         ref={ref}
         className={cx('treeview-checkbox', className)}
+        {...props}
+        disabled={isDisabled}
         checked={isChecked}
         indeterminate={isIndeterminate}
+        tabIndex={-1}
+        aria-hidden
         onChange={handleChange}
         onClick={handleCheckboxClick}
-        {...props}
+        onMouseDown={handleCheckboxMouseDown}
       />
     );
   },

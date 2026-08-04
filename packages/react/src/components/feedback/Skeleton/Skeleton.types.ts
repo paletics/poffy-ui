@@ -1,90 +1,94 @@
-import type { MotionPrimitiveProps } from '@/types/motion';
+import type { MotionPrimitiveProps, StaticMotionAsChildHostProps } from '@/types/motion';
+import type { SemanticIntent } from '@poffy-ui/types';
+import type { ComponentPropsWithoutRef, ReactElement } from 'react';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Semantic tint alias for Skeleton placeholders.
- *
- * ### Notes
- * Most app code should leave this unset and control perceived loading
- * hierarchy with `shape`, `width`, and `height`.
- *
- * ### AI Context & Architecture
- * - SkeletonVariant maps to semantic token keys in variants.* token group.
- */
-export type SkeletonVariant =
-  | 'primary'
-  | 'secondary'
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'danger'
-  | 'light'
-  | 'dark';
+/** Optional semantic tint for a Skeleton placeholder. Most uses rely on shape and dimensions. */
+export type SkeletonIntent = SemanticIntent;
 
-/**
- * Shape of the skeleton placeholder.
- *
- * ### Notes
- * Match the shape to the content being replaced: text for lines,
- * circle for avatars, and rect for media or cards.
- */
+/** Shape of the placeholder: text line, avatar-like circle, or rectangular content. */
 export type SkeletonShape = 'text' | 'circle' | 'rect';
 
-/**
- * Animation type for the skeleton.
- *
- * ### Notes
- * Both `pulse` and `shimmer` use CSS keyframes only.
- */
+/** Animation treatment for the placeholder. */
 export type SkeletonAnimation = 'pulse' | 'shimmer' | 'none';
 
 /**
- * Base props for the Skeleton component.
- *
- * @example
- * ```tsx
- * import { Skeleton } from '@poffy-ui/react/feedback';
- *
- * <Skeleton shape="text" width="12rem" />
- * <Skeleton shape="circle" width={40} />
- * ```
- *
- * ### Notes
- * Do: mark the real loading region with `aria-busy` or status text when users
- * need an announcement.
- * Don't: put meaningful text inside Skeleton; the component is `aria-hidden`.
- *
- * ### AI Usage
- * - Use to reserve layout while data loads.
- * - Prefer dimensions that match the eventual content to avoid layout shift.
+ * Props that reserve space for loading content. Skeleton itself is hidden from assistive technology;
+ * place `aria-busy` or status text on the real loading region when users need an announcement.
  */
 export interface SkeletonBaseProps {
-  /** Legacy semantic tint alias. Prefer the shape axis as the primary public API. */
-  variant?: SkeletonVariant;
-  /** The geometric shape. */
+  /**
+   * Semantic tint used for the loading surface.
+   *
+   * @defaultValue `'secondary'`
+   */
+  intent?: SkeletonIntent;
+  /**
+   * The geometric shape.
+   *
+   * @defaultValue `'text'`
+   */
   shape?: SkeletonShape;
-  /** The animation style. */
+  /**
+   * The animation style.
+   *
+   * @defaultValue `'pulse'`
+   */
   animation?: SkeletonAnimation;
   /**
    * Width of the skeleton. Applied through `--skeleton-width` so the recipe can map
-   * sizing to each shape. Numeric values are converted to px.
+   * sizing to each shape. Numeric values are converted to px; invalid numeric
+   * values are omitted. Use CSS lengths or percentages for strings, not Panda
+   * shorthand tokens.
    */
   width?: string | number;
   /**
    * Height of the skeleton. Applied through `--skeleton-height`.
-   * For `shape="circle"`, defaults to `width` when omitted.
-   * Numeric values are converted to px.
+   * For `shape="circle"`, the recipe preserves a 1:1 aspect ratio when omitted.
+   * Numeric values are converted to px; invalid numeric values are omitted.
    */
   height?: string | number;
 }
 
-/**
- * Props for the Skeleton component.
- *
- * ### AI Context & Architecture
- * Uses `MotionPrimitiveProps` (not `PrimitiveProps`) because the root element is
- * `motion.span`. This resolves drag/animation event type conflicts between React's
- * `DragEventHandler` and framer-motion's `PanInfo`-based signatures.
- *
- * Related: `SkeletonBaseProps`
- */
-export type SkeletonProps = MotionPrimitiveProps<'span', SkeletonBaseProps>;
+type SkeletonMotionProps = Omit<
+  MotionPrimitiveProps<'span', SkeletonBaseProps>,
+  'aria-hidden' | 'asChild' | 'children' | 'inert'
+>;
+interface SkeletonOwnedSemantics {
+  'aria-hidden'?: never;
+  inert?: never;
+}
+
+/** Props for Skeleton rendered with its default host. */
+export type SkeletonDefaultProps = DefaultHostProps<SkeletonMotionProps> &
+  SkeletonOwnedSemantics & {
+    /** A default Skeleton is a content-free placeholder. */
+    children?: never;
+  };
+
+type SkeletonAsChildElement =
+  | ReactElement<ComponentPropsWithoutRef<'div'>, 'div'>
+  | ReactElement<ComponentPropsWithoutRef<'output'>, 'output'>
+  | ReactElement<ComponentPropsWithoutRef<'span'>, 'span'>;
+
+/** Props for Skeleton delegated to an asChild host. */
+export type SkeletonAsChildProps = StaticMotionAsChildHostProps<
+  SkeletonMotionProps,
+  HTMLElement,
+  SkeletonAsChildElement
+> &
+  SkeletonOwnedSemantics;
+
+/** Public props for Skeleton. */
+export type SkeletonProps = SkeletonDefaultProps | SkeletonAsChildProps;
+
+/** Polymorphic component call signatures for Skeleton. */
+export type SkeletonComponent = PolymorphicAsChildComponent<
+  SkeletonDefaultProps,
+  SkeletonAsChildProps,
+  HTMLSpanElement,
+  HTMLElement
+>;

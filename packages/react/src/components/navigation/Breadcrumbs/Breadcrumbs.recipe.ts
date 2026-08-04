@@ -15,6 +15,14 @@ export const breadcrumbsRecipe = defineSlotRecipe({
   base: {
     root: {
       display: 'block',
+      boxSizing: 'border-box',
+      maxWidth: '{sizes.full}',
+      minWidth: 0,
+      containerType: 'inline-size',
+      containerName: 'breadcrumbs',
+      overflowX: 'auto',
+      overflowY: 'hidden',
+      overscrollBehaviorX: 'contain',
     },
     list: {
       display: 'flex',
@@ -23,34 +31,55 @@ export const breadcrumbsRecipe = defineSlotRecipe({
       listStyle: 'none',
       p: '0',
       m: '0',
+      width: 'max-content',
+      minWidth: '{sizes.full}',
     },
     item: {
       display: 'inline-flex',
       alignItems: 'center',
       gap: '{spacing.sm}',
+      flexShrink: 0,
     },
     link: {
       display: 'inline-flex',
       alignItems: 'center',
+      minBlockSize: '{sizes.control.minimumTarget}',
+      px: '{spacing.xs}',
       gap: '{spacing.xs}',
+      whiteSpace: 'nowrap',
       fontSize: 'md',
       color: 'text.secondary',
       textDecoration: 'none',
       transitionProperty: 'color, background-color, text-decoration-color',
       transitionDuration: '{durations.fast}',
       transitionTimingFunction: '{easings.soft}',
+      _motionSubtle: { transitionDuration: '{durations.ultraFast}' },
+      _motionPop: {
+        transitionDuration: '{durations.standard}',
+        transitionTimingFunction: '{easings.bounce}',
+      },
       _hover: {
         color: 'text.primary',
         textDecoration: 'underline',
       },
+      _focusVisible: {
+        outline: '2px solid',
+        outlineColor: 'brand.main',
+        outlineOffset: '-2px',
+      },
       _current: {
+        boxSizing: 'border-box',
         color: 'text.primary',
         fontWeight: 'medium',
         textDecoration: 'none',
         pointerEvents: 'none',
+        maxInlineSize: '100cqi',
+        whiteSpace: 'normal',
+        overflowWrap: 'anywhere',
       },
     },
     separator: {
+      flexShrink: 0,
       color: 'text.secondary',
       fontSize: 'md',
       opacity: '0.6',
@@ -59,7 +88,7 @@ export const breadcrumbsRecipe = defineSlotRecipe({
   variants: {
     size: {
       sm: {
-        link: { fontSize: 'xs' },
+        link: { fontSize: 'sm', px: '{spacing.2xs}' },
         list: { gap: '{spacing.xs}' },
         item: { gap: '{spacing.xs}' },
       },

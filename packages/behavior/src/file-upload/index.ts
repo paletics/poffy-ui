@@ -1,3 +1,19 @@
-export { acceptsFileUpload, filterAcceptedFiles, formatFileSize } from './file-upload';
+export {
+  acceptsFileUpload,
+  createFileUploadItems,
+  filterAcceptedFiles,
+  formatFileSize,
+  getFileUploadRejectionReasons,
+  normalizeFileUploadCandidates,
+  resolveFileUploadSelection,
+} from './file-upload';
 /** Re-exported file upload behavior types. */
-export type { FileUploadAcceptOptions, FileUploadCandidate } from './file-upload';
+export type {
+  FileUploadAcceptOptions,
+  FileUploadCandidate,
+  FileUploadItem,
+  FileUploadItemState,
+  FileUploadRejection,
+  FileUploadRejectionReason,
+  FileUploadSelectionRejectionReason,
+} from './file-upload';

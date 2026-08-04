@@ -8,18 +8,8 @@ import { CollapseTransitionType } from './CollapseTransition.presets';
 export type CollapseAnimationType = CollapseTransitionType;
 
 /**
- * Base props for `CollapseTransition`.
- *
- * ### Notes
- * This is a controlled transition. The parent owns `isOpen`; the
- * component only animates the mounted/open state it receives.
- *
- * ### AI Usage
- * - **DO**: Pair with a trigger that owns `aria-expanded` and, when applicable, `aria-controls`.
- * - **DON'T**: Use this as an accordion state manager; use it as the animated panel only.
- *
- * ### Generic Parameters
- * - **C**: Custom data shape accepted by preset resolvers.
+ * Props for a controlled collapse transition; the parent owns `isOpen` and trigger semantics.
+ * @typeParam C - Custom data accepted by the selected preset.
  */
 export interface CollapseTransitionBaseProps<C extends CustomData = CustomData> {
   /**
@@ -34,7 +24,8 @@ export interface CollapseTransitionBaseProps<C extends CustomData = CustomData> 
   animationType?: CollapseAnimationType;
   /**
    * Keeps the element mounted and toggles hidden state instead of removing it.
-   * Closed persistent content receives `aria-hidden`.
+   * Closed persistent content receives `aria-hidden`. With `animationType="scale-y"`,
+   * the closed element retains its layout space; use a height animation to collapse flow.
    *
    * @defaultValue `false`
    */

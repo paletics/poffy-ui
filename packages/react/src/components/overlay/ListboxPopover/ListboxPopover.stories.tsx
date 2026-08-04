@@ -9,7 +9,7 @@ const optionListClass = css({
   display: 'grid',
   gap: '2xs',
   p: 'xs',
-  minW: '12rem',
+  minW: '[12rem]',
 });
 
 const optionClass = css({
@@ -24,13 +24,7 @@ const optionClass = css({
   },
 });
 
-/**
- * Popover preset for listbox/select surfaces that own focus and selection upstream.
- *
- * ### AI Context & Architecture
- * - **Tier**: Molecules
- * - **Stack**: Popover with manual trigger mode and listbox role
- */
+
 const meta: Meta<typeof ListboxPopover> = {
   title: 'Overlay/ListboxPopover',
   component: ListboxPopover,
@@ -60,7 +54,7 @@ export const Default: Story = {
       <ListboxPopoverAnchor asChild>
         <Button>Choose fruit</Button>
       </ListboxPopoverAnchor>
-      <ListboxPopoverContent>
+      <ListboxPopoverContent aria-label="Fruit options">
         <Options />
       </ListboxPopoverContent>
     </ListboxPopover>
@@ -73,7 +67,7 @@ export const Closed: Story = {
       <ListboxPopoverAnchor asChild>
         <Button>Choose fruit</Button>
       </ListboxPopoverAnchor>
-      <ListboxPopoverContent>
+      <ListboxPopoverContent aria-label="Fruit options">
         <Options />
       </ListboxPopoverContent>
     </ListboxPopover>

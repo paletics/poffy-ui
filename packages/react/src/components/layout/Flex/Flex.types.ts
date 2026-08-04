@@ -2,29 +2,18 @@ import { flexStyle } from '@/styled-system/recipes';
 import { JsxStyleProps, RecipeVariantProps } from '@/styled-system/types';
 import { PrimitiveProps } from '@poffy-ui/types';
 import { ReactNode } from 'react';
+import type {
+  AsChildHostProps,
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Extracted variant types from the Panda CSS recipe.
- * ### AI Usage
- * - Use this when extending Flex styles.
- */
+/** Recipe-backed flexbox layout options. */
 export type FlexVariants = RecipeVariantProps<typeof flexStyle>;
 
 /**
- * Own props for Flex.
- *
- * ### Notes
- * Use Flex when alignment, wrapping, or distribution needs explicit flexbox
- * control. For simple one-axis spacing, prefer `HStack` or `VStack`.
- *
- * @example
- * ```tsx
- * import { Flex } from '@poffy-ui/react/layout';
- * ```
- *
- * ### AI Usage
- * - Do: use `align`, `justify`, `direction`, `wrap`, and `gap` for flex layout.
- * - Don't: use Flex to create tabular or two-dimensional data layouts.
+ * Style and composition props for explicit flexbox alignment, wrapping, or distribution. Prefer
+ * `HStack` or `VStack` when a fixed one-dimensional axis communicates the layout more clearly.
  */
 export type FlexBaseProps = FlexVariants &
   JsxStyleProps & {
@@ -34,9 +23,17 @@ export type FlexBaseProps = FlexVariants &
     className?: string;
   };
 
-/**
- * Comprehensive properties for the core Flex component.
- * ### AI Usage
- * - Use this to type-check Flex components.
- */
-export type FlexProps = PrimitiveProps<'div', FlexBaseProps>;
+
+type FlexNativeProps = PrimitiveProps<'div', FlexBaseProps>;
+/** Props for Flex rendered with its default host. */
+export type FlexDefaultProps = DefaultHostProps<FlexNativeProps>;
+/** Props for Flex delegated to an asChild host. */
+export type FlexAsChildProps = AsChildHostProps<FlexNativeProps>;
+/** Public props for Flex. */
+export type FlexProps = FlexDefaultProps | FlexAsChildProps;
+/** Polymorphic component call signatures for Flex. */
+export type FlexComponent = PolymorphicAsChildComponent<
+  FlexDefaultProps,
+  FlexAsChildProps,
+  HTMLDivElement
+>;

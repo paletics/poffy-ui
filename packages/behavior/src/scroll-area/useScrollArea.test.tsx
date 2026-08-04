@@ -37,7 +37,10 @@ describe('useScrollArea', () => {
 
     act(() => {
       result.current.getThumbPointerDown('vertical')({
+        button: 0,
         clientY: 0,
+        isPrimary: true,
+        pointerId: 1,
         preventDefault: vi.fn(),
       } as unknown as React.PointerEvent<HTMLDivElement>);
     });

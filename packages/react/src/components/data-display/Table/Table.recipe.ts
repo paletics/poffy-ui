@@ -6,44 +6,46 @@ import { defineSlotRecipe } from '@pandacss/dev';
 export const tableRecipe = defineSlotRecipe({
   className: 'table',
   description: 'Table styling for root, head, body, row, cell, and caption slots',
-  slots: ['root', 'caption', 'head', 'body', 'row', 'cell', 'footer'],
+  slots: ['root', 'caption', 'head', 'body', 'row', 'cell', 'footer', 'emptyState'],
   base: {
     root: {
+      '--table-sticky-background': 'var(--poffy-colors-layout-surface)',
       width: '100%',
       captionSide: 'bottom',
       borderCollapse: 'collapse',
       fontSize: 'md',
-      textAlign: 'left',
+      textAlign: 'start',
     },
     caption: {
+      minInlineSize: 0,
       pt: '{spacing.base}',
       color: 'text.secondary',
       fontSize: 'sm',
+      overflowWrap: 'anywhere',
     },
     head: {
       '& tr': {
-        borderBottomWidth: '1px',
+        borderBlockEndWidth: '1px',
         borderColor: 'brand.border',
       },
     },
     body: {
       '& tr:last-child': {
-        borderBottomWidth: '0',
+        borderBlockEndWidth: '0',
       },
     },
     footer: {
-      borderTopWidth: '1px',
+      borderBlockStartWidth: '1px',
       borderColor: 'brand.border',
       bg: 'brand.tint',
       fontWeight: 'medium',
     },
     row: {
-      borderBottomWidth: '1px',
+      borderBlockEndWidth: '1px',
       borderColor: 'brand.border',
       transition: 'colors',
-      _hover: {
-        bg: 'brand.tint',
-      },
+      _motionSubtle: { transition: 'colors {durations.ultraFast} {easings.soft}' },
+      _motionPop: { transition: 'colors {durations.standard} {easings.bounce}' },
       _selected: {
         bg: 'brand.tint',
       },
@@ -51,9 +53,15 @@ export const tableRecipe = defineSlotRecipe({
     cell: {
       p: '{spacing.base}',
       verticalAlign: 'middle',
+      overflowWrap: 'anywhere',
       '&:has([role=checkbox])': {
-        pr: '0',
+        paddingInlineEnd: '0',
       },
+    },
+    emptyState: {
+      py: '{spacing.xl}',
+      color: 'text.secondary',
+      textAlign: 'center',
     },
   },
   defaultVariants: {
@@ -66,6 +74,7 @@ export const tableRecipe = defineSlotRecipe({
       striped: {
         body: {
           '& tr:nth-of-type(odd)': {
+            '--table-sticky-background': 'var(--poffy-colors-brand-tint)',
             bg: 'brand.tint',
           },
         },
@@ -73,6 +82,7 @@ export const tableRecipe = defineSlotRecipe({
       stripedVertical: {
         root: {
           '& td:nth-of-type(odd), & th:nth-of-type(odd)': {
+            '--table-sticky-background': 'var(--poffy-colors-brand-tint)',
             bg: 'brand.tint',
           },
         },
@@ -90,11 +100,11 @@ export const tableRecipe = defineSlotRecipe({
         },
         head: {
           '& tr': {
-            borderBottom: 'none',
+            borderBlockEnd: 'none',
           },
         },
         row: {
-          borderBottom: 'none',
+          borderBlockEnd: 'none',
         },
       },
     },
@@ -107,6 +117,40 @@ export const tableRecipe = defineSlotRecipe({
       fixed: {
         root: {
           tableLayout: 'fixed',
+        },
+      },
+    },
+    stickyHeader: {
+      true: {
+        head: {
+          position: 'sticky',
+          top: '0',
+          zIndex: 1,
+          '& th': {
+            '--table-sticky-background': 'var(--poffy-colors-layout-surface)',
+            bg: 'layout.surface',
+          },
+        },
+      },
+    },
+    headerTone: {
+      subtle: {
+        head: {
+          '& th': {
+            '--table-sticky-background': 'var(--poffy-colors-layout-surface)',
+            bg: 'layout.surface',
+            color: 'text.secondary',
+          },
+        },
+      },
+      strong: {
+        head: {
+          '& th': {
+            '--table-sticky-background': 'var(--poffy-colors-brand-tint)',
+            bg: 'brand.tint',
+            color: 'brand.main',
+            fontWeight: 'bold',
+          },
         },
       },
     },

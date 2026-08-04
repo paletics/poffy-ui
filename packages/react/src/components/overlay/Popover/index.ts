@@ -1,7 +1,11 @@
 export { Popover } from './Popover';
 export type {
+  ClickPopoverProps,
+  ManualPopoverProps,
   PopoverProps,
-  PopoverVariants,
+  PopoverAnchorAsChildProps,
+  PopoverAnchorComponent,
+  PopoverAnchorDefaultProps,
   PopoverAnchorProps,
   PopoverTriggerProps,
   PopoverContentProps,

@@ -4,14 +4,6 @@ import { Heading, Text } from '@/components/typography';
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, userEvent, within } from 'storybook/test';
 
-/**
- * A specialized dismiss button that renders a static X SVG icon.
- * Used consistently across overlays, notifications, and tag components.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`closeButton` recipe), Radix Slot + Slottable
- */
 const meta = {
   title: 'Inputs/CloseButton',
   component: CloseButton,
@@ -115,6 +107,14 @@ export const Shapes: Story = {
   ),
 };
 
+export const AsChild: Story = {
+  render: () => (
+    <CloseButton asChild aria-label="Close details">
+      <button type="button">Close details</button>
+    </CloseButton>
+  ),
+};
+
 export const InModalHeader: Story = {
   parameters: {
     docs: {
@@ -126,14 +126,15 @@ export const InModalHeader: Story = {
   },
   render: () => (
     <Box
-      width="400px"
-      p="4"
+      width="[min(400px, calc(100vw - 4rem))]"
+      p="base"
       bg="layout.surface"
       borderRadius="lg"
-      border="1px solid"
+      borderWidth="thin"
+      borderStyle="solid"
       borderColor="layout.divider"
     >
-      <Flex justify="space-between" align="center" mb="4">
+      <Flex justify="space-between" align="center" mb="base">
         <Heading level="3" fontSize="lg" fontWeight="bold">
           Modal Title
         </Heading>
@@ -158,15 +159,16 @@ export const InToast: Story = {
       justify="space-between"
       align="flex-start"
       gap="sm"
-      maxWidth="360px"
-      p="3"
+      width="[min(360px, calc(100vw - 4rem))]"
+      p="md"
       bg="variants.success.surface"
       borderRadius="md"
-      border="1px solid"
+      borderWidth="thin"
+      borderStyle="solid"
       borderColor="variants.success.border"
     >
       <Box>
-        <Text fontWeight="bold" mb="1">
+        <Text fontWeight="bold" mb="2xs">
           Success!
         </Text>
         <Text fontSize="sm" color="text.secondary">
@@ -192,15 +194,16 @@ export const InAlert: Story = {
       justify="space-between"
       align="flex-start"
       gap="sm"
-      maxWidth="600px"
-      p="4"
+      width="[min(600px, calc(100vw - 4rem))]"
+      p="base"
       bg="variants.warning.surface"
       borderRadius="md"
-      borderLeft="4px solid"
+      borderLeftWidth="strong"
+      borderLeftStyle="solid"
       borderColor="variants.warning.main"
     >
       <Box>
-        <Text fontWeight="bold" mb="1" color="variants.warning.main">
+        <Text fontWeight="bold" mb="2xs" color="variants.warning.main">
           Warning
         </Text>
         <Text fontSize="sm" color="text.secondary">
@@ -223,18 +226,20 @@ export const InDrawer: Story = {
   },
   render: () => (
     <Flex
-      width="320px"
-      height="100vh"
+      width="[min(320px, calc(100vw - 4rem))]"
+      height="[100vh]"
       bg="layout.surface"
-      borderLeft="1px solid"
+      borderLeftWidth="thin"
+      borderLeftStyle="solid"
       borderColor="layout.divider"
       direction="column"
     >
       <Flex
         justify="space-between"
         align="center"
-        p="4"
-        borderBottom="1px solid"
+        p="base"
+        borderBottomWidth="thin"
+        borderBottomStyle="solid"
         borderColor="layout.divider"
       >
         <Heading level="3" fontSize="lg" fontWeight="bold">
@@ -242,7 +247,7 @@ export const InDrawer: Story = {
         </Heading>
         <CloseButton />
       </Flex>
-      <Box p="4">
+      <Box p="base">
         <Text color="text.secondary">Drawer content goes here.</Text>
       </Box>
     </Flex>

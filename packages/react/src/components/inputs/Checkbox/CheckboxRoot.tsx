@@ -2,37 +2,41 @@
 
 import { cx } from '@/styled-system/css';
 import { checkbox } from '@/styled-system/recipes';
-import { forwardRef, useMemo, useState } from 'react';
+import { useControllableState } from '@poffy-ui/behavior/hooks';
+import {
+  Fragment,
+  forwardRef,
+  isValidElement,
+  type ReactNode,
+  useCallback,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+} from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { CheckboxRootProps } from './Checkbox.types';
 import { CheckboxContext } from './CheckboxContext';
 import { useCheckboxGroup } from './CheckboxGroupContext';
+import { useFormControl } from '../FormControl/useFormControl';
+import { useWarnInvalidControllableState } from '@/components/inputs/shared/useWarnInvalidControllableState';
+import { CHECKBOX_GROUP_ITEM_MARKER } from './CheckboxGroupTopology';
+
+const isCheckboxLabelAsChildHost = (children: ReactNode) =>
+  isValidElement(children) &&
+  children.type !== Fragment &&
+  (typeof children.type !== 'string' ? true : children.type === 'label');
 
 /**
- * Root container for the Checkbox component.
+ * State-owning label container for composable Checkbox parts.
  *
- * ### AI Context & Architecture
- * - Tier: Atoms, Stack: Panda CSS, context provider
- *
- * ### Design Tokens
- * - gap: silver.md
- *
- * ### Accessibility
- * - Renders a label wrapper by default so the hidden input and text label share activation.
- * - Use `asChild` only when the child preserves label semantics or explicitly labels the input.
- *
- * ### AI Usage
- * - Internal use only. Managed by Checkbox molecule.
- *
- * @example Compound root
- * ```tsx
- * import { CheckboxRoot } from './CheckboxRoot';
- *
- * <CheckboxRoot value="terms" />
- * ```
+ * Use `checked` with `onChange` for controlled state or `defaultChecked` for local state. In a
+ * Checkbox.Group, `value` selects group membership and duplicate values are disabled. `asChild`
+ * accepts a native `label` or a custom component that forwards its ref and label props; other
+ * native hosts fall back to the owned label.
  */
 export const CheckboxRoot = forwardRef<HTMLLabelElement, CheckboxRootProps>((props, ref) => {
   const group = useCheckboxGroup();
+  const formControl = useFormControl();
   const {
     size: localSize,
     intent: localIntent,
@@ -49,28 +53,63 @@ export const CheckboxRoot = forwardRef<HTMLLabelElement, CheckboxRootProps>((pro
     asChild,
     ...rest
   } = props;
+  const resolvedOnChange = typeof onChange === 'function' ? onChange : undefined;
+  const isAmbiguous = Boolean(
+    group &&
+    value !== undefined &&
+    [group.failClosedAll, group.ambiguousValues.has(value)].some(Boolean),
+  );
+  useWarnInvalidControllableState({
+    componentName: 'Checkbox.Root',
+    value: controlledChecked,
+    defaultValue: defaultChecked,
+    handler: onChange,
+  });
+  const normalizedControlledChecked =
+    controlledChecked === undefined
+      ? undefined
+      : typeof controlledChecked === 'boolean'
+        ? controlledChecked
+        : false;
+  const normalizedDefaultChecked = typeof defaultChecked === 'boolean' ? defaultChecked : false;
 
   const size = group?.size ?? localSize;
   const intent = group?.intent ?? localIntent;
-  const disabled = group?.disabled ?? localDisabled;
-
-  const [uncontrolledChecked, setUncontrolledChecked] = useState(defaultChecked ?? false);
+  const disabled = Boolean(
+    group?.disabled || localDisabled || formControl.isDisabled || isAmbiguous,
+  );
+  const isInvalid = error ?? group?.isInvalid ?? formControl.isInvalid;
 
   const isGrouped = group !== null && value !== undefined;
-  const isControlled = controlledChecked !== undefined;
+  const {
+    value: standaloneChecked,
+    isControlled,
+    setValue: setStandaloneChecked,
+  } = useControllableState({
+    value: normalizedControlledChecked,
+    defaultValue: normalizedDefaultChecked,
+  });
+  const defaultCheckedRef = useRef(normalizedDefaultChecked);
+  useLayoutEffect(() => {
+    defaultCheckedRef.current = normalizedDefaultChecked;
+  }, [normalizedDefaultChecked]);
+
+  const resetStandaloneChecked = useCallback(() => {
+    if (!isGrouped && !isControlled) {
+      setStandaloneChecked(defaultCheckedRef.current);
+    }
+  }, [isControlled, isGrouped, setStandaloneChecked]);
 
   const isChecked = isGrouped
-    ? (group.value?.includes(value) ?? false)
-    : isControlled
-      ? controlledChecked
-      : uncontrolledChecked;
+    ? !isAmbiguous && (group.value?.includes(value) ?? false)
+    : standaloneChecked;
 
   const contextValue = useMemo(
     () => ({
       size,
       intent,
       value,
-      error,
+      error: isInvalid,
       checked: isChecked,
       indeterminate,
       disabled,
@@ -79,15 +118,16 @@ export const CheckboxRoot = forwardRef<HTMLLabelElement, CheckboxRootProps>((pro
         if (isGrouped) {
           group.onItemChange(value, e.target.checked);
         } else if (!isControlled) {
-          setUncontrolledChecked(e.target.checked);
+          setStandaloneChecked(e.target.checked);
         }
-        onChange?.(e);
+        resolvedOnChange?.(e);
       },
+      onFormReset: resetStandaloneChecked,
     }),
     [
       size,
       intent,
-      error,
+      isInvalid,
       isChecked,
       indeterminate,
       disabled,
@@ -96,12 +136,15 @@ export const CheckboxRoot = forwardRef<HTMLLabelElement, CheckboxRootProps>((pro
       isControlled,
       value,
       group,
-      onChange,
+      setStandaloneChecked,
+      resolvedOnChange,
+      resetStandaloneChecked,
     ],
   );
 
-  const classes = checkbox({ size, intent, error });
-  const Component = asChild ? Slot : 'label';
+  const classes = checkbox({ size, intent, error: isInvalid });
+  const canUseAsChild = Boolean(asChild && isCheckboxLabelAsChildHost(children));
+  const Component = canUseAsChild ? Slot : 'label';
 
   return (
     <CheckboxContext.Provider value={contextValue}>
@@ -118,3 +161,6 @@ export const CheckboxRoot = forwardRef<HTMLLabelElement, CheckboxRootProps>((pro
 });
 
 CheckboxRoot.displayName = 'Checkbox.Root';
+(CheckboxRoot as typeof CheckboxRoot & { [CHECKBOX_GROUP_ITEM_MARKER]?: boolean })[
+  CHECKBOX_GROUP_ITEM_MARKER
+] = true;

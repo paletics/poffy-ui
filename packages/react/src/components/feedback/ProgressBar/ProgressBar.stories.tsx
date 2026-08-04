@@ -4,6 +4,7 @@ import { ProgressBar } from '@/components/feedback/ProgressBar';
 import { Grid } from '@/components/layout/Grid';
 import { Stack } from '@/components/layout/Stack';
 import { Text } from '@/components/typography/Text';
+import { css } from '@/styled-system/css';
 
 const renderProgressItem = (label: string, children: ReactNode) => (
   <Stack gap="xs">
@@ -14,19 +15,22 @@ const renderProgressItem = (label: string, children: ReactNode) => (
   </Stack>
 );
 
-/**
- * Linear bar indicator that conveys task completion or loading progress as a filled horizontal track.
- * Use for file uploads, multi-step flows, or any operation with a measurable percentage of completion.
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (progressBar recipe), Radix Slot
- */
+const responsiveProgressWidthClass = css({
+  '--responsive-progress-width': '[min(100%, 28rem)]',
+} as Parameters<typeof css>[0]);
+
 const meta: Meta<typeof ProgressBar> = {
   title: 'Feedback/ProgressBar',
   component: ProgressBar,
+  decorators: [
+    (Story) => (
+      <Stack minHeight="[100vh]" align="center" justify="center" p="md" width="100%">
+        <Story />
+      </Stack>
+    ),
+  ],
   parameters: {
-    layout: 'centered',
+    layout: 'fullscreen',
   },
   tags: ['autodocs'],
   argTypes: {
@@ -46,8 +50,8 @@ const meta: Meta<typeof ProgressBar> = {
       description: '`load` renders an indeterminate bar and omits `aria-valuenow`.',
     },
     size: {
-      control: { type: 'number', min: 120, max: 640, step: 20 },
-      description: 'Width in pixels.',
+      control: 'text',
+      description: 'Positive numbers are pixels; strings accept any non-empty CSS width.',
     },
     thickness: {
       control: { type: 'number', min: 4, max: 40, step: 2 },
@@ -111,7 +115,7 @@ export const Playground: Story = {
 
 export const Intents: Story = {
   render: () => (
-    <Grid columns={2} gap="lg" width="[min(680px, calc(100vw - 32px))]">
+    <Grid minChildWidth="280px" gap="lg" width="[min(680px, calc(100vw - 32px))]">
       {renderProgressItem(
         'Primary',
         <ProgressBar intent="primary" progressPercent={70} showProgress />,
@@ -133,13 +137,18 @@ export const Intents: Story = {
         'Danger',
         <ProgressBar intent="danger" progressPercent={70} showProgress />,
       )}
+      {renderProgressItem(
+        'Light',
+        <ProgressBar intent="light" progressPercent={70} showProgress />,
+      )}
+      {renderProgressItem('Dark', <ProgressBar intent="dark" progressPercent={70} showProgress />)}
     </Grid>
   ),
   parameters: {
     docs: {
       description: {
         story:
-          'Fixed semantic variant gallery. Values are literal JSX so Panda emits each recipe branch.',
+          'Fixed semantic intent gallery. Values are literal JSX so Panda emits each recipe branch.',
       },
     },
   },
@@ -151,6 +160,38 @@ export const Widths: Story = {
       <ProgressBar size={200} progressPercent={30} showProgress />
       <ProgressBar size={300} progressPercent={50} showProgress />
       <ProgressBar size={420} progressPercent={70} showProgress />
+    </Stack>
+  ),
+};
+
+export const ResponsiveWidths: Story = {
+  render: () => (
+    <Stack
+      gap="lg"
+      width="[min(520px, calc(100vw - 32px))]"
+      className={responsiveProgressWidthClass}
+    >
+      <ProgressBar
+        data-testid="percentage-width"
+        size="50%"
+        progressPercent={60}
+        showProgress
+        aria-label="Percentage width"
+      />
+      <ProgressBar
+        data-testid="functional-width"
+        size="min(100%, 24rem)"
+        progressPercent={60}
+        showProgress
+        aria-label="Functional CSS width"
+      />
+      <ProgressBar
+        data-testid="custom-property-width"
+        size="var(--responsive-progress-width)"
+        progressPercent={60}
+        showProgress
+        aria-label="Custom property width"
+      />
     </Stack>
   ),
 };
@@ -183,9 +224,13 @@ export const AutoLabelPlacement: Story = {
       )}
       {renderProgressItem(
         'Long label does not fit: right',
-        <ProgressBar thickness={20} progressPercent={42} showProgress labelPosition="auto">
-          Syncing a long task name
-        </ProgressBar>,
+        <ProgressBar
+          thickness={20}
+          progressPercent={42}
+          showProgress
+          labelPosition="auto"
+          label="Syncing a long task name"
+        />,
       )}
       {renderProgressItem(
         'Long label fits: inside',
@@ -195,9 +240,8 @@ export const AutoLabelPlacement: Story = {
           progressPercent={82}
           showProgress
           labelPosition="auto"
-        >
-          Syncing a long task name
-        </ProgressBar>,
+          label="Syncing a long task name"
+        />,
       )}
     </Stack>
   ),
@@ -205,30 +249,49 @@ export const AutoLabelPlacement: Story = {
     docs: {
       description: {
         story:
-          '`auto` uses thickness, filled width, and label length. Explicit `inside` still forces an inside label with ellipsis.',
+          '`auto` measures text/native label content and the available filled area, and responds to resizes without placement oscillation. Opaque custom label components stay at inline-end to avoid rendering component effects twice; explicit `inside` still forces an inside label with ellipsis.',
       },
     },
   },
+};
+
+export const CenterLabels: Story = {
+  render: () => (
+    <Stack gap="lg" width="[min(300px, calc(100vw - 32px))]">
+      <ProgressBar
+        size={160}
+        thickness={10}
+        progressPercent={50}
+        showProgress
+        labelPosition="center"
+        label="Syncing a long task name"
+      />
+      <ProgressBar
+        size={300}
+        thickness={24}
+        progressPercent={50}
+        showProgress
+        labelPosition="center"
+        label="Syncing a long task name"
+      />
+    </Stack>
+  ),
 };
 
 export const States: Story = {
   render: () => (
     <Stack gap="lg" width="[min(520px, calc(100vw - 32px))]">
       <ProgressBar progressPercent={0} showProgress />
-      <ProgressBar progressPercent={42} showProgress>
-        Processing
-      </ProgressBar>
+      <ProgressBar progressPercent={42} showProgress label="Processing" />
       <ProgressBar progressPercent={100} showProgress />
-      <ProgressBar animationType="load" showProgress>
-        Loading
-      </ProgressBar>
+      <ProgressBar animationType="load" showProgress label="Loading" />
     </Stack>
   ),
 };
 
 export const Patterns: Story = {
   render: () => (
-    <Grid columns={2} gap="lg" width="[min(680px, calc(100vw - 32px))]">
+    <Grid minChildWidth="280px" gap="lg" width="[min(680px, calc(100vw - 32px))]">
       {renderProgressItem(
         'Simple primary',
         <ProgressBar intent="primary" pattern="simple" progressPercent={60} showProgress />,
@@ -259,7 +322,7 @@ export const Patterns: Story = {
 
 export const Appearances: Story = {
   render: () => (
-    <Grid columns={2} gap="lg" width="[min(680px, calc(100vw - 32px))]">
+    <Grid minChildWidth="280px" gap="lg" width="[min(680px, calc(100vw - 32px))]">
       {renderProgressItem(
         'Solid',
         <ProgressBar appearance="solid" progressPercent={55} showProgress />,
@@ -287,9 +350,7 @@ export const Animations: Story = {
   render: () => (
     <Stack gap="lg" width="[min(520px, calc(100vw - 32px))]">
       <ProgressBar animationType="progress" progressPercent={70} showProgress />
-      <ProgressBar animationType="load" showProgress>
-        Loading
-      </ProgressBar>
+      <ProgressBar animationType="load" showProgress label="Loading" />
       <ProgressBar animationType={false} progressPercent={70} showProgress />
     </Stack>
   ),
@@ -325,9 +386,8 @@ export const EdgeCases: Story = {
         progressPercent={48}
         showProgress
         labelPosition="inside"
-      >
-        Syncing a long task name
-      </ProgressBar>
+        label="Syncing a long task name"
+      />
       <ProgressBar
         size={220}
         thickness={10}
@@ -341,6 +401,31 @@ export const EdgeCases: Story = {
         progressPercent={64}
         showProgress
         labelPosition="bottom"
+      />
+    </Stack>
+  ),
+};
+
+export const ConstrainedLocalizedLabels: Story = {
+  render: () => (
+    <Stack gap="lg" width="[180px]" aria-label="Constrained progress bars">
+      <ProgressBar
+        size={300}
+        thickness={12}
+        progressPercent={42}
+        showProgress
+        labelPosition="right"
+        aria-label="Localized upload progress"
+        label="VerarbeitungdesmehrsprachigenDokuments"
+      />
+      <ProgressBar
+        size={300}
+        thickness={12}
+        progressPercent={64}
+        showProgress
+        labelPosition="top"
+        aria-label="Top label progress"
+        label="長い処理状況ラベル"
       />
     </Stack>
   ),

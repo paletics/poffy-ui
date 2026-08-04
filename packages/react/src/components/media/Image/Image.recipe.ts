@@ -12,6 +12,20 @@ export const imageRecipe = defineRecipe({
     display: 'block',
   },
   variants: {
+    sizing: {
+      intrinsic: {},
+      fluid: {
+        width: '100%',
+        height: 'auto',
+      },
+      fill: {
+        width: '100%',
+        height: '100%',
+        minWidth: 0,
+        minHeight: 0,
+        overflow: 'hidden',
+      },
+    },
     fit: {
       cover: { objectFit: 'cover' },
       contain: { objectFit: 'contain' },
@@ -36,6 +50,7 @@ export const imageRecipe = defineRecipe({
     },
   },
   defaultVariants: {
+    sizing: 'intrinsic',
     fit: 'cover',
     radius: 'none',
   },

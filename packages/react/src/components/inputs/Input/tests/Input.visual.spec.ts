@@ -1,4 +1,12 @@
 import { expect, test } from '@playwright/test';
+import { testVisualStories } from '@/components/e2e/visualSpecUtils';
+
+testVisualStories({
+  componentId: 'inputs-input',
+  snapshotPrefix: 'input',
+  title: 'Input',
+  stories: [{ name: 'Default', story: 'default' }],
+});
 
 const getAdornmentMetrics = async (page: import('@playwright/test').Page, placeholder: string) => {
   const input = page.getByPlaceholder(placeholder);
@@ -8,8 +16,8 @@ const getAdornmentMetrics = async (page: import('@playwright/test').Page, placeh
 
   return input.evaluate((node) => {
     const groupNode = node.parentElement;
-    const leftSvg = groupNode?.querySelector('[data-placement="left"] svg');
-    const rightSvg = groupNode?.querySelector('[data-placement="right"] svg');
+    const leftSvg = groupNode?.querySelector('[data-placement="start"] svg');
+    const rightSvg = groupNode?.querySelector('[data-placement="end"] svg');
     const styles = window.getComputedStyle(node);
     const inputRect = node.getBoundingClientRect();
     const leftRect = leftSvg?.getBoundingClientRect();
@@ -54,5 +62,26 @@ test.describe('Input adornment layout', () => {
       expect(metrics.leftIconRight).not.toBeNull();
       expect(metrics.leftIconRight!).toBeLessThanOrEqual(metrics.inputLeft + metrics.paddingLeft);
     }
+  });
+
+  test('contains arbitrary compact adornment content in RTL', async ({ page }) => {
+    await page.goto('/iframe.html?id=inputs-input--compact-long-adornment&viewMode=story');
+
+    const input = page.getByRole('textbox', { name: 'Compact adornment input' });
+    const root = input.locator('..');
+    const adornments = root.locator('[data-input-group-element]');
+    await expect(adornments).toHaveCount(2);
+
+    const rootBox = await root.boundingBox();
+    expect(rootBox).not.toBeNull();
+    for (let index = 0; index < 2; index += 1) {
+      const box = await adornments.nth(index).boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(rootBox!.x - 1);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(rootBox!.x + rootBox!.width + 1);
+      await expect(adornments.nth(index)).toHaveCSS('overflow', 'hidden');
+      await expect(adornments.nth(index)).toHaveCSS('white-space', 'nowrap');
+    }
+    expect(await input.evaluate((node) => getComputedStyle(node).direction)).toBe('rtl');
   });
 });

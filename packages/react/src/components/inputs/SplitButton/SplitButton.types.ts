@@ -1,4 +1,5 @@
 import type { SplitButtonVariantProps } from '@/styled-system/recipes';
+import type { PortalTargetProps } from '@/providers/PortalProvider.types';
 import { ComponentPropsWithoutRef, MouseEvent, ReactNode } from 'react';
 
 /**
@@ -24,9 +25,13 @@ export type SplitButtonAppearance = 'solid' | 'soft' | 'outline' | 'ghost' | 'mi
  */
 export type SplitButtonShape = 'rounded' | 'pill' | 'square';
 
-/**
- * Variants for the SplitButton component based on Panda CSS recipe.
- */
+/** Localizable accessible labels used by SplitButton. */
+export interface SplitButtonLabels {
+  /** Accessible name for the secondary menu trigger. */
+  moreOptions: string;
+}
+
+/** Visual options shared by SplitButton's primary and disclosure segments. */
 export interface SplitButtonVariants extends Omit<SplitButtonVariantProps, 'variant' | 'isOpen'> {
   /**
    * Semantic color intent shared by the primary action and menu trigger.
@@ -48,13 +53,7 @@ export interface SplitButtonVariants extends Omit<SplitButtonVariantProps, 'vari
   shape?: SplitButtonShape;
 }
 
-/**
- * Represents a single item within the SplitButton's dropdown menu.
- *
- * ### Notes
- * Each item should have a stable `id` for React rendering and a short `label`
- * suitable for menu text and assistive technology.
- */
+/** One secondary menu action. Its `id` must remain stable across renders. */
 export interface SplitButtonMenuItem {
   /**
    * Unique identifier for the menu item.
@@ -83,43 +82,16 @@ export interface SplitButtonMenuItem {
   onClick?: () => void;
 }
 
-/**
- * Properties for the SplitButton component.
- * Combines a primary action button with a secondary dropdown menu for related actions.
- *
- * ### Notes
- * The root renders two coordinated buttons: the primary action uses `children`
- * and `onClick`, while the secondary trigger opens the `items` menu. Provide
- * related secondary actions only; unrelated navigation belongs in a menu or
- * toolbar. Disabled menu items are skipped by pointer and keyboard activation.
- *
- * Do: keep the primary action safe to trigger without opening the menu.
- * Don't: put destructive actions in the default primary slot unless clearly
- * labeled.
- *
- * @example
- * ```tsx
- * import { SplitButton } from '@poffy-ui/react/inputs';
- *
- * <SplitButton
- *   items={[{ id: 'draft', label: 'Save draft', onClick: saveDraft }]}
- *   onClick={publish}
- * >
- *   Publish
- * </SplitButton>
- * ```
- *
- * Related: ButtonProps for a single action button.
- */
+/** Props for paired primary and secondary actions. */
 export interface SplitButtonProps
-  extends Omit<ComponentPropsWithoutRef<'div'>, 'onClick'>, SplitButtonVariants {
+  extends Omit<ComponentPropsWithoutRef<'div'>, 'onClick'>, SplitButtonVariants, PortalTargetProps {
   /**
    * Content for the main primary action button.
    */
   children: ReactNode;
 
   /**
-   * List of items to display in the secondary dropdown menu.
+   * List of related secondary actions. The trigger is disabled when none are enabled.
    */
   items: SplitButtonMenuItem[];
 
@@ -138,4 +110,10 @@ export interface SplitButtonProps
    * @defaultValue `false`
    */
   disabled?: boolean;
+
+  /** BCP 47 locale used for built-in accessible labels. */
+  locale?: string;
+
+  /** Overrides for built-in accessible labels. */
+  labels?: Partial<SplitButtonLabels>;
 }

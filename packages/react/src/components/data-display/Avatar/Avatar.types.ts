@@ -1,73 +1,95 @@
 import { PrimitiveProps } from '@poffy-ui/types';
 import { type ControlShape } from '@poffy-ui/types';
 import { AvatarVariantProps } from '@/styled-system/recipes';
+import type { avatar } from '@/styled-system/recipes';
 import { ReactNode } from 'react';
+import type {
+  DefaultHostProps,
+  PolymorphicAsChildComponent,
+  RetargetedAsChildHostProps,
+} from '@/components/shared/polymorphicAsChild.types';
 
-/**
- * Extracted variant types from the Panda CSS avatar recipe.
- *
- * ### Notes
- * Prefer `AvatarProps` or `AvatarRootProps` in application code.
- * Use this type only when a wrapper needs to mirror recipe variant keys.
- *
- * ### AI Usage
- * - Use this when extending avatar styles.
- */
-export type AvatarVariants = AvatarVariantProps;
+type AvatarRecipeVariants = AvatarVariantProps;
 
 /**
  * Public Avatar variant props with shared control shape names.
  *
  * ### Notes
- * Do: use `shape="circle"` or another supported control shape to match nearby controls.
+ * Do: use `shape="rounded"` or `shape="square"` to match nearby controls.
  * Don't: invent custom shape strings; add a system-level shape token first.
  */
-export interface AvatarVariantSubset extends Omit<AvatarVariantProps, 'shape'> {
-  /** Avatar silhouette. */
+export interface AvatarVariantSubset extends Omit<AvatarRecipeVariants, 'shape'> {
+  /** Avatar silhouette. Defaults to the recipe's rounded shape. */
   shape?: ControlShape;
 }
 
 /**
- * Common props for all Avatar sub-components to maintain consistency.
+ * Canonical public variants accepted by Avatar and suitable for component
+ * wrappers.
  */
-export interface AvatarContextValue extends AvatarVariantSubset {
-  /** Current image loading state shared with Image and Fallback children. */
-  status: 'loading' | 'loaded' | 'error';
-  /** Updates the shared image loading state from Avatar.Image lifecycle events. */
-  setStatus: (status: 'loading' | 'loaded' | 'error') => void;
-}
+export type AvatarVariants = AvatarVariantSubset;
 
 /**
- * Comprehensive properties for the AvatarRoot component.
- * ### Formula
- * - Silver Ratio (1:1.414) is applied to all size and padding variants inside the recipe.
- *
- * @example
- * ```tsx
- * import { Avatar } from '@poffy-ui/react/data-display';
- *
- * <Avatar.Root size="md">
- *   <Avatar.Image src="/people/jane.jpg" alt="Jane Doe" />
- *   <Avatar.Fallback name="Jane Doe" />
- * </Avatar.Root>
- * ```
- *
- * ### AI Usage
- * - Use this for custom Avatar composition when shorthand `Avatar` is not enough.
- * - Keep exactly one image and one fallback in the root so loading state remains predictable.
+ * Runtime state shared internally by Avatar compound children.
  */
+export interface AvatarContextValue extends AvatarVariantSubset {
+  classes: ReturnType<typeof avatar>;
+  /** Current image loading state shared with Image and Fallback children. */
+  status: 'loading' | 'loaded' | 'error';
+  /** Whether an image resource is currently loading. */
+  hasLoadingImage: boolean;
+  /** Whether the composed avatar includes an image source. */
+  hasImage: boolean;
+  /** Whether the avatar is intentionally hidden from assistive technology. */
+  decorative: boolean;
+  /** Registers an image resource whose lifecycle contributes to the shared status. */
+  registerImage: (id: string) => void;
+  /** Removes an image resource from the shared status calculation. */
+  unregisterImage: (id: string) => void;
+  /** Reports the lifecycle status of a registered image resource. */
+  setImageStatus: (id: string, status: 'loading' | 'loaded' | 'error') => void;
+}
+
+/** Shared base props for AvatarRoot. */
 export interface AvatarRootBaseProps extends AvatarVariantSubset {
   children?: ReactNode;
   /**
-   * Callback fired when the image loading status changes.
+   * Called when the aggregate status changes between `loading`, `loaded`, and `error`.
    */
   onStatusChange?: (status: 'loading' | 'loaded' | 'error') => void;
+  /** Hides the complete avatar from assistive technology. */
+  decorative?: boolean;
 }
 
 /**
- * Prop type for usage in components utilizing the Root element.
+ * Native props accepted by the default `span` root.
  */
-export type AvatarRootProps = PrimitiveProps<'span', AvatarRootBaseProps>;
+type AvatarRootNativeProps = Omit<
+  PrimitiveProps<'span', AvatarRootBaseProps>,
+  'aria-hidden' | 'data-status'
+>;
+interface AvatarManagedRootProps {
+  'aria-hidden'?: never;
+  'data-status'?: never;
+}
+/** Props for AvatarRoot rendered with its default host. */
+export type AvatarRootDefaultProps = DefaultHostProps<AvatarRootNativeProps> &
+  AvatarManagedRootProps;
+/** Props for AvatarRoot delegated to an asChild host. */
+export type AvatarRootAsChildProps = RetargetedAsChildHostProps<
+  AvatarRootNativeProps,
+  HTMLElement
+> &
+  AvatarManagedRootProps;
+/** Public props for AvatarRoot. */
+export type AvatarRootProps = AvatarRootDefaultProps | AvatarRootAsChildProps;
+/** Polymorphic component call signatures for AvatarRoot. */
+export type AvatarRootComponent = PolymorphicAsChildComponent<
+  AvatarRootDefaultProps,
+  AvatarRootAsChildProps,
+  HTMLSpanElement,
+  HTMLElement
+>;
 
 /**
  * Base properties for the AvatarImage component.
@@ -79,19 +101,46 @@ export type AvatarRootProps = PrimitiveProps<'span', AvatarRootBaseProps>;
 export interface AvatarImageBaseProps {
   src?: string;
   alt?: string;
+  /** Forces an empty image alternative. Inherits from Avatar.Root when omitted. */
+  decorative?: boolean;
   /**
-   * Callback fired when the image loading status changes.
-   * This is internal and managed by Avatar.Root if used as a child.
+   * Called when this image settles. `Avatar.Root` also receives the result
+   * when this component is composed below it.
    */
   onStatusChange?: (status: 'loading' | 'loaded' | 'error') => void;
 }
 
-/**
- * Extends `img` attributes, enforcing consistent image representation.
- * ### AI Usage
- * - Use this to enforce image rules within the avatar container.
- */
-export type AvatarImageProps = PrimitiveProps<'img', AvatarImageBaseProps>;
+type AvatarImageNativeProps = Omit<PrimitiveProps<'img', AvatarImageBaseProps>, 'data-loading'>;
+type AvatarInformativeImageProps = Omit<AvatarImageNativeProps, 'decorative'> & {
+  decorative?: false;
+};
+type AvatarDecorativeImageProps = Omit<
+  AvatarImageNativeProps,
+  'aria-label' | 'aria-labelledby' | 'decorative'
+> & {
+  decorative: true;
+  /** Decorative images cannot expose an accessible name. */
+  'aria-label'?: never;
+  /** Decorative images cannot expose an accessible name. */
+  'aria-labelledby'?: never;
+};
+type AvatarDynamicDecorativeImageProps = Omit<
+  AvatarImageNativeProps,
+  'aria-label' | 'aria-labelledby' | 'decorative'
+> & {
+  decorative: boolean;
+  'aria-label'?: never;
+  'aria-labelledby'?: never;
+};
+/** Public props for AvatarImage. */
+export type AvatarImageProps = (
+  | AvatarInformativeImageProps
+  | AvatarDecorativeImageProps
+  | AvatarDynamicDecorativeImageProps
+) & {
+  /** Managed by Avatar.Image from the current resource lifecycle. */
+  'data-loading'?: never;
+};
 
 /**
  * Base properties for the AvatarFallback component.
@@ -102,7 +151,7 @@ export type AvatarImageProps = PrimitiveProps<'img', AvatarImageBaseProps>;
 export interface AvatarFallbackBaseProps {
   children?: ReactNode;
   /**
-   * Name to generate initials from.
+   * Name used to generate one or two uppercase initials when `children` is omitted.
    */
   name?: string;
   /**
@@ -114,13 +163,28 @@ export interface AvatarFallbackBaseProps {
 }
 
 /**
- * Prop type for identifying what replaces a missing image.
+ * Props accepted by the default fallback `span`.
  */
-export type AvatarFallbackProps = PrimitiveProps<'span', AvatarFallbackBaseProps>;
+type AvatarFallbackNativeProps = PrimitiveProps<'span', AvatarFallbackBaseProps>;
+/** Props for AvatarFallback rendered with its default host. */
+export type AvatarFallbackDefaultProps = DefaultHostProps<AvatarFallbackNativeProps>;
+/** Props for AvatarFallback delegated to an asChild host. */
+export type AvatarFallbackAsChildProps = RetargetedAsChildHostProps<
+  AvatarFallbackNativeProps,
+  HTMLElement
+>;
+/** Public props for AvatarFallback. */
+export type AvatarFallbackProps = AvatarFallbackDefaultProps | AvatarFallbackAsChildProps;
+/** Polymorphic component call signatures for AvatarFallback. */
+export type AvatarFallbackComponent = PolymorphicAsChildComponent<
+  AvatarFallbackDefaultProps,
+  AvatarFallbackAsChildProps,
+  HTMLSpanElement,
+  HTMLElement
+>;
 
 /**
- * Legacy props for backward compatibility if needed,
- * or as a shorthand for the Molecule version.
+ * Shorthand props for rendering the compound Avatar from a single component.
  *
  * @example
  * ```tsx
@@ -132,16 +196,35 @@ export type AvatarFallbackProps = PrimitiveProps<'span', AvatarFallbackBaseProps
 export interface AvatarBaseProps extends AvatarVariantSubset {
   src?: string;
   alt?: string;
+  /** Marks the shorthand avatar as decorative and forces an empty image alternative. */
+  decorative?: boolean;
   /** Name used by Avatar.Fallback to generate initials when no custom children are supplied. */
   name?: string;
   children?: ReactNode;
   /**
-   * Callback fired when the image loading status changes.
+   * Called when the aggregate image status changes.
    */
   onStatusChange?: (status: 'loading' | 'loaded' | 'error') => void;
 }
 
 /**
- * Type checks Avatar instances for the complete set of valid props.
+ * Native props accepted by the shorthand's default `span` root.
  */
-export type AvatarProps = PrimitiveProps<'span', AvatarBaseProps>;
+type AvatarNativeProps = Omit<
+  PrimitiveProps<'span', AvatarBaseProps>,
+  'aria-hidden' | 'data-status'
+>;
+/** Props for Avatar rendered with its default host. */
+export type AvatarDefaultProps = DefaultHostProps<AvatarNativeProps> & AvatarManagedRootProps;
+/** Props for Avatar delegated to an asChild host. */
+export type AvatarAsChildProps = RetargetedAsChildHostProps<AvatarNativeProps, HTMLElement> &
+  AvatarManagedRootProps;
+/** Public props for Avatar. */
+export type AvatarProps = AvatarDefaultProps | AvatarAsChildProps;
+/** Polymorphic component call signatures for Avatar. */
+export type AvatarComponent = PolymorphicAsChildComponent<
+  AvatarDefaultProps,
+  AvatarAsChildProps,
+  HTMLSpanElement,
+  HTMLElement
+>;

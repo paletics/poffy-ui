@@ -4,12 +4,6 @@ import { Stack } from '@/components/layout';
 import { Text } from '@/components/typography';
 import { useState } from 'react';
 
-/**
- * ### AI Context & Architecture
- * - **Tier**: Molecules, read-only `Input` + `Calendar` in a `Popover`
- * - **Stack**: Panda CSS (via `Input`, `Popover`, `Calendar`), `Intl.DateTimeFormat`
- * - **Modes**: Controlled (`value`) and uncontrolled (`defaultValue`)
- */
 const meta: Meta<typeof DatePicker> = {
   title: 'Inputs/DatePicker',
   component: DatePicker,
@@ -18,14 +12,15 @@ const meta: Meta<typeof DatePicker> = {
     docs: {
       description: {
         component:
-          'Pairs a read-only text input with a Calendar popover. Click the input to open; selecting a date closes the popover and formats the value with `Intl.DateTimeFormat`.',
+          'Pairs an input-styled button with a Calendar popover. Click the button to open; selecting a date closes the popover and formats the visible text with `Intl.DateTimeFormat`.',
       },
     },
   },
   argTypes: {
     locale: { control: 'text' },
     size: { control: 'select', options: ['sm', 'md', 'lg'] },
-    appearance: { control: 'select', options: ['outline', 'soft'] },
+    appearance: { control: 'select', options: ['outline', 'soft', 'flushed'] },
+    native: { control: 'boolean' },
   },
 };
 
@@ -40,7 +35,7 @@ export const Default: Story = {
     docs: {
       description: {
         story:
-          'Standard date picker with default settings. Click the input to open the calendar popover.',
+          'Standard date picker with default settings. Click the button to open the calendar popover.',
       },
     },
   },
@@ -71,7 +66,7 @@ export const Controlled: Story = {
     docs: {
       description: {
         story:
-          'Controlled mode: `value` is managed by parent state. The display below the input reflects the selected date.',
+          'Controlled mode: `value` is managed by parent state. The display below the button reflects the selected date.',
       },
     },
   },
@@ -79,7 +74,12 @@ export const Controlled: Story = {
     const [date, setDate] = useState<Date | null>(new Date(2023, 9, 15));
     return (
       <Stack gap="base">
-        <DatePicker value={date} onChange={setDate} placeholder="Controlled Picker" />
+        <DatePicker
+          aria-label="Controlled date picker"
+          value={date}
+          onChange={setDate}
+          placeholder="Controlled Picker"
+        />
         <Text>Selected: {date?.toLocaleDateString() ?? 'None'}</Text>
       </Stack>
     );
@@ -101,6 +101,32 @@ export const ErrorState: Story = {
   },
 };
 
+export const Constrained: Story = {
+  args: {
+    defaultValue: new Date(2026, 3, 14),
+    minDate: new Date(2026, 3, 10),
+    maxDate: new Date(2026, 3, 20),
+    placeholder: 'Select a date',
+  },
+  parameters: {
+    docs: {
+      description: {
+        story:
+          '`minDate` and `maxDate` limit calendar selection by local calendar day. Native mode also maps them to date input `min` and `max` attributes.',
+      },
+    },
+  },
+};
+
+export const Native: Story = {
+  args: {
+    native: true,
+    defaultValue: new Date(2026, 3, 14),
+    minDate: new Date(2026, 3, 10),
+    maxDate: new Date(2026, 3, 20),
+  },
+};
+
 export const StandardSizes: Story = {
   parameters: {
     docs: {
@@ -115,6 +141,20 @@ export const StandardSizes: Story = {
       <DatePicker size="sm" placeholder="Small" />
       <DatePicker size="md" placeholder="Medium" />
       <DatePicker size="lg" placeholder="Large" />
+    </Stack>
+  ),
+};
+
+export const TabOrder: Story = {
+  render: () => (
+    <Stack gap="md">
+      <button type="button">Before date picker</button>
+      <DatePicker
+        aria-label="Appointment date"
+        defaultValue={new Date(2026, 3, 14)}
+        locale="en-US"
+      />
+      <button type="button">After date picker</button>
     </Stack>
   ),
 };

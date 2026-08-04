@@ -1,51 +1,37 @@
 import { SelectVariantProps } from '@/styled-system/recipes';
-import { type InputAppearance } from '@poffy-ui/types';
 import { ComponentProps } from 'react';
+import type {
+  NeoInputAppearanceProp,
+  NeoInputAppearanceValue,
+} from '@/components/inputs/inputVariant';
 
-/**
- * Variants for the Select component based on Panda CSS recipe.
- */
-export type SelectVariants = SelectVariantProps;
+/** Visual props for `Select`. */
+export type SelectVariants = SelectVariantSubset;
 
-/**
- * Public surface treatment for Select.
- */
-export type SelectAppearance = InputAppearance | 'neo';
+/** Surface treatment for `Select`. */
+export type SelectAppearance = NeoInputAppearanceValue;
 
-/**
- * Public Select variant props with shared input appearance names.
- */
+/** Select recipe options using shared input appearance names. */
 export interface SelectVariantSubset extends Omit<SelectVariantProps, 'variant'> {
-  /** Surface treatment. */
-  appearance?: SelectAppearance;
-  /** Legacy recipe variant alias. */
-  variant?: SelectVariantProps['variant'];
+  /** Surface treatment. @defaultValue `'outline'` */
+  appearance?: NeoInputAppearanceProp;
 }
 
 /**
- * Props for the styled native `<select>` input.
+ * Props for an owned native `<select>`. Provide a visible label or an ARIA name.
  *
- * ### Notes
- * Select keeps the browser select behavior and accepts normal HTML select
- * children. Use `value` with `onChange` for controlled state, or `defaultValue`
- * for uncontrolled initial state. Provide a visible label, `aria-label`, or
- * `aria-labelledby`.
- *
- * Do: use this for standard forms and maximum native behavior.
- * Don't: use this when you need a searchable popup; use `ComboBox` instead.
- *
- * @example
- * ```tsx
- * import { Select } from '@poffy-ui/react/inputs';
- *
- * <Select aria-label="Status" value={status} onChange={event => setStatus(event.target.value)}>
- *   <option value="open">Open</option>
- * </Select>
- * ```
- *
- * Related: ListboxSelectProps for a custom listbox surface with select-like props.
+ * Direct `disabled`, `readOnly`, `required`, `id`, and `error` values override the nearest
+ * FormControl. Single select shows a decorative chevron; native `multiple` select does not.
  */
 export interface SelectProps extends Omit<ComponentProps<'select'>, 'size'>, SelectVariantSubset {
+  /**
+   * Prevents user-driven selection changes while preserving focus and form submission.
+   *
+   * Pointer and non-Tab keyboard changes are restored to the prior option set.
+   * Read-only keeps `aria-required` but omits native `required` validation
+   * because the user cannot satisfy it by changing the field.
+   */
+  readOnly?: boolean;
   /**
    * Whether the select is in an error state.
    * If true, applies error-specific styles to the field.

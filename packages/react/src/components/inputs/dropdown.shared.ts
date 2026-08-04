@@ -5,7 +5,9 @@ export const dropdownContentStyles = {
   position: 'absolute',
   top: '100%',
   left: '0',
-  width: 'var(--floating-reference-width, 100%)',
+  boxSizing: 'border-box',
+  width: 'min(var(--floating-reference-width, 100%), var(--floating-available-width, 100vw))',
+  maxWidth: 'var(--floating-available-width, 100vw)',
   mt: '{spacing.2xs}',
   zIndex: 'popover',
   bg: 'brand.surface',
@@ -13,7 +15,8 @@ export const dropdownContentStyles = {
   borderWidth: '1px',
   borderColor: 'brand.border',
   boxShadow: 'md',
-  maxHeight: '{sizes.silver.5}',
+  maxHeight: 'min({sizes.silver.5}, var(--floating-available-height, {sizes.silver.5}))',
+  overflowX: 'hidden',
   overflowY: 'auto',
   listStyle: 'none',
   p: '{spacing.2xs}',
@@ -28,6 +31,8 @@ export const dropdownContentStyles = {
     listStyle: 'none',
   },
   transition: 'opacity 0.2s',
+  _motionSubtle: { transition: 'opacity {durations.ultraFast} {easings.soft}' },
+  _motionPop: { transition: 'opacity {durations.standard} {easings.bounce}' },
 };
 
 /**
@@ -37,6 +42,8 @@ export const dropdownItemStyles = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
+  minWidth: 0,
+  overflowWrap: 'anywhere',
   px: '{spacing.sm}',
   py: '{spacing.xs}',
   borderRadius: 'sm',
@@ -44,6 +51,8 @@ export const dropdownItemStyles = {
   fontSize: 'sm',
   color: 'text.primary',
   transition: 'background-color 0.2s',
+  _motionSubtle: { transition: 'background-color {durations.ultraFast} {easings.soft}' },
+  _motionPop: { transition: 'background-color {durations.standard} {easings.bounce}' },
   _hover: {
     bg: 'brand.tint',
   },

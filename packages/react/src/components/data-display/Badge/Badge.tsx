@@ -1,17 +1,31 @@
 'use client';
 
-import { cloneElement, forwardRef, isValidElement, ReactElement, ReactNode } from 'react';
+import {
+  Children,
+  forwardRef,
+  type ForwardRefExoticComponent,
+  type PropsWithoutRef,
+  type RefAttributes,
+} from 'react';
+import { materializeReactNodeTree } from '@/components/shared/flattenFragmentChildren';
 import { BadgeRoot } from './BadgeRoot';
 import { BadgeIndicator } from './BadgeIndicator';
-import { BadgeProps } from './Badge.types';
+import type { BadgeComponent, BadgeProps, BadgeRootProps } from './Badge.types';
+import { isBadgeRootAsChildHost } from './Badge.utils';
 
-const BadgeImplementation = forwardRef<HTMLDivElement, BadgeProps>((props, ref) => {
+const BadgeRootRuntime = BadgeRoot as unknown as ForwardRefExoticComponent<
+  PropsWithoutRef<BadgeRootProps> & RefAttributes<HTMLElement>
+>;
+
+const BadgeImplementation = forwardRef<HTMLElement, BadgeProps>((props, ref) => {
   const { asChild, content, size, placement, intent, appearance, shape, children, ...rest } = props;
+  const materializedChildren = materializeReactNodeTree(children);
+  const hasAnchor = Children.toArray(materializedChildren).length > 0;
 
-  if (asChild && isValidElement(children)) {
-    const child = children as ReactElement<{ children?: ReactNode }>;
+  if (asChild && isBadgeRootAsChildHost(materializedChildren)) {
+    const child = materializedChildren;
     return (
-      <BadgeRoot
+      <BadgeRootRuntime
         ref={ref}
         size={size}
         placement={placement}
@@ -21,20 +35,14 @@ const BadgeImplementation = forwardRef<HTMLDivElement, BadgeProps>((props, ref) 
         asChild
         {...rest}
       >
-        {cloneElement(
-          child,
-          undefined,
-          <span>
-            {child.props.children}
-            {content != null && <BadgeIndicator>{content}</BadgeIndicator>}
-          </span>,
-        )}
-      </BadgeRoot>
+        {child}
+        {content != null && <BadgeIndicator>{content}</BadgeIndicator>}
+      </BadgeRootRuntime>
     );
   }
 
   return (
-    <BadgeRoot
+    <BadgeRootRuntime
       ref={ref}
       size={size}
       placement={placement}
@@ -42,31 +50,28 @@ const BadgeImplementation = forwardRef<HTMLDivElement, BadgeProps>((props, ref) 
       appearance={appearance}
       shape={shape}
       {...rest}
+      data-standalone={content != null && !hasAnchor ? '' : undefined}
     >
-      {children}
-      {content != null && <BadgeIndicator>{content}</BadgeIndicator>}
-    </BadgeRoot>
+      {materializedChildren}
+      {content != null && (
+        <BadgeIndicator data-standalone={!hasAnchor ? '' : undefined}>
+          {hasAnchor ? content : <span data-badge-standalone-content="">{content}</span>}
+        </BadgeIndicator>
+      )}
+    </BadgeRootRuntime>
   );
 });
 
 BadgeImplementation.displayName = 'Badge';
 
 /**
- * Compound Badge component with Root and Indicator subcomponents.
+ * Attaches a compact indicator to an anchor or renders a standalone badge.
  *
- * ### AI Usage
- * - Use the shorthand form for common anchored badges, or compose Root/Indicator for custom layout.
- *
- * @example Shorthand anchored badge
- * ```tsx
- * import { Avatar, Badge } from '@poffy-ui/react/data-display';
- *
- * <Badge content={3} placement="top-end" intent="danger">
- *   <Avatar src="/user.jpg" alt="User" />
- * </Badge>
- * ```
+ * When children are present, `content` is placed in `Badge.Indicator` beside
+ * the first anchor. Without children it renders a standalone indicator.
+ * `asChild` delegates only when the supplied child is a valid badge anchor.
  */
-export const Badge = Object.assign(BadgeImplementation, {
+export const Badge = Object.assign(BadgeImplementation as BadgeComponent, {
   Root: BadgeRoot,
   Indicator: BadgeIndicator,
 });

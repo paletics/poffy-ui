@@ -9,13 +9,6 @@ import { useState } from 'react';
 import { LayoutTransition } from '@/components/animations/LayoutTransition/LayoutTransition';
 import { layoutVariants } from '@/components/animations/LayoutTransition/LayoutTransition.presets';
 
-/**
- * Automatically animates changes to an element's size or position in the DOM using Framer Motion's layout FLIP technique. Used to wrap elements that dynamically resize, reorder, or reshape (e.g. accordions, switches, morphing shapes).
- *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: motion/react (layout animation), LayoutTransition presets, Radix Slot
- */
 const meta: Meta<typeof LayoutTransition> = {
   title: 'Animations/LayoutTransition',
   component: LayoutTransition,
@@ -82,8 +75,8 @@ const accordionPanelClass = css({
 });
 
 const accordionPanelStateClass = {
-  open: css({ height: '[150px]', border: '[1px solid]' }),
-  closed: css({ height: '[0px]', border: '[0px]' }),
+  open: css({ height: '[150px]', borderWidth: 'thin', borderStyle: 'solid' }),
+  closed: css({ height: '[0px]', borderWidth: 'none' }),
 };
 
 const switchClass = css({
@@ -119,12 +112,14 @@ const containerStyle = css({
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '4',
-  p: '8',
-  border: '[1px dashed]',
-  borderColor: 'slate.200',
+  gap: 'base',
+  p: { base: 'base', md: 'xl' },
+  borderWidth: 'thin',
+  borderStyle: 'dashed',
+  borderColor: 'layout.divider',
   borderRadius: 'xl',
-  minWidth: '[400px]',
+  width: '[min(400px, calc(100vw - 4rem))]',
+  maxWidth: '[100%]',
 });
 
 export const Default: Story = {
@@ -163,7 +158,7 @@ export const Reorder: Story = {
         <Button appearance="minimal" animationType="subtle" onClick={rotateItems}>
           Rotate Items
         </Button>
-        <Flex gap="xs">
+        <Flex gap="xs" wrap="wrap" justify="center">
           {items.map((item) => (
             <LayoutTransition key={item} {...args} animationType="reorder">
               <Box className={cx(boxClass, boxSizeClass.md)}>{item}</Box>
@@ -257,7 +252,12 @@ export const Elastic: Story = {
           </Button>
         </Flex>
         <Flex
-          className={css({ display: 'flex', flexWrap: 'wrap', gap: '2', justifyContent: 'center' })}
+          className={css({
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 'sm',
+            justifyContent: 'center',
+          })}
         >
           {Array.from({ length: count }).map((_, i) => (
             <LayoutTransition key={i} {...args} animationType="elastic" layout>
@@ -278,7 +278,7 @@ export const Stable: Story = {
         <Button appearance="minimal" animationType="subtle" onClick={() => setIsLong(!isLong)}>
           Toggle Content Length
         </Button>
-        <Box width="[300px]" p="4" bg="slate.50" borderRadius="md">
+        <Box width="[min(300px, 100%)]" p="base" bg="slate.50" borderRadius="md">
           <LayoutTransition {...args} animationType="stable" layout>
             <Text fontSize="sm" lineHeight="relaxed">
               {isLong

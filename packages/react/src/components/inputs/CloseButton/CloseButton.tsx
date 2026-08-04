@@ -1,81 +1,140 @@
 import { cx } from '@/styled-system/css';
 import { closeButton } from '@/styled-system/recipes';
-import { forwardRef } from 'react';
+import {
+  getFallbackChildrenForNativeButton,
+  isButtonCompatibleAsChildHost,
+  isExclusiveButtonAsChildHost,
+  isNonVoidAsChildHost,
+  shouldEmulateButtonHost,
+} from '@/components/shared/asChild';
+import {
+  createDisabledActivationHandlers,
+  guardDisabledActivationHandlers,
+  useButtonKeyboardActivation,
+} from '@poffy-ui/behavior/activation';
+import { omitNativeButtonOnlyProps } from '@/components/shared/buttonDelegation';
+import { cloneElement, forwardRef, isValidElement } from 'react';
+import type { ElementType, MouseEvent, ReactNode } from 'react';
 import { Slot, Slottable } from '@radix-ui/react-slot';
 import { CrossIcon } from '@/components/media/Icon/icons';
-import type { CloseButtonProps } from './CloseButton.types';
+import type { CloseButtonComponent, CloseButtonProps } from './CloseButton.types';
+import { getCommonMessages } from '@/components/shared/common.locales';
+import { useOptionalLocale } from '@/providers/LocaleProvider';
+
+const CloseButtonImpl = forwardRef<HTMLElement, CloseButtonProps>((rawProps, ref) => {
+  const {
+    size = 'md',
+    appearance = 'ghost',
+    shape = 'rounded',
+    className,
+    disabled = false,
+    'aria-label': ariaLabel,
+    'aria-disabled': _ariaDisabled,
+    onAuxClick,
+    onAuxClickCapture,
+    onClick,
+    onClickCapture,
+    onKeyDown,
+    onKeyDownCapture,
+    onKeyUp,
+    onKeyUpCapture,
+    onBlur,
+    onPointerDown,
+    onPointerDownCapture,
+    onPointerUp,
+    onPointerUpCapture,
+    asChild,
+    children,
+    type: _type,
+    ...props
+  } = rawProps as CloseButtonProps & { type?: unknown };
+  const messages = getCommonMessages(useOptionalLocale()?.locale);
+  const resolvedAriaLabel = ariaLabel?.trim() || messages.close;
+  const recipeClass = closeButton({ size, appearance, shape });
+  const asChildElement = asChild && isExclusiveButtonAsChildHost(children) ? children : null;
+  const canUseAsChild = Boolean(asChild && asChildElement);
+  const isButtonCompatibleHost = isButtonCompatibleAsChildHost(asChildElement);
+  const needsButtonSemantics = Boolean(canUseAsChild && shouldEmulateButtonHost(asChildElement));
+  const Component = (canUseAsChild ? Slot : 'button') as ElementType;
+  const hostProps = asChild ? omitNativeButtonOnlyProps(props) : props;
+  const shouldGuardAsChildActivation = Boolean(canUseAsChild && disabled);
+  const fallbackChildren = isValidElement<{ children?: ReactNode }>(children)
+    ? children.props.children
+    : children;
+  const safeFallbackChildren =
+    asChild && isNonVoidAsChildHost(children) && !canUseAsChild
+      ? getFallbackChildrenForNativeButton(children)
+      : fallbackChildren;
+
+  const handleClick = (event: MouseEvent<HTMLElement>) => {
+    onClick?.(event as MouseEvent<HTMLButtonElement>);
+  };
+
+  const keyboardActivation = useButtonKeyboardActivation<HTMLButtonElement>({
+    enabled: needsButtonSemantics && !disabled,
+    onBlur,
+    onKeyDown,
+    onKeyUp,
+  });
+
+  const guardedChildren = guardDisabledActivationHandlers(children, shouldGuardAsChildActivation);
+  const activationHandlers = createDisabledActivationHandlers(shouldGuardAsChildActivation, {
+    onAuxClick,
+    onAuxClickCapture,
+    onClick: handleClick,
+    onClickCapture,
+    onKeyDown: keyboardActivation.onKeyDown,
+    onKeyDownCapture,
+    onKeyUp: keyboardActivation.onKeyUp,
+    onKeyUpCapture,
+    onPointerDown,
+    onPointerDownCapture,
+    onPointerUp,
+    onPointerUpCapture,
+  });
+  const slottableChildren: ReactNode =
+    canUseAsChild && isValidElement<Record<string, unknown>>(guardedChildren)
+      ? cloneElement(guardedChildren, {
+          'aria-disabled': disabled ? true : undefined,
+          'aria-label': resolvedAriaLabel,
+          disabled: isButtonCompatibleHost ? disabled : undefined,
+          ...(isButtonCompatibleHost ? { type: 'button' } : {}),
+          ...(needsButtonSemantics ? { role: 'button', tabIndex: 0 } : {}),
+        })
+      : guardedChildren;
+
+  return (
+    <Component
+      ref={ref}
+      className={cx(recipeClass, className)}
+      disabled={canUseAsChild ? undefined : disabled}
+      {...hostProps}
+      type={canUseAsChild ? undefined : 'button'}
+      aria-disabled={disabled ? true : undefined}
+      aria-label={resolvedAriaLabel}
+      data-disabled={disabled ? '' : undefined}
+      onBlur={keyboardActivation.onBlur}
+      {...activationHandlers}
+    >
+      {canUseAsChild ? (
+        <Slottable>{slottableChildren}</Slottable>
+      ) : asChild ? (
+        safeFallbackChildren
+      ) : null}
+      <CrossIcon />
+    </Component>
+  );
+});
+
+CloseButtonImpl.displayName = 'CloseButton';
 
 /**
- * A specialized dismiss button rendering a static `×` SVG icon.
- * Used inside overlays (Modal, Drawer), notifications (Toast, Alert),
- * and tag/chip components to provide a consistent close affordance.
+ * Triggers dismissal of its owning surface.
  *
- * ### AI Context & Architecture
- * - **Tier**: Atoms
- * - **Stack**: Panda CSS (`closeButton` recipe), Radix Slot + Slottable
- * - **Props**: `PrimitiveProps<'button'>`
- *
- * ### Design Tokens
- * - **sizing**: width / height → Silver Ratio tokens per `size` variant
- * - **color**: `ghost` appearance — no background, inherits from surface context
- *
- * ### Variant Logic
- * - **size="sm"**: For compact contexts — Tags, inline alerts.
- * - **size="md"**: Default. Modal and Drawer headers.
- * - **size="lg"**: Large overlay headers or card dismissals.
- *
- * ### Accessibility
- * - **Role**: `button` (implicit)
- * - **Keyboard**: Tab: focus | Enter / Space: activate
- * - **Default**: `aria-label="Close"` is pre-applied — override per context (e.g., `"Close cart drawer"`)
- * - **Note**: Never passes native `disabled` to `asChild` children — `aria-disabled` is used instead
- *
- * @example Standard dismiss
- * ```tsx
- * <CloseButton onClick={onClose} aria-label="Close modal" />
- * ```
- *
- * @example In a modal header
- * ```tsx
- * <div style={{ display: 'flex', justifyContent: 'space-between' }}>
- *   <h2>Dialog Title</h2>
- *   <CloseButton onClick={onClose} aria-label="Close dialog" />
- * </div>
- * ```
+ * The accessible name defaults to the active locale's “Close” message; override `aria-label`
+ * when the target needs to be named. `asChild` accepts an action-only host, not a destination
+ * link; unsupported children fall back to a native button. Disabled delegated hosts cannot
+ * activate through pointer or keyboard input.
  */
-export const CloseButton = forwardRef<HTMLButtonElement, CloseButtonProps>(
-  (
-    {
-      size = 'md',
-      appearance = 'ghost',
-      shape = 'rounded',
-      className,
-      disabled = false,
-      'aria-label': ariaLabel = 'Close',
-      asChild,
-      children,
-      ...props
-    },
-    ref,
-  ) => {
-    const recipeClass = closeButton({ size, appearance, shape });
-    const Component = asChild ? Slot : 'button';
 
-    return (
-      <Component
-        ref={ref}
-        type={asChild ? undefined : 'button'}
-        className={cx(recipeClass, className)}
-        disabled={asChild ? undefined : disabled}
-        aria-disabled={disabled ? true : undefined}
-        aria-label={ariaLabel}
-        {...props}
-      >
-        {asChild && <Slottable>{children}</Slottable>}
-        <CrossIcon />
-      </Component>
-    );
-  },
-);
-
-CloseButton.displayName = 'CloseButton';
+export const CloseButton = CloseButtonImpl as CloseButtonComponent;

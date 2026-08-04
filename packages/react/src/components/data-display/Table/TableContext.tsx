@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext } from 'react';
+import type { table } from '@/styled-system/recipes';
 import { TableProps } from './Table.types';
 
 /**
@@ -10,6 +11,9 @@ interface TableContextValue {
   variant?: TableProps['variant'];
   size?: TableProps['size'];
   layout?: TableProps['layout'];
+  stickyHeader?: TableProps['stickyHeader'];
+  headerTone?: TableProps['headerTone'];
+  classes: ReturnType<typeof table>;
 }
 
 /**

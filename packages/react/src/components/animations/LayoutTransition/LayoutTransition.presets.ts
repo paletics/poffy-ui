@@ -2,14 +2,6 @@ import { springs } from '../presets';
 import { CustomData } from '../types';
 import { getCustomValue } from '../utils';
 
-/**
- * Layout Transition Presets
- *
- * ### AI Context & Architecture
- * Defines animation variants for layout changes (size, position, etc.).
- * Includes presets for reordering, expansion (accordion), and morphing.
- * Uses spring-based transitions to ensure organic movement.
- */
 export const layoutVariants = {
   /**
    * Reorder: Smooth transitions for elements changing position in a list.

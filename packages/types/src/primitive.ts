@@ -4,36 +4,20 @@ import { ComponentPropsWithoutRef, ElementType, ReactNode } from 'react';
  * Base type for components that wrap a fixed HTML element without polymorphism.
  * Use this for semantic elements whose tag never changes (e.g., `<img>`, `<audio>`, `<video>`).
  *
- * ### AI Context
- * - **Domain**: Type Utility / Polymorphism
- * - **Side Effects**: None; compile-time prop helper only
- *
- * ### AI Usage
- * - **DO**: Use when the component does NOT support `asChild` / Slot pattern.
- * - **DO**: Use when the underlying HTML element is fixed and semantically meaningful (media, form elements, etc.).
- * - **DON'T**: Do not use when the component needs `asChild` delegation; use `PrimitiveProps` instead.
- *
- * @param T - The fixed HTML element type (e.g., `'img'`, `'audio'`).
- * @param P - Custom component-specific props.
+ * @typeParam T - The fixed HTML element type, such as `'img'` or `'audio'`.
+ * @typeParam P - Component-specific props that override matching native props.
  */
 export type NativeProps<T extends ElementType, P = object> = P &
   Omit<ComponentPropsWithoutRef<T>, keyof P>;
 
 /**
  * Base type for components that support the `asChild` (Slot) pattern.
- * Use this when the component can delegate rendering to a child element via Radix UI Slot.
  *
- * ### AI Context
- * - **Domain**: Type Utility / Polymorphism
- * - **Side Effects**: None; compile-time prop helper only
+ * `PrimitiveProps` describes the default host only. When `asChild` is true, refs and event
+ * targets are the supplied child host at runtime; this utility does not infer that host type.
  *
- * ### AI Usage
- * - **DO**: Use when the component implements `asChild` with `@radix-ui/react-slot`.
- * - **DO**: Use when the component is a style/behavior wrapper whose element can be swapped by the consumer.
- * - **DON'T**: Do not use when the underlying HTML element is fixed; use `NativeProps` instead.
- *
- * @param T - The default HTML element type (e.g., `'button'`, `'div'`).
- * @param P - Custom component-specific props.
+ * @typeParam T - The default HTML element type, such as `'button'` or `'div'`.
+ * @typeParam P - Component-specific props that override matching native props.
  */
 export type PrimitiveProps<T extends ElementType, P = object> = P &
   Omit<ComponentPropsWithoutRef<T>, keyof P | 'asChild'> & {
